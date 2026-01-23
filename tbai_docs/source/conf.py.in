@@ -1,0 +1,46 @@
+# Configuration file for the Sphinx documentation builder.
+
+import os
+import sys
+
+# -- Project information -----------------------------------------------------
+project = 'tbai'
+copyright = '2026, tbai contributors'
+author = 'tbai contributors'
+version = '@PROJECT_VERSION@'
+release = '@PROJECT_VERSION@'
+
+# -- General configuration ---------------------------------------------------
+extensions = [
+    'sphinx.ext.mathjax',
+    'myst_parser',
+]
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
+}
+
+# The master toctree document
+master_doc = 'index'
+
+# Patterns to exclude
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+
+# -- Options for HTML output -------------------------------------------------
+html_theme = 'furo'
+html_title = 'tbai Documentation'
+
+# Furo theme options
+html_theme_options = {
+    'light_css_variables': {
+        'color-brand-primary': '#2980b9',
+        'color-brand-content': '#2980b9',
+    },
+    'dark_css_variables': {
+        'color-brand-primary': '#56b4e9',
+        'color-brand-content': '#56b4e9',
+    },
+    'sidebar_hide_name': False,
+    'navigation_with_keys': True,
+}
