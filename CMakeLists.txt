@@ -17,6 +17,7 @@ option(TBAI_BUILD_OCS2 "Build the ocs2" ON)
 option(TBAI_BUILD_MPC "Build the mpc" ON)
 option(TBAI_BUILD_DTC "Build the dtc" ON)
 option(TBAI_BUILD_JOE "Build the joe" ON)
+option(TBAI_BUILD_DOCS "Build the documentation" OFF)
 option(TBAI_FETCH_TORCH "Fetch libtorch" OFF)
 
 project(tbai VERSION 2.0.0)
@@ -92,6 +93,10 @@ endif()
 
 if(TBAI_BUILD_JOE)
   add_subdirectory(tbai_joe)
+endif()
+
+if(TBAI_BUILD_DOCS)
+  add_subdirectory(tbai_docs)
 endif()
 
 include(CMakePackageConfigHelpers)
