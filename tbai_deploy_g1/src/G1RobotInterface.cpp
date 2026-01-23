@@ -159,11 +159,19 @@ void G1RobotInterface::lowStateCallback(const void *message) {
     }
 
     // Extract IMU data
+    // Unitree IMU provides quaternion in [w, x, y, z] order
+    // We store as [x, y, z, w] for Eigen compatibility and TWIST2
     vector4_t baseOrientation;
     baseOrientation[0] = low_state.imu_state().quaternion()[1];  // x
     baseOrientation[1] = low_state.imu_state().quaternion()[2];  // y
     baseOrientation[2] = low_state.imu_state().quaternion()[3];  // z
     baseOrientation[3] = low_state.imu_state().quaternion()[0];  // w
+
+    // Store raw quaternion for TWIST2 compatibility
+    {
+        std::lock_guard<std::mutex> lock(quat_mutex_);
+        baseQuaternion_ = baseOrientation;
+    }
 
     vector3_t baseAngVel;
     baseAngVel[0] = low_state.imu_state().gyroscope()[0];

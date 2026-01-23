@@ -37,12 +37,19 @@ set_target_properties(onnxruntime PROPERTIES
 
 message(STATUS "ONNX Runtime configured: ${onnxruntime_SOURCE_DIR}")
 
+# Find Torch for G1TwistController
+find_package(Torch REQUIRED)
+
 add_library(tbai_deploy_g1
     src/G1RobotInterface.cpp
     src/G1RLController.cpp
     src/G1MimicController.cpp
     src/G1BeyondMimicController.cpp
+    src/G1SpinkickController.cpp
+    src/G1TwistController.cpp
     src/MotionLoader.cpp
+    src/TwistMotionLoader.cpp
+    src/Twist2MotionLoader.cpp
 )
 set_target_properties(tbai_deploy_g1 PROPERTIES EXPORT_NAME deploy_g1)
 
@@ -57,8 +64,10 @@ target_link_libraries(tbai_deploy_g1
     PUBLIC
         tbai_core
         tbai_reference
+        tbai_torch
         unitree_sdk2
         onnxruntime
+        ${TORCH_LIBRARIES}
 )
 
 ## Installation rules

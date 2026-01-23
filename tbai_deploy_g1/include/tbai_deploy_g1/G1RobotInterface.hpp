@@ -67,6 +67,22 @@ class G1RobotInterface : public RobotInterface {
     std::mutex latest_state_mutex_;
     State state_;
 
+    // Raw quaternion for TWIST2 compatibility (x, y, z, w order)
+    vector4_t baseQuaternion_;
+    std::mutex quat_mutex_;
+
+   public:
+    /**
+     * @brief Get the raw base quaternion in (x, y, z, w) format
+     * For TWIST2 compatibility - computes roll/pitch using the same formula
+     */
+    vector4_t getBaseQuaternion() const {
+        std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(quat_mutex_));
+        return baseQuaternion_;
+    }
+
+   private:
+
     std::shared_ptr<spdlog::logger> logger_;
 
     bool enable_ = false;
