@@ -49,6 +49,7 @@ add_library(tbai_deploy_g1
     src/G1TwistController.cpp
     src/G1PBHCController.cpp
     src/G1ASAPController.cpp
+    src/G1ASAPMimicController.cpp
     src/MotionLoader.cpp
     src/TwistMotionLoader.cpp
     src/Twist2MotionLoader.cpp
