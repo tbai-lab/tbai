@@ -47,9 +47,11 @@ add_library(tbai_deploy_g1
     src/G1BeyondMimicController.cpp
     src/G1SpinkickController.cpp
     src/G1TwistController.cpp
+    src/G1PBHCController.cpp
     src/MotionLoader.cpp
     src/TwistMotionLoader.cpp
     src/Twist2MotionLoader.cpp
+    src/PBHCMotionLoader.cpp
 )
 set_target_properties(tbai_deploy_g1 PROPERTIES EXPORT_NAME deploy_g1)
 
