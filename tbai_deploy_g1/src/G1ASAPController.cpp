@@ -43,7 +43,8 @@ G1ASAPController::G1ASAPController(const std::shared_ptr<tbai::StateSubscriber> 
     }
 
     // Load upper body reference positions (17 joints)
-    auto defaultUpperBodyRefVec = tbai::fromGlobalConfig<std::vector<double>>("g1_asap_controller/default_upper_body_ref");
+    auto defaultUpperBodyRefVec =
+        tbai::fromGlobalConfig<std::vector<double>>("g1_asap_controller/default_upper_body_ref");
     if (defaultUpperBodyRefVec.size() != ASAP_UPPER_BODY_JOINTS) {
         throw std::runtime_error("Expected 17 default_upper_body_ref values for ASAP");
     }
@@ -238,8 +239,7 @@ void G1ASAPController::buildObservation(scalar_t currentTime, scalar_t dt) {
 
     // Stand command: 1.0 when walking, 0.0 when standing
     // Using velocity magnitude as heuristic
-    bool hasVelocity = std::abs(currentLinVelCmd_[0]) > 0.05 ||
-                       std::abs(currentLinVelCmd_[1]) > 0.05 ||
+    bool hasVelocity = std::abs(currentLinVelCmd_[0]) > 0.05 || std::abs(currentLinVelCmd_[1]) > 0.05 ||
                        std::abs(currentAngVelCmd_) > 0.05;
     currentStandCmd_ = hasVelocity ? 1.0 : currentStandCmd_;
 

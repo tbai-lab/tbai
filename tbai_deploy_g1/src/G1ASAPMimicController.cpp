@@ -46,7 +46,8 @@ G1ASAPMimicController::G1ASAPMimicController(const std::shared_ptr<tbai::StateSu
     }
 
     // Load full 29-DOF default positions for motor commands
-    auto defaultJointPos29Vec = tbai::fromGlobalConfig<std::vector<double>>("g1_asap_mimic_controller/default_joint_pos_full");
+    auto defaultJointPos29Vec =
+        tbai::fromGlobalConfig<std::vector<double>>("g1_asap_mimic_controller/default_joint_pos_full");
     if (defaultJointPos29Vec.size() != G1_NUM_JOINTS) {
         throw std::runtime_error("Expected 29 default_joint_pos_full values for ASAP Mimic");
     }
@@ -116,13 +117,13 @@ void G1ASAPMimicController::initJointMapping() {
     // Mimic 19-22: right arm without wrists (G1 22-25)
 
     dofMask_ = {
-        true, true, true, true, true, true,     // left leg (0-5)
-        true, true, true, true, true, true,     // right leg (6-11)
-        true, true, true,                        // waist (12-14)
-        true, true, true, true,                  // left arm (15-18)
-        false, false, false,                     // left wrist (19-21) - LOCKED
-        true, true, true, true,                  // right arm (22-25)
-        false, false, false                      // right wrist (26-28) - LOCKED
+        true,  true,  true,  true, true, true,  // left leg (0-5)
+        true,  true,  true,  true, true, true,  // right leg (6-11)
+        true,  true,  true,                     // waist (12-14)
+        true,  true,  true,  true,              // left arm (15-18)
+        false, false, false,                    // left wrist (19-21) - LOCKED
+        true,  true,  true,  true,              // right arm (22-25)
+        false, false, false                     // right wrist (26-28) - LOCKED
     };
 
     // Build mapping from 23-DOF mimic index to 29-DOF G1 index
@@ -137,7 +138,8 @@ void G1ASAPMimicController::initJointMapping() {
         throw std::runtime_error("DOF mask does not produce 23 active joints");
     }
 
-    TBAI_LOG_INFO(logger_, "Joint mapping initialized: {} mimic DOFs -> {} G1 DOFs", ASAP_MIMIC_NUM_JOINTS, G1_NUM_JOINTS);
+    TBAI_LOG_INFO(logger_, "Joint mapping initialized: {} mimic DOFs -> {} G1 DOFs", ASAP_MIMIC_NUM_JOINTS,
+                  G1_NUM_JOINTS);
 }
 
 void G1ASAPMimicController::initOnnxModel(const std::string &policyPath) {

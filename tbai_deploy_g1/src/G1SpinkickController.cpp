@@ -248,7 +248,7 @@ quaternion_t G1SpinkickController::computeAnchorOrientation(const quaternion_t &
 }
 
 Eigen::Matrix<scalar_t, 6, 1> G1SpinkickController::computeOrientationError(const quaternion_t &targetQuat,
-                                                                             const quaternion_t &actualQuat) const {
+                                                                            const quaternion_t &actualQuat) const {
     quaternion_t alignedMotion = initQuat_ * targetQuat;
     quaternion_t relQuat = actualQuat.conjugate() * alignedMotion;
     matrix3_t rot = relQuat.toRotationMatrix();

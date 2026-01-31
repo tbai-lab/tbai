@@ -30,7 +30,8 @@ constexpr int ASAP_MIMIC_HISTORY_LENGTH = 4;
 constexpr int ASAP_MIMIC_CURRENT_OBS_SIZE = 72;
 constexpr int ASAP_MIMIC_HISTORY_OBS_SIZE = 304;
 constexpr int ASAP_MIMIC_POST_HISTORY_SIZE = 4;
-constexpr int ASAP_MIMIC_TOTAL_OBS_SIZE = ASAP_MIMIC_CURRENT_OBS_SIZE + ASAP_MIMIC_HISTORY_OBS_SIZE + ASAP_MIMIC_POST_HISTORY_SIZE;
+constexpr int ASAP_MIMIC_TOTAL_OBS_SIZE =
+    ASAP_MIMIC_CURRENT_OBS_SIZE + ASAP_MIMIC_HISTORY_OBS_SIZE + ASAP_MIMIC_POST_HISTORY_SIZE;
 
 /**
  * @brief G1 ASAP Mimic Controller for motion tracking using ONNX Runtime.
@@ -132,12 +133,12 @@ class G1ASAPMimicController : public tbai::Controller {
     scalar_t currentPhase_;    // 1 dim (0 to 1)
 
     // History buffers (ALPHABETICALLY sorted)
-    std::deque<vector_t> historyActions_;   // 4 x 23
-    std::deque<vector_t> historyAngVel_;    // 4 x 3
-    std::deque<vector_t> historyDofPos_;    // 4 x 23
-    std::deque<vector_t> historyDofVel_;    // 4 x 23
-    std::deque<vector_t> historyGravity_;   // 4 x 3
-    std::deque<scalar_t> historyPhase_;     // 4 x 1
+    std::deque<vector_t> historyActions_;  // 4 x 23
+    std::deque<vector_t> historyAngVel_;   // 4 x 3
+    std::deque<vector_t> historyDofPos_;   // 4 x 23
+    std::deque<vector_t> historyDofVel_;   // 4 x 23
+    std::deque<vector_t> historyGravity_;  // 4 x 3
+    std::deque<scalar_t> historyPhase_;    // 4 x 1
 
     // Action output (23 mimic DOFs)
     vector_t action_;
@@ -163,9 +164,9 @@ class G1ASAPMimicController : public tbai::Controller {
     scalar_t actionClip_;
 
     // Motion tracking
-    float motionLength_;       // Duration of motion in seconds
-    float motionStartTime_;    // When motion started
-    float motionPhase_;        // Current phase (0 to 1)
+    float motionLength_;     // Duration of motion in seconds
+    float motionStartTime_;  // When motion started
+    float motionPhase_;      // Current phase (0 to 1)
     bool motionActive_;
     bool motionComplete_;
 

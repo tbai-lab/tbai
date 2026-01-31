@@ -144,16 +144,16 @@ class G1ASAPController : public tbai::Controller {
     vector_t observation_;
 
     // Current observation components
-    vector_t currentAngVel_;       // 3 dims
-    vector_t currentGravity_;      // 3 dims
-    vector_t currentDofPos_;       // 29 dims (relative to default)
-    vector_t currentDofVel_;       // 29 dims
-    vector_t currentLinVelCmd_;    // 2 dims
-    scalar_t currentAngVelCmd_;    // 1 dim
-    scalar_t currentStandCmd_;     // 1 dim
-    scalar_t currentBaseHeightCmd_;// 1 dim
-    scalar_t currentCosPhase_;     // 1 dim
-    scalar_t currentSinPhase_;     // 1 dim
+    vector_t currentAngVel_;         // 3 dims
+    vector_t currentGravity_;        // 3 dims
+    vector_t currentDofPos_;         // 29 dims (relative to default)
+    vector_t currentDofVel_;         // 29 dims
+    vector_t currentLinVelCmd_;      // 2 dims
+    scalar_t currentAngVelCmd_;      // 1 dim
+    scalar_t currentStandCmd_;       // 1 dim
+    scalar_t currentBaseHeightCmd_;  // 1 dim
+    scalar_t currentCosPhase_;       // 1 dim
+    scalar_t currentSinPhase_;       // 1 dim
 
     // Upper body reference
     vector_t refUpperDofPos_;  // 17 dims

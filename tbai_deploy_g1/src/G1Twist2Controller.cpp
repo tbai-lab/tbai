@@ -10,8 +10,8 @@ namespace tbai {
 namespace g1 {
 
 G1Twist2Controller::G1Twist2Controller(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
-                                     const std::string &policyPath, const std::string &motionFilePath, float timeStart,
-                                     float timeEnd, const std::string &controllerName)
+                                       const std::string &policyPath, const std::string &motionFilePath,
+                                       float timeStart, float timeEnd, const std::string &controllerName)
     : stateSubscriberPtr_(stateSubscriberPtr),
       modelLoaded_(false),
       timeStart_(timeStart),
@@ -141,7 +141,7 @@ vector_t G1Twist2Controller::buildActionMimicObs() const {
     return motionLoader_->getActionMimic();
 }
 
-Eigen::Vector2d G1Twist2Controller::quatToRollPitch(const vector4_t& quat) const {
+Eigen::Vector2d G1Twist2Controller::quatToRollPitch(const vector4_t &quat) const {
     // Convert quaternion [x, y, z, w] to roll/pitch using TWIST2's formula
     // This matches TWIST2's quatToEuler function in rot_utils.py
     double x = quat(0);
@@ -191,7 +191,7 @@ vector_t G1Twist2Controller::buildProprioObs() const {
     // 2. Roll & Pitch (2 dims) - compute from raw quaternion using TWIST2's formula
     // Try to get raw quaternion from G1RobotInterface for exact TWIST2 compatibility
     Eigen::Vector2d rollPitch;
-    auto* g1Interface = dynamic_cast<G1RobotInterface*>(stateSubscriberPtr_.get());
+    auto *g1Interface = dynamic_cast<G1RobotInterface *>(stateSubscriberPtr_.get());
     if (g1Interface) {
         vector4_t quat = g1Interface->getBaseQuaternion();
         rollPitch = quatToRollPitch(quat);
@@ -327,8 +327,8 @@ std::vector<tbai::MotorCommand> G1Twist2Controller::getMotorCommands(scalar_t cu
 }
 
 bool G1Twist2Controller::isSupported(const std::string &controllerType) {
-    return controllerType == controllerName_ || controllerType == "G1Twist2Controller" || controllerType == "g1_twist" ||
-           controllerType == "twist" || controllerType == "twist2";
+    return controllerType == controllerName_ || controllerType == "G1Twist2Controller" ||
+           controllerType == "g1_twist" || controllerType == "twist" || controllerType == "twist2";
 }
 
 void G1Twist2Controller::stopController() {

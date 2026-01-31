@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Eigen/Dense>
 #include <string>
 #include <vector>
 
+#include <Eigen/Dense>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 
@@ -125,13 +125,13 @@ class Twist2MotionLoader {
     float dt_;
 
     // Raw data (column-major Eigen matrices)
-    Eigen::MatrixXd rootPos_;      // (3, num_frames)
-    Eigen::MatrixXd rootRot_;      // (4, num_frames) quaternion x,y,z,w
-    Eigen::MatrixXd dofPos_;       // (29, num_frames)
+    Eigen::MatrixXd rootPos_;  // (3, num_frames)
+    Eigen::MatrixXd rootRot_;  // (4, num_frames) quaternion x,y,z,w
+    Eigen::MatrixXd dofPos_;   // (29, num_frames)
 
     // Computed velocities
-    Eigen::MatrixXd rootVel_;      // (3, num_frames)
-    Eigen::MatrixXd rootAngVel_;   // (3, num_frames)
+    Eigen::MatrixXd rootVel_;     // (3, num_frames)
+    Eigen::MatrixXd rootAngVel_;  // (3, num_frames)
 
     // Current interpolated state
     vector_t currentRootPos_;

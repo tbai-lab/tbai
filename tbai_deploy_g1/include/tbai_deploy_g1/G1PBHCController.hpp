@@ -123,20 +123,20 @@ class G1PBHCController : public tbai::Controller {
     vector_t observation_;
 
     // Current observation components (before scaling)
-    vector_t currentAngVel_;      // 3 dims
-    vector_t currentGravity_;     // 3 dims
-    vector_t currentDofPos_;      // 23 dims (relative to default)
-    vector_t currentDofVel_;      // 23 dims
-    vector_t currentActions_;     // 23 dims
-    scalar_t currentPhase_;       // 1 dim
+    vector_t currentAngVel_;   // 3 dims
+    vector_t currentGravity_;  // 3 dims
+    vector_t currentDofPos_;   // 23 dims (relative to default)
+    vector_t currentDofVel_;   // 23 dims
+    vector_t currentActions_;  // 23 dims
+    scalar_t currentPhase_;    // 1 dim
 
     // History buffers (each is a deque of PBHC_HISTORY_LENGTH vectors)
-    std::deque<vector_t> historyActions_;     // 4 x 23
-    std::deque<vector_t> historyAngVel_;      // 4 x 3
-    std::deque<vector_t> historyDofPos_;      // 4 x 23
-    std::deque<vector_t> historyDofVel_;      // 4 x 23
-    std::deque<vector_t> historyGravity_;     // 4 x 3
-    std::deque<scalar_t> historyPhase_;       // 4 x 1
+    std::deque<vector_t> historyActions_;  // 4 x 23
+    std::deque<vector_t> historyAngVel_;   // 4 x 3
+    std::deque<vector_t> historyDofPos_;   // 4 x 23
+    std::deque<vector_t> historyDofVel_;   // 4 x 23
+    std::deque<vector_t> historyGravity_;  // 4 x 3
+    std::deque<scalar_t> historyPhase_;    // 4 x 1
 
     // Action output
     vector_t action_;

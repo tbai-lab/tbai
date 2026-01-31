@@ -15,7 +15,7 @@
 namespace tbai {
 namespace g1 {
 
-constexpr int BEYOND_OBS_MOTION_CMD = 58;       // 29 joint_pos + 29 joint_vel
+constexpr int BEYOND_OBS_MOTION_CMD = 58;  // 29 joint_pos + 29 joint_vel
 constexpr int BEYOND_OBS_ANCHOR_ORI = 6;
 constexpr int BEYOND_OBS_BASE_ANG_VEL = 3;
 constexpr int BEYOND_OBS_JOINT_POS_REL = 29;
@@ -29,7 +29,8 @@ constexpr int BEYOND_NUM_BODIES = 14;
 class G1BeyondMimicController : public tbai::Controller {
    public:
     G1BeyondMimicController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
-                            const std::string &policyPath, const std::string &controllerName = "G1BeyondMimicController",
+                            const std::string &policyPath,
+                            const std::string &controllerName = "G1BeyondMimicController",
                             bool useModelMetaConfig = true, float actionBeta = 1.0f);
 
     ~G1BeyondMimicController();

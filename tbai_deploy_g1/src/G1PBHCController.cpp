@@ -68,11 +68,11 @@ G1PBHCController::G1PBHCController(const std::shared_ptr<tbai::StateSubscriber> 
     // 15-21: left arm with wrists (shoulder_pitch, roll, yaw, elbow, wrist_roll, pitch, yaw)
     // 22-28: right arm with wrists
     jointMapping_ = {
-        0, 1, 2, 3, 4, 5,      // left leg (0-5) -> (0-5)
-        6, 7, 8, 9, 10, 11,    // right leg (6-11) -> (6-11)
-        12, 13, 14,            // waist (12-14) -> (12-14)
-        15, 16, 17, 18,        // left arm (15-18) -> (15, 16, 17, 18)
-        22, 23, 24, 25         // right arm (19-22) -> (22, 23, 24, 25)
+        0,  1,  2,  3,  4,  5,   // left leg (0-5) -> (0-5)
+        6,  7,  8,  9,  10, 11,  // right leg (6-11) -> (6-11)
+        12, 13, 14,              // waist (12-14) -> (12-14)
+        15, 16, 17, 18,          // left arm (15-18) -> (15, 16, 17, 18)
+        22, 23, 24, 25           // right arm (19-22) -> (22, 23, 24, 25)
     };
 
     jointNames_ = tbai::fromGlobalConfig<std::vector<std::string>>("joint_names");

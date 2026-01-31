@@ -15,14 +15,15 @@
 namespace tbai {
 namespace g1 {
 
-constexpr int SPINKICK_OBS_MOTION_CMD = 58;       // 29 joint_pos + 29 joint_vel
+constexpr int SPINKICK_OBS_MOTION_CMD = 58;  // 29 joint_pos + 29 joint_vel
 constexpr int SPINKICK_OBS_ANCHOR_ORI = 6;
 constexpr int SPINKICK_OBS_BASE_ANG_VEL = 3;
 constexpr int SPINKICK_OBS_JOINT_POS_REL = 29;
 constexpr int SPINKICK_OBS_JOINT_VEL_REL = 29;
 constexpr int SPINKICK_OBS_LAST_ACTION = 29;
 constexpr int SPINKICK_TOTAL_OBS_SIZE = SPINKICK_OBS_MOTION_CMD + SPINKICK_OBS_ANCHOR_ORI + SPINKICK_OBS_BASE_ANG_VEL +
-                                        SPINKICK_OBS_JOINT_POS_REL + SPINKICK_OBS_JOINT_VEL_REL + SPINKICK_OBS_LAST_ACTION;
+                                        SPINKICK_OBS_JOINT_POS_REL + SPINKICK_OBS_JOINT_VEL_REL +
+                                        SPINKICK_OBS_LAST_ACTION;
 
 constexpr int SPINKICK_NUM_BODIES = 14;
 

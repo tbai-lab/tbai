@@ -60,8 +60,8 @@ class G1Twist2Controller : public tbai::Controller {
      * @param controllerName Name for logging
      */
     G1Twist2Controller(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr, const std::string &policyPath,
-                      const std::string &motionFilePath, float timeStart = 0.0f, float timeEnd = -1.0f,
-                      const std::string &controllerName = "G1Twist2Controller");
+                       const std::string &motionFilePath, float timeStart = 0.0f, float timeEnd = -1.0f,
+                       const std::string &controllerName = "G1Twist2Controller");
 
     ~G1Twist2Controller();
 
@@ -120,7 +120,7 @@ class G1Twist2Controller : public tbai::Controller {
      * @param quat Quaternion in [x, y, z, w] format
      * @return Vector2 containing [roll, pitch]
      */
-    Eigen::Vector2d quatToRollPitch(const vector4_t& quat) const;
+    Eigen::Vector2d quatToRollPitch(const vector4_t &quat) const;
 
     std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
     std::unique_ptr<Twist2MotionLoader> motionLoader_;
@@ -138,10 +138,10 @@ class G1Twist2Controller : public tbai::Controller {
     vector_t lastAction_;
 
     // Observation components
-    vector_t observation_;       // Full 1432-dim observation
-    vector_t currentFrameObs_;   // Current frame (127 dims)
-    vector_t actionMimicObs_;    // Current action_mimic (35 dims)
-    vector_t proprioObs_;        // Current proprio (92 dims)
+    vector_t observation_;      // Full 1432-dim observation
+    vector_t currentFrameObs_;  // Current frame (127 dims)
+    vector_t actionMimicObs_;   // Current action_mimic (35 dims)
+    vector_t proprioObs_;       // Current proprio (92 dims)
 
     // History buffer (deque of observation frames, 127 dims each)
     std::deque<vector_t> historyBuffer_;
@@ -150,9 +150,9 @@ class G1Twist2Controller : public tbai::Controller {
     vector_t action_;
 
     // Configuration (29 DOFs)
-    vector_t defaultJointPos_;   // 29 G1 joints
-    vector_t stiffness_;         // 29 joints
-    vector_t damping_;           // 29 joints
+    vector_t defaultJointPos_;        // 29 G1 joints
+    vector_t stiffness_;              // 29 joints
+    vector_t damping_;                // 29 joints
     std::vector<int> ankleJointIds_;  // Ankle joint indices for velocity zeroing
 
     std::vector<std::string> jointNames_;  // 29 joint names
