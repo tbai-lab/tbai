@@ -53,13 +53,9 @@ if(TBAI_BUILD_NP3O)
   add_subdirectory(tbai_np3o)
 endif()
 
-if(TBAI_BUILD_PYTHON)
-  add_subdirectory(tbai_python)
-endif()
-
-set(GET_USE_UNITREE_SDK2 
-    ${TBAI_BUILD_DEPLOY_GO2} 
-    OR ${TBAI_BUILD_DEPLOY_GO2W} 
+set(GET_USE_UNITREE_SDK2
+    ${TBAI_BUILD_DEPLOY_GO2}
+    OR ${TBAI_BUILD_DEPLOY_GO2W}
     OR ${TBAI_BUILD_DEPLOY_G1}
 )
 
@@ -69,6 +65,10 @@ endif()
 
 if(TBAI_BUILD_DEPLOY_GO2)
   add_subdirectory(tbai_deploy_go2)
+endif()
+
+if(TBAI_BUILD_PYTHON)
+  add_subdirectory(tbai_python)
 endif()
 
 if(TBAI_BUILD_DEPLOY_GO2W)

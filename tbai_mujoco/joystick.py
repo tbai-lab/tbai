@@ -85,10 +85,11 @@ class VirtualJoystick(tk.Frame):
 
 
 class UIController:
-    def __init__(self, stand_callback = lambda: None, sit_callback = lambda: None, bob_callback = lambda: None):
+    def __init__(self, stand_callback = lambda: None, sit_callback = lambda: None, np3o_callback = lambda: None, bob_callback = lambda: None):
         self.stand_callback = stand_callback
         self.sit_callback = sit_callback
         self.bob_callback = bob_callback
+        self.np3o_callback = np3o_callback
 
         self.root = tk.Tk()
         self.root.title("Virtual Joystick")
@@ -132,8 +133,11 @@ class UIController:
         self.button2 = ttk.Button(buttons_frame, text="Sit", command=self.sit_callback)
         self.button2.grid(row=0, column=1, padx=10)
 
-        self.button3 = ttk.Button(buttons_frame, text="Bob", command=self.bob_callback)
+        self.button3 = ttk.Button(buttons_frame, text="np3o", command=self.np3o_callback)
         self.button3.grid(row=0, column=2, padx=10)
+
+        self.button4 = ttk.Button(buttons_frame, text="bob", command=self.bob_callback)
+        self.button4.grid(row=0, column=3, padx=10)
 
         self.linear_x = 0.0
         self.linear_y = 0.0

@@ -22,6 +22,11 @@ target_link_libraries(tbai_python
         tbai_estim
         pinocchio::pinocchio
 )
+
+if(TBAI_BUILD_DEPLOY_GO2)
+    target_link_libraries(tbai_python PUBLIC tbai_deploy_go2)
+    target_compile_definitions(tbai_python PRIVATE TBAI_HAS_DEPLOY_GO2)
+endif()
 target_include_directories(tbai_python
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

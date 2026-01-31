@@ -18,6 +18,10 @@
 #include <tbai_static/StaticController.hpp>
 #include <tbai_wtw/WtwController.hpp>
 
+#ifdef TBAI_HAS_DEPLOY_GO2
+#include <tbai_deploy_go2/Go2RobotInterface.hpp>
+#endif
+
 // Python wrappers around virtual classes
 namespace tbai {
 
@@ -53,32 +57,32 @@ class PyChangeControllerSubscriber : public tbai::ChangeControllerSubscriber {
 class PyStaticController : public tbai::static_::StaticController {
    public:
     PyStaticController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
-                       std::function<void(scalar_t, scalar_t)> visualizeCallback = nullptr)
-        : tbai::static_::StaticController(stateSubscriberPtr), visualizeCallback_(visualizeCallback) {}
+                       std::function<void(scalar_t, scalar_t)> postStepCallback = nullptr)
+        : tbai::static_::StaticController(stateSubscriberPtr), postStepCallback_(postStepCallback) {}
 
     bool ok() const override { return true; }
 
     void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
-        if (visualizeCallback_) {
-            visualizeCallback_(currentTime, dt);
+        if (postStepCallback_) {
+            postStepCallback_(currentTime, dt);
         }
     }
 
-    std::function<void(scalar_t, scalar_t)> visualizeCallback_ = nullptr;
+    std::function<void(scalar_t, scalar_t)> postStepCallback_ = nullptr;
 };
 
 class PyBobController : public tbai::BobController {
    public:
     PyBobController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
                     const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
-                    std::function<void(scalar_t, scalar_t)> visualizeCallback = nullptr)
-        : tbai::BobController(stateSubscriberPtr, refVelGen), visualizeCallback_(visualizeCallback) {}
+                    std::function<void(scalar_t, scalar_t)> postStepCallback = nullptr)
+        : tbai::BobController(stateSubscriberPtr, refVelGen), postStepCallback_(postStepCallback) {}
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
-        if (visualizeCallback_) {
-            visualizeCallback_(currentTime, dt);
+        if (postStepCallback_) {
+            postStepCallback_(currentTime, dt);
         }
     }
 
@@ -92,19 +96,19 @@ class PyBobController : public tbai::BobController {
 
     bool ok() const override { return true; }
 
-    std::function<void(scalar_t, scalar_t)> visualizeCallback_ = nullptr;
+    std::function<void(scalar_t, scalar_t)> postStepCallback_ = nullptr;
 };
 
 class PyNp3oController : public tbai::Np3oController {
    public:
     PyNp3oController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
                      const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
-                     std::function<void(scalar_t, scalar_t)> visualizeCallback = nullptr)
-        : tbai::Np3oController(stateSubscriberPtr, refVelGen), visualizeCallback_(visualizeCallback) {}
+                     std::function<void(scalar_t, scalar_t)> postStepCallback = nullptr)
+        : tbai::Np3oController(stateSubscriberPtr, refVelGen), postStepCallback_(postStepCallback) {}
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
-        if (visualizeCallback_) {
-            visualizeCallback_(currentTime, dt);
+        if (postStepCallback_) {
+            postStepCallback_(currentTime, dt);
         }
     }
 
@@ -114,19 +118,19 @@ class PyNp3oController : public tbai::Np3oController {
 
     bool ok() const override { return true; }
 
-    std::function<void(scalar_t, scalar_t)> visualizeCallback_ = nullptr;
+    std::function<void(scalar_t, scalar_t)> postStepCallback_ = nullptr;
 };
 
 class PyWtwController : public tbai::WtwController {
    public:
     PyWtwController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
                     const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
-                    std::function<void(scalar_t, scalar_t)> visualizeCallback = nullptr)
-        : tbai::WtwController(stateSubscriberPtr, refVelGen), visualizeCallback_(visualizeCallback) {}
+                    std::function<void(scalar_t, scalar_t)> postStepCallback = nullptr)
+        : tbai::WtwController(stateSubscriberPtr, refVelGen), postStepCallback_(postStepCallback) {}
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
-        if (visualizeCallback_) {
-            visualizeCallback_(currentTime, dt);
+        if (postStepCallback_) {
+            postStepCallback_(currentTime, dt);
         }
     }
 
@@ -144,7 +148,7 @@ class PyWtwController : public tbai::WtwController {
 
     void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
 
-    std::function<void(scalar_t, scalar_t)> visualizeCallback_ = nullptr;
+    std::function<void(scalar_t, scalar_t)> postStepCallback_ = nullptr;
 };
 
 class PyReferenceVelocityGenerator : public tbai::reference::ReferenceVelocityGenerator {
@@ -159,11 +163,6 @@ class PyReferenceVelocityGenerator : public tbai::reference::ReferenceVelocityGe
 
 typedef tbai::CentralController<tbai::SystemRate<scalar_t>, tbai::SystemTime<std::chrono::high_resolution_clock>>
     CentralControllerPython;
-
-class PyCentralController : public CentralControllerPython {
-   public:
-    using CentralControllerPython::CentralController;
-};
 
 }  // namespace tbai
 
@@ -217,6 +216,37 @@ PYBIND11_MODULE(tbai_python, m) {
         .def(py::init<>())
         .def("getReferenceVelocity", &tbai::reference::ReferenceVelocityGenerator::getReferenceVelocity);
 
+    // Controller base class
+    py::class_<tbai::Controller, std::shared_ptr<tbai::Controller>>(m, "Controller");
+
+    // Concrete controller types
+    py::class_<tbai::PyStaticController, tbai::Controller, std::shared_ptr<tbai::PyStaticController>>(
+        m, "StaticController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
+             py::arg("state_subscriber"), py::arg("post_step_callback") = nullptr);
+
+    py::class_<tbai::PyNp3oController, tbai::Controller, std::shared_ptr<tbai::PyNp3oController>>(
+        m, "Np3oController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
+                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
+             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
+
+    py::class_<tbai::PyBobController, tbai::Controller, std::shared_ptr<tbai::PyBobController>>(
+        m, "BobController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
+                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
+             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
+
+    py::class_<tbai::PyWtwController, tbai::Controller, std::shared_ptr<tbai::PyWtwController>>(
+        m, "WtwController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
+                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
+             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
+
+    // Central controller with generic add_controller
     py::class_<tbai::CentralControllerPython, std::shared_ptr<tbai::CentralControllerPython>>(m, "CentralController")
         .def_static("create",
                     [](std::shared_ptr<tbai::CommandPublisher> commandPublisherPtr,
@@ -227,40 +257,8 @@ PYBIND11_MODULE(tbai_python, m) {
         .def("start", &tbai::CentralControllerPython::start)
         .def("startThread", &tbai::CentralControllerPython::startThread)
         .def("stopThread", &tbai::CentralControllerPython::stopThread)
-        .def(
-            "add_np3o_controller",
-            [](tbai::CentralControllerPython *self, const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
-               const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
-               std::function<void(tbai::scalar_t, tbai::scalar_t)> visualizeCallback = nullptr) {
-                self->addController(
-                    std::make_unique<tbai::PyNp3oController>(stateSubscriberPtr, refVelGen, visualizeCallback));
-            },
-            py::arg("stateSubscriberPtr"), py::arg("refVelGen"), py::arg("visualizeCallback") = nullptr)
-        .def(
-            "add_bob_controller",
-            [](tbai::CentralControllerPython *self, const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
-               const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
-               std::function<void(tbai::scalar_t, tbai::scalar_t)> visualizeCallback = nullptr) {
-                self->addController(
-                    std::make_unique<tbai::PyBobController>(stateSubscriberPtr, refVelGen, visualizeCallback));
-            },
-            py::arg("stateSubscriberPtr"), py::arg("refVelGen"), py::arg("visualizeCallback") = nullptr)
-        .def(
-            "add_wtw_controller",
-            [](tbai::CentralControllerPython *self, const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
-               const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
-               std::function<void(tbai::scalar_t, tbai::scalar_t)> visualizeCallback = nullptr) {
-                self->addController(
-                    std::make_unique<tbai::PyWtwController>(stateSubscriberPtr, refVelGen, visualizeCallback));
-            },
-            py::arg("stateSubscriberPtr"), py::arg("refVelGen"), py::arg("visualizeCallback") = nullptr)
-        .def(
-            "add_static_controller",
-            [](tbai::CentralControllerPython *self, std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr,
-               std::function<void(tbai::scalar_t, tbai::scalar_t)> visualizeCallback = nullptr) {
-                self->addController(std::make_unique<tbai::PyStaticController>(stateSubscriberPtr, visualizeCallback));
-            },
-            py::arg("stateSubscriberPtr"), py::arg("visualizeCallback") = nullptr)
+        .def("add_controller", &tbai::CentralControllerPython::addController,
+             py::arg("controller"), py::arg("make_active") = false)
         .def("initialize", &tbai::CentralControllerPython::initialize)
         .def("step", &tbai::CentralControllerPython::step)
         .def("getRate", &tbai::CentralControllerPython::getRate);
@@ -299,4 +297,61 @@ PYBIND11_MODULE(tbai_python, m) {
         .def("update", &tbai::muse::MuseEstimator::update)
         .def("getBasePosition", &tbai::muse::MuseEstimator::getBasePosition)
         .def("getBaseVelocity", &tbai::muse::MuseEstimator::getBaseVelocity);
+
+#ifdef TBAI_HAS_DEPLOY_GO2
+    py::class_<tbai::Go2RobotInterfaceArgs>(m, "Go2RobotInterfaceArgs")
+        .def(py::init<>())
+        .def(
+            "set_network_interface",
+            [](tbai::Go2RobotInterfaceArgs &self, const std::string &val) -> tbai::Go2RobotInterfaceArgs & {
+                self.networkInterface(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_unitree_channel",
+            [](tbai::Go2RobotInterfaceArgs &self, int val) -> tbai::Go2RobotInterfaceArgs & {
+                self.unitreeChannel(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_channel_init",
+            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
+                self.channelInit(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_enable_state_estim",
+            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
+                self.enableStateEstim(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_subscribe_lidar",
+            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
+                self.subscribeLidar(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal);
+
+    py::class_<tbai::RobotInterface, tbai::CommandPublisher, tbai::StateSubscriber,
+               std::shared_ptr<tbai::RobotInterface>>(m, "RobotInterface");
+
+    py::class_<tbai::Go2RobotInterface, tbai::RobotInterface, std::shared_ptr<tbai::Go2RobotInterface>>(
+        m, "Go2RobotInterface")
+        .def(py::init<tbai::Go2RobotInterfaceArgs>())
+        .def("publish", &tbai::Go2RobotInterface::publish)
+        .def("waitTillInitialized", &tbai::Go2RobotInterface::waitTillInitialized)
+        .def("getLatestState", &tbai::Go2RobotInterface::getLatestState);
+#endif
+
+    m.attr("HAS_DEPLOY_GO2") =
+#ifdef TBAI_HAS_DEPLOY_GO2
+        true;
+#else
+        false;
+#endif
 }
