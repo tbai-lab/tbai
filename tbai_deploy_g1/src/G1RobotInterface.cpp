@@ -167,12 +167,6 @@ void G1RobotInterface::lowStateCallback(const void *message) {
     baseOrientation[2] = low_state.imu_state().quaternion()[3];  // z
     baseOrientation[3] = low_state.imu_state().quaternion()[0];  // w
 
-    // Store raw quaternion for TWIST2 compatibility
-    {
-        std::lock_guard<std::mutex> lock(quat_mutex_);
-        baseQuaternion_ = baseOrientation;
-    }
-
     vector3_t baseAngVel;
     baseAngVel[0] = low_state.imu_state().gyroscope()[0];
     baseAngVel[1] = low_state.imu_state().gyroscope()[1];
@@ -220,8 +214,9 @@ void G1RobotInterface::lowStateCallback(const void *message) {
                            std::chrono::duration_cast<std::chrono::microseconds>(t12 - t11).count());
 
     // Update the latest state
-    std::lock_guard<std::mutex> lock(latest_state_mutex_);
+    std::lock_guard<std::mutex> lock(latestStateMutex_);
     state_ = std::move(state);
+    baseQuaternion_ = std::move(baseOrientation);
 
     initialized = true;
 }
@@ -281,7 +276,7 @@ void G1RobotInterface::waitTillInitialized() {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 State G1RobotInterface::getLatestState() {
-    std::lock_guard<std::mutex> lock(latest_state_mutex_);
+    std::lock_guard<std::mutex> lock(latestStateMutex_);
     return state_;
 }
 
