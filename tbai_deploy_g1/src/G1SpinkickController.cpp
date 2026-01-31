@@ -6,19 +6,10 @@
 
 #include <tbai_core/Rotations.hpp>
 #include <tbai_core/config/Config.hpp>
+#include <tbai_deploy_g1/MotionLoader.hpp>
 
 namespace tbai {
 namespace g1 {
-
-// Observation sizes for Spinkick (same structure as BeyondMimic)
-constexpr int SPINKICK_OBS_MOTION_CMD = 58;       // 29 joint_pos + 29 joint_vel
-constexpr int SPINKICK_OBS_ANCHOR_ORI = 6;
-constexpr int SPINKICK_OBS_BASE_ANG_VEL = 3;
-constexpr int SPINKICK_OBS_JOINT_POS_REL = 29;
-constexpr int SPINKICK_OBS_JOINT_VEL_REL = 29;
-constexpr int SPINKICK_OBS_LAST_ACTION = 29;
-constexpr int SPINKICK_TOTAL_OBS_SIZE = SPINKICK_OBS_MOTION_CMD + SPINKICK_OBS_ANCHOR_ORI + SPINKICK_OBS_BASE_ANG_VEL +
-                                        SPINKICK_OBS_JOINT_POS_REL + SPINKICK_OBS_JOINT_VEL_REL + SPINKICK_OBS_LAST_ACTION;
 
 G1SpinkickController::G1SpinkickController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
                                            const std::string &policyPath, const std::string &controllerName,
@@ -29,6 +20,7 @@ G1SpinkickController::G1SpinkickController(const std::shared_ptr<tbai::StateSubs
       timestep_(0),
       maxTimestep_(-1),
       motionActive_(false),
+      anchorBodyIndex_(0),
       controllerName_(controllerName) {
     logger_ = tbai::getLogger(controllerName_);
     TBAI_LOG_INFO(logger_, "Initializing {}", controllerName_);
@@ -42,6 +34,8 @@ G1SpinkickController::G1SpinkickController(const std::shared_ptr<tbai::StateSubs
     // Initialize motion data
     motionJointPos_ = vector_t::Zero(G1_NUM_JOINTS);
     motionJointVel_ = vector_t::Zero(G1_NUM_JOINTS);
+    motionBodyPos_.setZero();
+    motionBodyQuat_.setZero();
 
     // Load configuration
     defaultJointPos_ = tbai::fromGlobalConfig<vector_t>("g1_spinkick_controller/default_joint_pos");
@@ -61,6 +55,9 @@ G1SpinkickController::G1SpinkickController(const std::shared_ptr<tbai::StateSubs
     jointNames_ = tbai::fromGlobalConfig<std::vector<std::string>>("joint_names");
     maxTimestep_ = tbai::fromGlobalConfig<int>("g1_spinkick_controller/max_timestep", -1);
     actionBeta_ = tbai::fromGlobalConfig<float>("g1_spinkick_controller/action_beta", actionBeta);
+
+    initQuat_ = quaternion_t::Identity();
+    worldToInit_.setIdentity();
 
     TBAI_LOG_INFO(logger_, "{} initialized successfully (actionBeta={:.2f}, maxTimestep={})", controllerName_,
                   actionBeta_, maxTimestep_);
@@ -127,7 +124,19 @@ void G1SpinkickController::parseModelMetadata() {
             return result;
         };
 
+        // Try to get custom metadata
         bool hasMetadata = false;
+
+        auto parseStrings = [](const std::string &str) {
+            std::vector<std::string> result;
+            std::stringstream ss(str);
+            std::string token;
+            while (std::getline(ss, token, ',')) {
+                result.push_back(token);
+            }
+            return result;
+        };
+
         std::vector<std::string> metaKeys = {"default_joint_pos", "joint_stiffness", "joint_damping", "action_scale"};
 
         for (const auto &key : metaKeys) {
@@ -168,6 +177,41 @@ void G1SpinkickController::parseModelMetadata() {
             }
         }
 
+        try {
+            auto bodyNamesPtr = metadata.LookupCustomMetadataMapAllocated("body_names", allocator);
+            auto anchorBodyNamePtr = metadata.LookupCustomMetadataMapAllocated("anchor_body_name", allocator);
+            if (bodyNamesPtr && anchorBodyNamePtr) {
+                hasMetadata = true;
+                std::vector<std::string> bodyNames = parseStrings(bodyNamesPtr.get());
+                std::string anchorBodyName = anchorBodyNamePtr.get();
+
+                // Log all body names for debugging
+                std::string bodyNamesStr;
+                for (size_t i = 0; i < bodyNames.size(); ++i) {
+                    bodyNamesStr += std::to_string(i) + ":" + bodyNames[i] + " ";
+                }
+                TBAI_LOG_INFO(logger_, "Body names: {}", bodyNamesStr);
+                TBAI_LOG_INFO(logger_, "Looking for anchor_body_name: '{}'", anchorBodyName);
+
+                bool found = false;
+                for (size_t i = 0; i < bodyNames.size(); ++i) {
+                    if (bodyNames[i] == anchorBodyName) {
+                        anchorBodyIndex_ = i;
+                        TBAI_LOG_INFO(logger_, "Found anchor_body_name '{}' at index {}", anchorBodyName, i);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    TBAI_LOG_ERROR(logger_, "anchor_body_name '{}' not found in body_names!", anchorBodyName);
+                }
+            } else {
+                TBAI_LOG_ERROR(logger_, "Missing body_names or anchor_body_name in model metadata!");
+            }
+        } catch (...) {
+            TBAI_LOG_ERROR(logger_, "Failed to parse body_names/anchor_body_name from model metadata!");
+        }
+
         if (!hasMetadata) {
             TBAI_LOG_WARN(logger_, "No custom metadata found in model");
         }
@@ -191,43 +235,74 @@ void G1SpinkickController::postStep(scalar_t currentTime, scalar_t dt) {
     }
 }
 
+quaternion_t G1SpinkickController::computeAnchorOrientation(const quaternion_t &rootQuat,
+                                                            const vector_t &jointPos) const {
+    // Compute torso orientation from root quaternion and waist joints
+    // Waist joints are at indices 12 (yaw), 13 (roll), 14 (pitch) in DDS order
+    using aa_t = Eigen::AngleAxis<scalar_t>;
+    quaternion_t torsoQuat = rootQuat * tbai::quaternion_t(aa_t(jointPos[12], vector3_t::UnitZ())) *
+                             tbai::quaternion_t(aa_t(jointPos[13], vector3_t::UnitX())) *
+                             tbai::quaternion_t(aa_t(jointPos[14], vector3_t::UnitY()));
+
+    return torsoQuat;
+}
+
+Eigen::Matrix<scalar_t, 6, 1> G1SpinkickController::computeOrientationError(const quaternion_t &targetQuat,
+                                                                             const quaternion_t &actualQuat) const {
+    quaternion_t alignedMotion = initQuat_ * targetQuat;
+    quaternion_t relQuat = actualQuat.conjugate() * alignedMotion;
+    matrix3_t rot = relQuat.toRotationMatrix();
+
+    Eigen::Matrix<scalar_t, 6, 1> data;
+    data << rot(0, 0), rot(0, 1), rot(1, 0), rot(1, 1), rot(2, 0), rot(2, 1);
+    return data;
+}
+
 void G1SpinkickController::buildObservation(scalar_t currentTime, scalar_t dt) {
     vector3_t rpy = state_.x.segment<3>(0);
     vector3_t baseAngVel = state_.x.segment<3>(6);
     vector_t jointPos = state_.x.segment(12, G1_NUM_JOINTS);
     vector_t jointVel = state_.x.segment(12 + G1_NUM_JOINTS, G1_NUM_JOINTS);
 
+    // Compute root quaternion from RPY (using OCS2 convention to match state estimator)
+    quaternion_t rootQuat = tbai::ocs2rpy2quat(rpy);
+
+    // Compute anchor orientations
+    quaternion_t robotAnchorQuat = computeAnchorOrientation(rootQuat, jointPos);
+    quaternion_t motionAnchorQuat = quaternion_t::Identity();
+
+    if (motionBodyQuat_.row(anchorBodyIndex_).squaredNorm() > 0.5) {
+        motionAnchorQuat = quaternion_t(motionBodyQuat_(anchorBodyIndex_, 0), motionBodyQuat_(anchorBodyIndex_, 1),
+                                        motionBodyQuat_(anchorBodyIndex_, 2), motionBodyQuat_(anchorBodyIndex_, 3));
+    }
+
     int idx = 0;
 
-    // Motion command (from model outputs of previous step)
     observation_.segment(idx, G1_NUM_JOINTS) = motionJointPos_;
     idx += G1_NUM_JOINTS;
     observation_.segment(idx, G1_NUM_JOINTS) = motionJointVel_;
     idx += G1_NUM_JOINTS;
 
-    // Anchor orientation (simplified - identity for now)
-    observation_.segment<6>(idx).setZero();
+    auto oriError = computeOrientationError(motionAnchorQuat, robotAnchorQuat);
+    observation_.segment<6>(idx) = oriError;
     idx += 6;
 
-    // Base angular velocity
     observation_.segment<3>(idx) = baseAngVel;
     idx += 3;
 
-    // Joint positions relative to default
+    // Need to map from DDS order to policy order
     for (int i = 0; i < G1_NUM_JOINTS; ++i) {
         int ddsIdx = jointIdsMap_[i];
         observation_[idx + i] = jointPos[ddsIdx] - defaultJointPos_[i];
     }
     idx += G1_NUM_JOINTS;
 
-    // Joint velocities
     for (int i = 0; i < G1_NUM_JOINTS; ++i) {
         int ddsIdx = jointIdsMap_[i];
         observation_[idx + i] = jointVel[ddsIdx];
     }
     idx += G1_NUM_JOINTS;
 
-    // Last action
     observation_.segment(idx, G1_NUM_JOINTS) = lastAction_;
 }
 
@@ -264,17 +339,39 @@ void G1SpinkickController::runInference() {
     action_ = (1.0 - actionBeta_) * lastAction_ + actionBeta_ * rawAction_;
     lastAction_ = action_;
 
-    // Get motion data from model outputs if available
     if (outputTensors.size() > 1) {
+        // Get joint positions
         float *jointPosData = outputTensors[1].GetTensorMutableData<float>();
         for (int i = 0; i < G1_NUM_JOINTS; ++i) {
             motionJointPos_[i] = static_cast<scalar_t>(jointPosData[i]);
         }
 
+        // Get joint velocities
         if (outputTensors.size() > 2) {
             float *jointVelData = outputTensors[2].GetTensorMutableData<float>();
             for (int i = 0; i < G1_NUM_JOINTS; ++i) {
                 motionJointVel_[i] = static_cast<scalar_t>(jointVelData[i]);
+            }
+        }
+
+        // Get body positions
+        if (outputTensors.size() > 3) {
+            float *bodyPosData = outputTensors[3].GetTensorMutableData<float>();
+            for (int i = 0; i < SPINKICK_NUM_BODIES; ++i) {
+                motionBodyPos_(i, 0) = static_cast<scalar_t>(bodyPosData[i * 3 + 0]);
+                motionBodyPos_(i, 1) = static_cast<scalar_t>(bodyPosData[i * 3 + 1]);
+                motionBodyPos_(i, 2) = static_cast<scalar_t>(bodyPosData[i * 3 + 2]);
+            }
+        }
+
+        // Get body quaternions
+        if (outputTensors.size() > 4) {
+            float *bodyQuatData = outputTensors[4].GetTensorMutableData<float>();
+            for (int i = 0; i < SPINKICK_NUM_BODIES; ++i) {
+                motionBodyQuat_(i, 0) = static_cast<scalar_t>(bodyQuatData[i * 4 + 0]);
+                motionBodyQuat_(i, 1) = static_cast<scalar_t>(bodyQuatData[i * 4 + 1]);
+                motionBodyQuat_(i, 2) = static_cast<scalar_t>(bodyQuatData[i * 4 + 2]);
+                motionBodyQuat_(i, 3) = static_cast<scalar_t>(bodyQuatData[i * 4 + 3]);
             }
         }
     }
@@ -304,7 +401,7 @@ std::vector<tbai::MotorCommand> G1SpinkickController::getMotorCommands(scalar_t 
 
 bool G1SpinkickController::isSupported(const std::string &controllerType) {
     return controllerType == controllerName_ || controllerType == "G1SpinkickController" ||
-           controllerType == "g1_spinkick" || controllerType == "spinkick";
+           controllerType == "G1Spinkick" || controllerType == "g1_spinkick" || controllerType == "spinkick";
 }
 
 void G1SpinkickController::stopController() {
@@ -317,7 +414,7 @@ bool G1SpinkickController::ok() const {
 }
 
 bool G1SpinkickController::checkStability() const {
-    constexpr scalar_t maxAngle = 1.0;
+    constexpr scalar_t maxAngle = 1.0;  // radians
     scalar_t roll = std::abs(state_.x[0]);
     scalar_t pitch = std::abs(state_.x[1]);
 
@@ -344,18 +441,43 @@ void G1SpinkickController::changeController(const std::string &controllerType, s
     timestep_ = 0;
     motionActive_ = true;
 
-    // Reset motion data
-    motionJointPos_.setZero();
-    motionJointVel_.setZero();
-
     // Get current state
     state_ = stateSubscriberPtr_->getLatestState();
+    vector3_t rpy = state_.x.segment<3>(0);
+    vector_t jointPos = state_.x.segment(12, G1_NUM_JOINTS);
 
-    // Run initial inference at timestep 0
+    // Get robot's current anchor orientation (torso, using OCS2 RPY convention)
+    quaternion_t rootQuat = tbai::ocs2rpy2quat(rpy);
+    quaternion_t robotAnchorQuat = computeAnchorOrientation(rootQuat, jointPos);
+
+    // Run initial inference at timestep 0 to get motion's initial anchor
     observation_.setZero();
     runInference();
 
-    TBAI_LOG_INFO(logger_, "Motion playback started (timestep=0)");
+    // Get motion's initial anchor orientation
+    quaternion_t motionInitAnchorQuat = quaternion_t::Identity();
+    if (motionBodyQuat_.row(anchorBodyIndex_).squaredNorm() > 0.5) {
+        motionInitAnchorQuat = quaternion_t(motionBodyQuat_(anchorBodyIndex_, 0), motionBodyQuat_(anchorBodyIndex_, 1),
+                                            motionBodyQuat_(anchorBodyIndex_, 2), motionBodyQuat_(anchorBodyIndex_, 3));
+    }
+
+    quaternion_t robotYaw = MotionLoader::yawQuaternion(robotAnchorQuat);
+    quaternion_t motionYaw = MotionLoader::yawQuaternion(motionInitAnchorQuat);
+
+    initQuat_ = robotYaw * motionYaw.conjugate();
+
+    TBAI_LOG_DEBUG(logger_, "Anchor body index: {}", anchorBodyIndex_);
+    TBAI_LOG_DEBUG(logger_, "Robot anchor quat (full): [{:.3f},{:.3f},{:.3f},{:.3f}]", robotAnchorQuat.w(),
+                   robotAnchorQuat.x(), robotAnchorQuat.y(), robotAnchorQuat.z());
+    TBAI_LOG_DEBUG(logger_, "Motion anchor quat (full): [{:.3f},{:.3f},{:.3f},{:.3f}]", motionInitAnchorQuat.w(),
+                   motionInitAnchorQuat.x(), motionInitAnchorQuat.y(), motionInitAnchorQuat.z());
+    TBAI_LOG_DEBUG(logger_, "Robot yaw quat: [{:.3f},{:.3f},{:.3f},{:.3f}]", robotYaw.w(), robotYaw.x(), robotYaw.y(),
+                   robotYaw.z());
+    TBAI_LOG_DEBUG(logger_, "Motion yaw quat: [{:.3f},{:.3f},{:.3f},{:.3f}]", motionYaw.w(), motionYaw.x(),
+                   motionYaw.y(), motionYaw.z());
+    TBAI_LOG_DEBUG(logger_, "Init quat (alignment): [{:.3f},{:.3f},{:.3f},{:.3f}]", initQuat_.w(), initQuat_.x(),
+                   initQuat_.y(), initQuat_.z());
+    TBAI_LOG_DEBUG(logger_, "Motion playback started (timestep=0)");
 }
 
 }  // namespace g1

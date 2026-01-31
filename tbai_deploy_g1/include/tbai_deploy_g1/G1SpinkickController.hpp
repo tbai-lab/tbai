@@ -15,18 +15,22 @@
 namespace tbai {
 namespace g1 {
 
-/**
- * @brief G1 Spinkick Controller - skill-based motion controller using ONNX.
- *
- * This controller executes a spinkick skill motion using a pre-trained ONNX model.
- * It follows the same pattern as G1BeyondMimicController but is designed for
- * specific skill execution with a fixed timestep limit.
- */
+constexpr int SPINKICK_OBS_MOTION_CMD = 58;       // 29 joint_pos + 29 joint_vel
+constexpr int SPINKICK_OBS_ANCHOR_ORI = 6;
+constexpr int SPINKICK_OBS_BASE_ANG_VEL = 3;
+constexpr int SPINKICK_OBS_JOINT_POS_REL = 29;
+constexpr int SPINKICK_OBS_JOINT_VEL_REL = 29;
+constexpr int SPINKICK_OBS_LAST_ACTION = 29;
+constexpr int SPINKICK_TOTAL_OBS_SIZE = SPINKICK_OBS_MOTION_CMD + SPINKICK_OBS_ANCHOR_ORI + SPINKICK_OBS_BASE_ANG_VEL +
+                                        SPINKICK_OBS_JOINT_POS_REL + SPINKICK_OBS_JOINT_VEL_REL + SPINKICK_OBS_LAST_ACTION;
+
+constexpr int SPINKICK_NUM_BODIES = 14;
+
 class G1SpinkickController : public tbai::Controller {
    public:
-    G1SpinkickController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr, const std::string &policyPath,
-                         const std::string &controllerName = "G1SpinkickController", bool useModelMetaConfig = true,
-                         float actionBeta = 1.0f);
+    G1SpinkickController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+                         const std::string &policyPath, const std::string &controllerName = "G1SpinkickController",
+                         bool useModelMetaConfig = true, float actionBeta = 1.0f);
 
     ~G1SpinkickController();
 
@@ -64,6 +68,11 @@ class G1SpinkickController : public tbai::Controller {
     void buildObservation(scalar_t currentTime, scalar_t dt);
     void runInference();
 
+    quaternion_t computeAnchorOrientation(const quaternion_t &rootQuat, const vector_t &jointPos) const;
+
+    Eigen::Matrix<scalar_t, 6, 1> computeOrientationError(const quaternion_t &targetQuat,
+                                                          const quaternion_t &actualQuat) const;
+
     std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
 
     // ONNX Runtime
@@ -86,6 +95,8 @@ class G1SpinkickController : public tbai::Controller {
     // Motion data from ONNX outputs
     vector_t motionJointPos_;
     vector_t motionJointVel_;
+    Eigen::Matrix<scalar_t, SPINKICK_NUM_BODIES, 3> motionBodyPos_;
+    Eigen::Matrix<scalar_t, SPINKICK_NUM_BODIES, 4> motionBodyQuat_;  // wxyz format
 
     // Configuration
     vector_t defaultJointPos_;
@@ -102,6 +113,13 @@ class G1SpinkickController : public tbai::Controller {
     int timestep_;
     int maxTimestep_;
     bool motionActive_;
+
+    // Initial alignment for motion
+    quaternion_t initQuat_;
+    matrix3_t worldToInit_;
+
+    // Anchor body index in the body array
+    int anchorBodyIndex_;
 
     std::string controllerName_;
 
