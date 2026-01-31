@@ -1,4 +1,4 @@
-#include "tbai_deploy_g1/G1TwistController.hpp"
+#include "tbai_deploy_g1/G1Twist2Controller.hpp"
 
 #include <algorithm>
 
@@ -9,7 +9,7 @@
 namespace tbai {
 namespace g1 {
 
-G1TwistController::G1TwistController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+G1Twist2Controller::G1Twist2Controller(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
                                      const std::string &policyPath, const std::string &motionFilePath, float timeStart,
                                      float timeEnd, const std::string &controllerName)
     : stateSubscriberPtr_(stateSubscriberPtr),
@@ -91,16 +91,16 @@ G1TwistController::G1TwistController(const std::shared_ptr<tbai::StateSubscriber
     TBAI_LOG_INFO(logger_, "{} initialized successfully (obs_size={})", controllerName_, TWIST2_TOTAL_OBS_SIZE);
 }
 
-G1TwistController::~G1TwistController() {
+G1Twist2Controller::~G1Twist2Controller() {
     TBAI_LOG_INFO(logger_, "Destroying {}", controllerName_);
 }
 
-void G1TwistController::initOnnxModel(const std::string &policyPath) {
+void G1Twist2Controller::initOnnxModel(const std::string &policyPath) {
     TBAI_LOG_INFO(logger_, "Loading ONNX policy from: {}", policyPath);
 
     try {
         // Create ONNX Runtime environment
-        ortEnv_ = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "G1TwistController");
+        ortEnv_ = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "G1Twist2Controller");
 
         // Create session options
         ortSessionOptions_ = std::make_unique<Ort::SessionOptions>();
@@ -125,7 +125,7 @@ void G1TwistController::initOnnxModel(const std::string &policyPath) {
     }
 }
 
-void G1TwistController::preStep(scalar_t currentTime, scalar_t dt) {
+void G1Twist2Controller::preStep(scalar_t currentTime, scalar_t dt) {
     state_ = stateSubscriberPtr_->getLatestState();
 
     // Update motion time
@@ -135,13 +135,13 @@ void G1TwistController::preStep(scalar_t currentTime, scalar_t dt) {
     }
 }
 
-vector_t G1TwistController::buildActionMimicObs() const {
+vector_t G1Twist2Controller::buildActionMimicObs() const {
     // Get action_mimic (35 dims) from motion loader
     // Format: xy_vel(2), z(1), roll(1), pitch(1), yaw_ang_vel(1), dof_pos(29) = 35
     return motionLoader_->getActionMimic();
 }
 
-Eigen::Vector2d G1TwistController::quatToRollPitch(const vector4_t& quat) const {
+Eigen::Vector2d G1Twist2Controller::quatToRollPitch(const vector4_t& quat) const {
     // Convert quaternion [x, y, z, w] to roll/pitch using TWIST2's formula
     // This matches TWIST2's quatToEuler function in rot_utils.py
     double x = quat(0);
@@ -166,7 +166,7 @@ Eigen::Vector2d G1TwistController::quatToRollPitch(const vector4_t& quat) const 
     return Eigen::Vector2d(roll, pitch);
 }
 
-vector_t G1TwistController::buildProprioObs() const {
+vector_t G1Twist2Controller::buildProprioObs() const {
     // Build proprio observation (92 dims):
     // ang_vel(3)*scale + roll_pitch(2) + (dof_pos-default)(29)*scale + dof_vel(29)*scale + last_action(29)
 
@@ -222,7 +222,7 @@ vector_t G1TwistController::buildProprioObs() const {
     return proprio;
 }
 
-void G1TwistController::buildObservation(scalar_t currentTime, scalar_t dt) {
+void G1Twist2Controller::buildObservation(scalar_t currentTime, scalar_t dt) {
     // Get action_mimic and proprio
     actionMimicObs_ = buildActionMimicObs();
     proprioObs_ = buildProprioObs();
@@ -247,7 +247,7 @@ void G1TwistController::buildObservation(scalar_t currentTime, scalar_t dt) {
     observation_.segment(idx, TWIST2_OBS_ACTION_MIMIC) = actionMimicObs_;
 }
 
-vector_t G1TwistController::buildHistoryObs() const {
+vector_t G1Twist2Controller::buildHistoryObs() const {
     vector_t historyObs(TWIST2_HISTORY_LENGTH * TWIST2_OBS_FRAME_SIZE);
 
     for (int i = 0; i < TWIST2_HISTORY_LENGTH; ++i) {
@@ -257,13 +257,13 @@ vector_t G1TwistController::buildHistoryObs() const {
     return historyObs;
 }
 
-void G1TwistController::updateHistoryBuffer() {
+void G1Twist2Controller::updateHistoryBuffer() {
     // Push current frame to history (FIFO)
     historyBuffer_.pop_front();
     historyBuffer_.push_back(currentFrameObs_);
 }
 
-void G1TwistController::runInference() {
+void G1Twist2Controller::runInference() {
     if (!modelLoaded_) {
         TBAI_LOG_ERROR(logger_, "Model not loaded!");
         return;
@@ -303,7 +303,7 @@ void G1TwistController::runInference() {
     }
 }
 
-std::vector<tbai::MotorCommand> G1TwistController::getMotorCommands(scalar_t currentTime, scalar_t dt) {
+std::vector<tbai::MotorCommand> G1Twist2Controller::getMotorCommands(scalar_t currentTime, scalar_t dt) {
     buildObservation(currentTime, dt);
     runInference();
     updateHistoryBuffer();
@@ -326,21 +326,21 @@ std::vector<tbai::MotorCommand> G1TwistController::getMotorCommands(scalar_t cur
     return commands;
 }
 
-bool G1TwistController::isSupported(const std::string &controllerType) {
-    return controllerType == controllerName_ || controllerType == "G1TwistController" || controllerType == "g1_twist" ||
+bool G1Twist2Controller::isSupported(const std::string &controllerType) {
+    return controllerType == controllerName_ || controllerType == "G1Twist2Controller" || controllerType == "g1_twist" ||
            controllerType == "twist" || controllerType == "twist2";
 }
 
-void G1TwistController::stopController() {
+void G1Twist2Controller::stopController() {
     motionActive_ = false;
     TBAI_LOG_INFO(logger_, "{} stopped", controllerName_);
 }
 
-bool G1TwistController::ok() const {
+bool G1Twist2Controller::ok() const {
     return true;
 }
 
-bool G1TwistController::checkStability() const {
+bool G1Twist2Controller::checkStability() const {
     const scalar_t maxAngle = 1.0;  // ~57 degrees
     scalar_t roll = std::abs(state_.x[0]);
     scalar_t pitch = std::abs(state_.x[1]);
@@ -352,11 +352,11 @@ bool G1TwistController::checkStability() const {
     return true;
 }
 
-bool G1TwistController::isMotionComplete() const {
+bool G1Twist2Controller::isMotionComplete() const {
     return motionLoader_->isComplete();
 }
 
-void G1TwistController::changeController(const std::string &controllerType, scalar_t currentTime) {
+void G1Twist2Controller::changeController(const std::string &controllerType, scalar_t currentTime) {
     TBAI_LOG_INFO(logger_, "Changing to {}", controllerName_);
 
     // Reset actions

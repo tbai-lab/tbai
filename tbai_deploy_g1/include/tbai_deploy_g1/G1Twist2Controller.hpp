@@ -48,10 +48,10 @@ constexpr int TWIST2_TOTAL_OBS_SIZE = TWIST2_OBS_FRAME_SIZE * (TWIST2_HISTORY_LE
  * - ONNX Runtime model inference
  * - Motion from TWIST2 pkl format
  */
-class G1TwistController : public tbai::Controller {
+class G1Twist2Controller : public tbai::Controller {
    public:
     /**
-     * @brief Construct a new G1TwistController (TWIST2)
+     * @brief Construct a new G1Twist2Controller (TWIST2)
      * @param stateSubscriberPtr State subscriber for robot state
      * @param policyPath Path to ONNX model (.onnx file)
      * @param motionFilePath Path to motion pkl file
@@ -59,11 +59,11 @@ class G1TwistController : public tbai::Controller {
      * @param timeEnd End time in motion file (-1 for full duration)
      * @param controllerName Name for logging
      */
-    G1TwistController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr, const std::string &policyPath,
+    G1Twist2Controller(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr, const std::string &policyPath,
                       const std::string &motionFilePath, float timeStart = 0.0f, float timeEnd = -1.0f,
-                      const std::string &controllerName = "G1TwistController");
+                      const std::string &controllerName = "G1Twist2Controller");
 
-    ~G1TwistController();
+    ~G1Twist2Controller();
 
     void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
 
