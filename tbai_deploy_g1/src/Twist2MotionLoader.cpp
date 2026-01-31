@@ -22,17 +22,18 @@ Twist2MotionLoader::Twist2MotionLoader(const std::string &motionFilePath)
       currentDofPos_(vector_t::Zero(29)) {
     logger_ = tbai::getLogger("Twist2MotionLoader");
 
-    // Load based on file extension
-    if (motionFilePath.find(".csv") != std::string::npos) {
-        loadPklFile(motionFilePath);  // Actually loads CSV
-    } else {
-        throw std::runtime_error("Twist2MotionLoader: Only CSV format supported. Convert pkl to CSV first.");
+    auto ends_with = [](const std::string &str, const std::string &suffix) {
+        return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+    };
+
+    if (!ends_with(motionFilePath, ".csv")) {
+        throw std::runtime_error("Twist2MotionLoader: Only CSV format supported");
     }
+
+    loadCsvFile(motionFilePath);
 
     // Set default quat to identity if not set
     currentRootRot_(3) = 1.0;  // w component
-
-    computeVelocities();
 
     if (timeEnd_ < 0) {
         timeEnd_ = getDuration();
@@ -41,11 +42,7 @@ Twist2MotionLoader::Twist2MotionLoader(const std::string &motionFilePath)
     TBAI_LOG_INFO(logger_, "Loaded motion with {} frames, fps={}, duration={:.2f}s", numFrames_, fps_, getDuration());
 }
 
-void Twist2MotionLoader::loadPklFile(const std::string &motionFilePath) {
-    // This loads CSV format (pkl must be pre-converted)
-    // CSV format: fps on first line, then per frame:
-    // px,py,pz,qx,qy,qz,qw,vx,vy,vz,wx,wy,wz,j0,...,j28
-
+void Twist2MotionLoader::loadCsvFile(const std::string &motionFilePath) {
     std::ifstream file(motionFilePath);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open motion file: " + motionFilePath);
@@ -54,13 +51,11 @@ void Twist2MotionLoader::loadPklFile(const std::string &motionFilePath) {
     std::vector<std::vector<double>> data;
     std::string line;
 
-    // First line: fps
     if (std::getline(file, line)) {
         fps_ = std::stof(line);
         dt_ = 1.0f / fps_;
     }
 
-    // Read motion data
     while (std::getline(file, line)) {
         if (line.empty() || line[0] == '#') continue;
 
@@ -83,14 +78,12 @@ void Twist2MotionLoader::loadPklFile(const std::string &motionFilePath) {
         throw std::runtime_error("No valid motion frames loaded");
     }
 
-    // Allocate matrices
     rootPos_.resize(3, numFrames_);
     rootRot_.resize(4, numFrames_);
     rootVel_.resize(3, numFrames_);
     rootAngVel_.resize(3, numFrames_);
     dofPos_.resize(29, numFrames_);
 
-    // Fill matrices
     for (int i = 0; i < numFrames_; ++i) {
         const auto &row = data[i];
 
@@ -121,13 +114,7 @@ void Twist2MotionLoader::loadPklFile(const std::string &motionFilePath) {
         }
     }
 
-    // Set time end to full duration
     timeEnd_ = getDuration();
-}
-
-void Twist2MotionLoader::computeVelocities() {
-    // Velocities are already loaded from CSV
-    // This method can smooth or recompute if needed
 }
 
 void Twist2MotionLoader::interpolateFrame(float time) {
@@ -159,13 +146,6 @@ void Twist2MotionLoader::interpolateFrame(float time) {
 }
 
 vector_t Twist2MotionLoader::rotateToLocal(const vector_t &vec, const vector_t &quat) const {
-    // Rotate vector from world to local frame using quaternion inverse rotation
-    // Matches TWIST2's quat_rotate_inverse_torch with scalar_first=False (x,y,z,w format)
-    // Formula: a - b + c where:
-    //   a = v * (2*w^2 - 1)
-    //   b = cross(q_vec, v) * 2*w
-    //   c = q_vec * 2*dot(q_vec, v)
-
     double qx = quat(0);
     double qy = quat(1);
     double qz = quat(2);

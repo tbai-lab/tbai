@@ -11,14 +11,7 @@ namespace tbai {
 namespace g1 {
 
 /**
- * @brief TWIST2 Motion Loader for loading pkl motion files.
- *
- * Loads motion data from TWIST2 pkl format:
- * - fps: frames per second
- * - root_pos: (num_frames, 3) root position
- * - root_rot: (num_frames, 4) root quaternion (x,y,z,w)
- * - dof_pos: (num_frames, 29) joint positions
- * - local_body_pos: (num_frames, num_bodies, 3)
+ * @brief TWIST2 Motion Loader
  *
  * Computes velocities and provides action_mimic (35 dims):
  * - xy_vel: 2 dims (local frame)
@@ -31,7 +24,7 @@ class Twist2MotionLoader {
    public:
     /**
      * @brief Construct a new Twist2MotionLoader
-     * @param motionFilePath Path to pkl motion file
+     * @param motionFilePath Path to motion CSV file
      */
     explicit Twist2MotionLoader(const std::string &motionFilePath);
 
@@ -113,8 +106,7 @@ class Twist2MotionLoader {
     float getFps() const { return fps_; }
 
    private:
-    void loadPklFile(const std::string &motionFilePath);
-    void computeVelocities();
+    void loadCsvFile(const std::string &motionFilePath);
     void interpolateFrame(float time);
 
     /**
@@ -132,7 +124,7 @@ class Twist2MotionLoader {
     float fps_;
     float dt_;
 
-    // Raw data from pkl (column-major Eigen matrices)
+    // Raw data (column-major Eigen matrices)
     Eigen::MatrixXd rootPos_;      // (3, num_frames)
     Eigen::MatrixXd rootRot_;      // (4, num_frames) quaternion x,y,z,w
     Eigen::MatrixXd dofPos_;       // (29, num_frames)

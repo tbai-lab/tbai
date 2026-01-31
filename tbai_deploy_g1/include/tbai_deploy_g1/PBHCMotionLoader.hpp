@@ -11,9 +11,9 @@ namespace tbai {
 namespace g1 {
 
 /**
- * @brief PBHC Motion Loader for loading pkl motion files.
+ * @brief PBHC Motion Loader
  *
- * Loads motion data from PBHC pkl format (via CSV conversion):
+ * Loads motion data from PBHC csv format:
  * - fps: frames per second (typically 50 Hz)
  * - root_pos: (num_frames, 3) root position
  * - root_rot: (num_frames, 4) root quaternion (x,y,z,w)
@@ -29,7 +29,7 @@ class PBHCMotionLoader {
    public:
     /**
      * @brief Construct a new PBHCMotionLoader
-     * @param motionFilePath Path to motion CSV file (converted from pkl)
+     * @param motionFilePath Path to motion CSV file
      */
     explicit PBHCMotionLoader(const std::string &motionFilePath);
 

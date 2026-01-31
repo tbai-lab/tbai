@@ -165,31 +165,10 @@ void G1PBHCController::preStep(scalar_t currentTime, scalar_t dt) {
 }
 
 vector_t G1PBHCController::getProjectedGravity(const vector4_t &quat) const {
-    // Rotate gravity vector [0, 0, -1] into body frame using quat_rotate_inverse
-    // Uses formula: result = a - b + c where:
-    //   a = v * (2*w^2 - 1)
-    //   b = cross(q_vec, v) * 2*w
-    //   c = q_vec * 2*dot(q_vec, v)
-    // This matches PBHC's r.apply([0,0,-1], inverse=True)
-    //
-    // quat format: [x, y, z, w]
-
     double qx = quat(0);
     double qy = quat(1);
     double qz = quat(2);
     double qw = quat(3);
-
-    // For gravity [0, 0, -1]:
-    // a = [0, 0, -1] * (2*qw^2 - 1) = [0, 0, 1-2*qw^2]
-    // cross([qx,qy,qz], [0,0,-1]) = [-qy, qx, 0]
-    // b = [-qy, qx, 0] * 2*qw = [-2*qw*qy, 2*qw*qx, 0]
-    // dot([qx,qy,qz], [0,0,-1]) = -qz
-    // c = [qx,qy,qz] * 2*(-qz) = [-2*qx*qz, -2*qy*qz, -2*qz^2]
-    //
-    // result = a - b + c:
-    // x: 0 - (-2*qw*qy) + (-2*qx*qz) = 2*qw*qy - 2*qx*qz
-    // y: 0 - (2*qw*qx) + (-2*qy*qz) = -2*qw*qx - 2*qy*qz
-    // z: (1-2*qw^2) - 0 + (-2*qz^2) = 1 - 2*qw^2 - 2*qz^2
 
     vector_t result(3);
     result(0) = 2.0 * (qw * qy - qx * qz);

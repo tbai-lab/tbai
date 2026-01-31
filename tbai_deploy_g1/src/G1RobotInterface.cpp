@@ -264,12 +264,11 @@ void G1RobotInterface::publish(std::vector<MotorCommand> commands) {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 void G1RobotInterface::waitTillInitialized() {
-    TBAI_LOG_INFO(logger_, "Waiting for the G1 robot to initialize...");
     while (!initialized) {
-        TBAI_LOG_INFO_THROTTLE(logger_, 1.0, "Waiting for the G1 robot to initialize...");
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(350));
+        TBAI_LOG_INFO_THROTTLE(logger_, 3.0, "Waiting for the G1 robot to initialize...");
     }
-    TBAI_LOG_INFO(logger_, "G1 Robot initialized");
+    TBAI_LOG_DEBUG(logger_, "G1 Robot initialized");
 }
 
 /*********************************************************************************************************************/
