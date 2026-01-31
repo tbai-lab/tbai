@@ -127,7 +127,7 @@ void Go2RobotInterface::lowStateCallback(const void *message) {
     static int count = 0;
     count++;
 
-    constexpr int N = 200;  // Print every 100th callback to avoid spam
+    constexpr int N = 1000;  // Print every 100th callback to avoid spam
     if (count % N == 0) {
         scalar_t time_diff = currentTime - last_time2;
         double rate = N / time_diff;
@@ -286,7 +286,7 @@ void Go2RobotInterface::publish(std::vector<MotorCommand> commands) {
     static int publish_count = 0;
     publish_count++;
 
-    constexpr int PUBLISH_N = 100;  // Print every 100 publishes (roughly 100 ms at 1kHz)
+    constexpr int PUBLISH_N = 1000;  // Print every 100 publishes (roughly 100 ms at 1kHz)
     if (publish_count % PUBLISH_N == 0) {
         auto current_time = std::chrono::high_resolution_clock::now();
         auto time_diff =

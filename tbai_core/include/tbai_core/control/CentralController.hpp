@@ -32,11 +32,11 @@ class CentralController {
         initTime_ = tbai::readInitTime();
         fallbackControllerType_ = "SIT";
         TBAI_LOG_INFO(logger_, "Init time: {} | Fallback controller type: {}", initTime_, fallbackControllerType_);
-        controllers_ = std::vector<std::unique_ptr<Controller>>();
+        controllers_ = std::vector<std::shared_ptr<Controller>>();
     }
 
     // Add a new controller
-    void addController(std::unique_ptr<Controller> controllerPtr, bool makeActive = false) {
+    void addController(std::shared_ptr<Controller> controllerPtr, bool makeActive = false) {
         controllers_.push_back(std::move(controllerPtr));
         if (makeActive || controllers_.size() == 1) {
             activeController_ = controllers_.back().get();
@@ -174,7 +174,7 @@ class CentralController {
     }
 
     // All the controllers
-    std::vector<std::unique_ptr<Controller>> controllers_;
+    std::vector<std::shared_ptr<Controller>> controllers_;
     Controller *activeController_ = nullptr;
 
     std::shared_ptr<CommandPublisher> commandPublisherPtr_;
