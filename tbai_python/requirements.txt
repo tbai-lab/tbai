@@ -1,1 +1,0 @@
-mpac_logging @ git+ssh://git@github.com/Hier-Lab/mpac_logging.git@main
