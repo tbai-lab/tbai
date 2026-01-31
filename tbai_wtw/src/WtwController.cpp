@@ -12,7 +12,7 @@
 #include <tbai_core/Rotations.hpp>
 #include <tbai_core/Utils.hpp>
 #include <tbai_core/config/Config.hpp>
-#include <tbai_wtw/EigenTorch.hpp>
+#include <tbai_torch/EigenTorch.hpp>
 #include <tbai_wtw/WtwController.hpp>
 
 namespace tbai {
@@ -69,36 +69,30 @@ WtwController::WtwController(const std::string &urdfPathOrString,
     }
     setupPinocchioModel(urdfString);
 
-    // auto hfRepo = tbai::fromGlobalConfig<std::string>("wtw_controller/hf_repo");
-    // auto hfModel = tbai::fromGlobalConfig<std::string>("wtw_controller/hf_model");
+    auto hfRepo = tbai::fromGlobalConfig<std::string>("wtw_controller/hf_repo");
+    auto hfAdaptationModule = tbai::fromGlobalConfig<std::string>("wtw_controller/hf_adaptation_module");
+    auto hfBodyModule = tbai::fromGlobalConfig<std::string>("wtw_controller/hf_body_module");
+    auto adaptationModulePath = tbai::downloadFromHuggingFace(hfRepo, hfAdaptationModule);
+    auto bodyModulePath = tbai::downloadFromHuggingFace(hfRepo, hfBodyModule);
 
-    // TBAI_LOG_INFO(logger_, "Loading HF model: {}/{}", hfRepo, hfModel);
-    // auto modelPath = tbai::downloadFromHuggingFace(hfRepo, hfModel);
-    // TBAI_LOG_INFO(logger_, "Model downloaded to: {}", modelPath);
-
-    const std::string adaptationModulePath =
-        "/home/kuba/Documents/walk-these-ways-go2/runs/gait-conditioned-agility/pretrain-go2/train/142238.667503/"
-        "checkpoints/adaptation_module_latest.jit";
     try {
         adaptationModule_ = torch::jit::load(adaptationModulePath);
     } catch (const c10::Error &e) {
         TBAI_THROW("Could not load model from: {}\nError: {}", adaptationModulePath, e.what());
     }
 
-    const std::string bodyModulePath =
-        "/home/kuba/Documents/walk-these-ways-go2/runs/gait-conditioned-agility/pretrain-go2/train/142238.667503/"
-        "checkpoints/body_latest.jit";
     try {
         bodyModule_ = torch::jit::load(bodyModulePath);
     } catch (const c10::Error &e) {
         TBAI_THROW("Could not load model from: {}\nError: {}", bodyModulePath, e.what());
     }
-    TBAI_LOG_INFO(logger_, "Model loaded");
+    TBAI_LOG_INFO(logger_, "Models loaded");
 
     lastAction_ = tbai::vector_t::Zero(12);
     lastLastAction_ = tbai::vector_t::Zero(12);
 
     defaultJointAngles_ = tbai::vector_t::Zero(12);
+    clockInputs_.setZero();
 }
 
 /***********************************************************************************************************************/
@@ -111,13 +105,9 @@ void WtwController::setupPinocchioModel(const std::string &urdfString) {
 
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
-/**********************************************************************************************
- * *************************/
+/************************************************************************************************************************/
 bool WtwController::isSupported(const std::string &controllerType) {
-    if (controllerType == "WTW") {
-        return true;
-    }
-    return false;
+    return controllerType == "WTW";
 }
 
 /***********************************************************************************************************************/
@@ -146,17 +136,27 @@ at::Tensor WtwController::getNNInput(const wtw::State &state, scalar_t currentTi
     fillJointVelocities(input, state);
     fillLastAction(input, state);
     fillLastLastAction(input, state);
-    fillClockInputs(input, currentTime, dt);
+
+    // Use previous step's clock inputs in the observation (matching reference timing)
+    input[CLOCK_INPUTS_START_INDEX + 0] = clockInputs_[0];
+    input[CLOCK_INPUTS_START_INDEX + 1] = clockInputs_[1];
+    input[CLOCK_INPUTS_START_INDEX + 2] = clockInputs_[2];
+    input[CLOCK_INPUTS_START_INDEX + 3] = clockInputs_[3];
 
     historyBuffer_.addObservation(input);
-    return wtw::vector2torch(historyBuffer_.getFinalObservation());
+
+    // Update clock inputs for next step (reference does this after get_obs)
+    updateClockInputs(input, dt);
+
+    return torch_utils::vector2torch(historyBuffer_.getFinalObservation());
 }
 
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 std::vector<tbai::MotorCommand> WtwController::getMotorCommands(scalar_t currentTime, scalar_t dt) {
-    auto state = getWtwState();
+    wtwState_ = getWtwState();
+    auto &state = wtwState_;
 
     // Do not keep track of gradients
     torch::NoGradGuard no_grad;
@@ -172,12 +172,12 @@ std::vector<tbai::MotorCommand> WtwController::getMotorCommands(scalar_t current
 
     // Send command
     auto ret = getMotorCommands(
-        tbai::wtw::torch2vector(out.reshape({12}) * torch::tensor({0.125, 0.25, 0.25, 0.125, 0.25, 0.25, 0.125, 0.25,
+        tbai::torch_utils::torch2vector(out.reshape({12}) * torch::tensor({0.125, 0.25, 0.25, 0.125, 0.25, 0.25, 0.125, 0.25,
                                                                    0.25, 0.125, 0.25, 0.25})) +
         defaultJointAngles_);
 
     lastLastAction_ = lastAction_;
-    lastAction_ = tbai::wtw::torch2vector(out.reshape({12}));
+    lastAction_ = tbai::torch_utils::torch2vector(out.reshape({12}));
 
     auto t5 = std::chrono::high_resolution_clock::now();
     TBAI_LOG_INFO_THROTTLE(
@@ -220,23 +220,22 @@ void WtwController::fillCommand(vector_t &input, const wtw::State &state, scalar
 
     input[COMMAND_START_INDEX + 0] = velocity_x * LIN_VEL_SCALE;
     input[COMMAND_START_INDEX + 1] = velocity_y * LIN_VEL_SCALE;
-    input[COMMAND_START_INDEX + 2] = yaw_rate;
+    input[COMMAND_START_INDEX + 2] = yaw_rate * ANG_VEL_SCALE;
 
     // 0.0 is default height
     input[COMMAND_START_INDEX + 3] = 0.0 * BODY_HEIGHT_SCALE;
 
-    // TODO: Fill these
-    input[COMMAND_START_INDEX + 4] = 2.0;  // step frequency
-    input[COMMAND_START_INDEX + 5] = 0.5;  // gait 1
-    input[COMMAND_START_INDEX + 6] = 0.0;  // gait 2 phase
-    input[COMMAND_START_INDEX + 7] = 0.0;  // gait 2 offset
-    input[COMMAND_START_INDEX + 8] = 0.8;
+    input[COMMAND_START_INDEX + 4] = 3.0;                          // step frequency (train range [2.0, 4.0])
+    input[COMMAND_START_INDEX + 5] = 0.5;                          // gait phase (trotting)
+    input[COMMAND_START_INDEX + 6] = 0.0;                          // gait offset
+    input[COMMAND_START_INDEX + 7] = 0.0;                          // gait bound
+    input[COMMAND_START_INDEX + 8] = 0.5;                          // gait duration (train range [0.5, 0.5])
 
-    input[COMMAND_START_INDEX + 9] = 0.10 * SWING_HEIGHT_SCALE;
-    input[COMMAND_START_INDEX + 10] = 0.0 * BODY_PITCH_SCALE;
-    input[COMMAND_START_INDEX + 11] = 0.0 * BODY_ROLL_SCALE;
-    input[COMMAND_START_INDEX + 12] = 0.18 * STANCE_WIDTH_SCALE;
-    input[COMMAND_START_INDEX + 13] = 0.0 * STANCE_LENGTH_SCALE;
+    input[COMMAND_START_INDEX + 9] = 0.08 * SWING_HEIGHT_SCALE;   // footswing height (train range [0.03, 0.35])
+    input[COMMAND_START_INDEX + 10] = 0.0 * BODY_PITCH_SCALE;     // body pitch
+    input[COMMAND_START_INDEX + 11] = 0.0 * BODY_ROLL_SCALE;      // body roll
+    input[COMMAND_START_INDEX + 12] = 0.25 * STANCE_WIDTH_SCALE;  // stance width (train range [0.10, 0.45])
+    input[COMMAND_START_INDEX + 13] = 0.40 * STANCE_LENGTH_SCALE; // stance length (train range [0.35, 0.45])
 
     input[COMMAND_START_INDEX + 14] = 0.0 * AUX_REWARD_SCALE;
 }
@@ -368,7 +367,7 @@ void WtwController::fillJointVelocities(vector_t &input, const wtw::State &state
 /***********************************************************************************************************************/
 void WtwController::fillLastAction(vector_t &input, const wtw::State &state) {
     for (int i = 0; i < 12; ++i) {
-        input[LAST_ACTION_START_INDEX + i] = clip(lastAction_[i], -100.0, 100.0);
+        input[LAST_ACTION_START_INDEX + i] = clip(lastAction_[i], -10.0, 10.0);
     }
 }
 
@@ -377,20 +376,20 @@ void WtwController::fillLastAction(vector_t &input, const wtw::State &state) {
 /***********************************************************************************************************************/
 void WtwController::fillLastLastAction(vector_t &input, const wtw::State &state) {
     for (int i = 0; i < 12; ++i) {
-        input[LAST_LAST_ACTION_START_INDEX + i] = clip(lastLastAction_[i], -100.0, 100.0);
+        input[LAST_LAST_ACTION_START_INDEX + i] = clip(lastLastAction_[i], -10.0, 10.0);
     }
 }
 
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
-void WtwController::fillClockInputs(vector_t &input, scalar_t currentTime, scalar_t dt) {
-    // Update gait indices
+void WtwController::updateClockInputs(const vector_t &input, scalar_t dt) {
+    // Read raw (unscaled) command values for clock computation
+    // Gait params have scale 1.0 so the observation values equal the raw values
     auto frequency = input[COMMAND_START_INDEX + 4];
     auto phase = input[COMMAND_START_INDEX + 5];
     auto offset = input[COMMAND_START_INDEX + 6];
     auto bound = input[COMMAND_START_INDEX + 7];
-    auto duration = input[COMMAND_START_INDEX + 8];
 
     gaitIndex_ = std::remainder(gaitIndex_ + dt * frequency, 1.0);
 
@@ -399,10 +398,10 @@ void WtwController::fillClockInputs(vector_t &input, scalar_t currentTime, scala
     auto footIndex2 = gaitIndex_ + bound;
     auto footIndex3 = gaitIndex_ + phase;
 
-    input[CLOCK_INPUTS_START_INDEX + 0] = std::sin(2.0 * M_PI * footIndex0);
-    input[CLOCK_INPUTS_START_INDEX + 1] = std::sin(2.0 * M_PI * footIndex1);
-    input[CLOCK_INPUTS_START_INDEX + 2] = std::sin(2.0 * M_PI * footIndex2);
-    input[CLOCK_INPUTS_START_INDEX + 3] = std::sin(2.0 * M_PI * footIndex3);
+    clockInputs_[0] = std::sin(2.0 * M_PI * footIndex0);
+    clockInputs_[1] = std::sin(2.0 * M_PI * footIndex1);
+    clockInputs_[2] = std::sin(2.0 * M_PI * footIndex2);
+    clockInputs_[3] = std::sin(2.0 * M_PI * footIndex3);
 }
 
 /***********************************************************************************************************************/

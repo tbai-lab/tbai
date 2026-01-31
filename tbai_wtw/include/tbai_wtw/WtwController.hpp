@@ -43,9 +43,11 @@ class WtwController : public tbai::Controller {
 
     void postStep(scalar_t currentTime, scalar_t dt) override {}
 
-    std::string getName() const override { return "WTW"; }
+    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
 
-    virtual void atPositions(matrix_t &positions) = 0;
+    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
+
+    std::string getName() const override { return "WTW"; }
 
    protected:
     std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
@@ -98,7 +100,7 @@ class WtwController : public tbai::Controller {
     void fillJointVelocities(vector_t &input, const wtw::State &state);
     void fillLastAction(vector_t &input, const wtw::State &state);
     void fillLastLastAction(vector_t &input, const wtw::State &state);
-    void fillClockInputs(vector_t &input, scalar_t currentTime, scalar_t dt);
+    void updateClockInputs(const vector_t &input, scalar_t dt);
 
     std::vector<std::string> jointNames_;
 
@@ -112,8 +114,10 @@ class WtwController : public tbai::Controller {
     vector_t defaultJointAngles_;
 
     scalar_t gaitIndex_;
+    Eigen::Vector4d clockInputs_;
 
     State state_;
+    wtw::State wtwState_;
 };
 
 }  // namespace tbai
