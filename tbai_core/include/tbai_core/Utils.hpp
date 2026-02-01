@@ -1,12 +1,10 @@
 #pragma once
 
-#include <filesystem>
 #include <functional>
+#include <chrono>
 #include <vector>
 
 #include <tbai_core/Types.hpp>
-
-constexpr const char *INIT_TIME_FILE = "/tmp/tbai_init_time_123";
 
 namespace tbai {
 
