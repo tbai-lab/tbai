@@ -222,28 +222,26 @@ PYBIND11_MODULE(tbai_python, m) {
     // Concrete controller types
     py::class_<tbai::PyStaticController, tbai::Controller, std::shared_ptr<tbai::PyStaticController>>(
         m, "StaticController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+                      std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
              py::arg("state_subscriber"), py::arg("post_step_callback") = nullptr);
 
-    py::class_<tbai::PyNp3oController, tbai::Controller, std::shared_ptr<tbai::PyNp3oController>>(
-        m, "Np3oController")
+    py::class_<tbai::PyNp3oController, tbai::Controller, std::shared_ptr<tbai::PyNp3oController>>(m, "Np3oController")
         .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
-                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
-                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
+                      const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
+                      std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
              py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
 
-    py::class_<tbai::PyBobController, tbai::Controller, std::shared_ptr<tbai::PyBobController>>(
-        m, "BobController")
+    py::class_<tbai::PyBobController, tbai::Controller, std::shared_ptr<tbai::PyBobController>>(m, "BobController")
         .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
-                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
-                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
+                      const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
+                      std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
              py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
 
-    py::class_<tbai::PyWtwController, tbai::Controller, std::shared_ptr<tbai::PyWtwController>>(
-        m, "WtwController")
+    py::class_<tbai::PyWtwController, tbai::Controller, std::shared_ptr<tbai::PyWtwController>>(m, "WtwController")
         .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
-                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
-                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
+                      const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
+                      std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
              py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
 
     // Central controller with generic add_controller
@@ -257,8 +255,8 @@ PYBIND11_MODULE(tbai_python, m) {
         .def("start", &tbai::CentralControllerPython::start)
         .def("startThread", &tbai::CentralControllerPython::startThread)
         .def("stopThread", &tbai::CentralControllerPython::stopThread)
-        .def("add_controller", &tbai::CentralControllerPython::addController,
-             py::arg("controller"), py::arg("make_active") = false)
+        .def("add_controller", &tbai::CentralControllerPython::addController, py::arg("controller"),
+             py::arg("make_active") = false)
         .def("initialize", &tbai::CentralControllerPython::initialize)
         .def("step", &tbai::CentralControllerPython::step)
         .def("getRate", &tbai::CentralControllerPython::getRate);

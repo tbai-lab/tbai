@@ -172,8 +172,8 @@ std::vector<tbai::MotorCommand> WtwController::getMotorCommands(scalar_t current
 
     // Send command
     auto ret = getMotorCommands(
-        tbai::torch_utils::torch2vector(out.reshape({12}) * torch::tensor({0.125, 0.25, 0.25, 0.125, 0.25, 0.25, 0.125, 0.25,
-                                                                   0.25, 0.125, 0.25, 0.25})) +
+        tbai::torch_utils::torch2vector(out.reshape({12}) * torch::tensor({0.125, 0.25, 0.25, 0.125, 0.25, 0.25, 0.125,
+                                                                           0.25, 0.25, 0.125, 0.25, 0.25})) +
         defaultJointAngles_);
 
     lastLastAction_ = lastAction_;
@@ -225,17 +225,17 @@ void WtwController::fillCommand(vector_t &input, const wtw::State &state, scalar
     // 0.0 is default height
     input[COMMAND_START_INDEX + 3] = 0.0 * BODY_HEIGHT_SCALE;
 
-    input[COMMAND_START_INDEX + 4] = 3.0;                          // step frequency (train range [2.0, 4.0])
-    input[COMMAND_START_INDEX + 5] = 0.5;                          // gait phase (trotting)
-    input[COMMAND_START_INDEX + 6] = 0.0;                          // gait offset
-    input[COMMAND_START_INDEX + 7] = 0.0;                          // gait bound
-    input[COMMAND_START_INDEX + 8] = 0.5;                          // gait duration (train range [0.5, 0.5])
+    input[COMMAND_START_INDEX + 4] = 3.0;  // step frequency (train range [2.0, 4.0])
+    input[COMMAND_START_INDEX + 5] = 0.5;  // gait phase (trotting)
+    input[COMMAND_START_INDEX + 6] = 0.0;  // gait offset
+    input[COMMAND_START_INDEX + 7] = 0.0;  // gait bound
+    input[COMMAND_START_INDEX + 8] = 0.5;  // gait duration (train range [0.5, 0.5])
 
-    input[COMMAND_START_INDEX + 9] = 0.08 * SWING_HEIGHT_SCALE;   // footswing height (train range [0.03, 0.35])
-    input[COMMAND_START_INDEX + 10] = 0.0 * BODY_PITCH_SCALE;     // body pitch
-    input[COMMAND_START_INDEX + 11] = 0.0 * BODY_ROLL_SCALE;      // body roll
-    input[COMMAND_START_INDEX + 12] = 0.25 * STANCE_WIDTH_SCALE;  // stance width (train range [0.10, 0.45])
-    input[COMMAND_START_INDEX + 13] = 0.40 * STANCE_LENGTH_SCALE; // stance length (train range [0.35, 0.45])
+    input[COMMAND_START_INDEX + 9] = 0.08 * SWING_HEIGHT_SCALE;    // footswing height (train range [0.03, 0.35])
+    input[COMMAND_START_INDEX + 10] = 0.0 * BODY_PITCH_SCALE;      // body pitch
+    input[COMMAND_START_INDEX + 11] = 0.0 * BODY_ROLL_SCALE;       // body roll
+    input[COMMAND_START_INDEX + 12] = 0.25 * STANCE_WIDTH_SCALE;   // stance width (train range [0.10, 0.45])
+    input[COMMAND_START_INDEX + 13] = 0.40 * STANCE_LENGTH_SCALE;  // stance length (train range [0.35, 0.45])
 
     input[COMMAND_START_INDEX + 14] = 0.0 * AUX_REWARD_SCALE;
 }

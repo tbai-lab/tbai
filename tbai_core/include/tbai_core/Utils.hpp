@@ -1,7 +1,7 @@
 #pragma once
 
-#include <functional>
 #include <chrono>
+#include <functional>
 #include <vector>
 
 #include <tbai_core/Types.hpp>
