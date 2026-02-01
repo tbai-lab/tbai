@@ -39,3 +39,33 @@ make -j10
 | **`TBAI_GLOBAL_CONFIG_PATH`** | `string` | **Required** | Global config file path | Main YAML config file |
 | **`TBAI_ROBOT_DESCRIPTION_PATH`** | `string` | **Required** | Robot URDF path | Robot model file |
 | **`TBAI_CACHE_DIR`** | `string` | `"/tmp/tbai_hf_cache"` | Model cache directory | For downloaded models |
+
+
+### Credits
+This project stands on the shoulders of giants.
+None of this would have been possible were it not for many amazing open-source projects.
+Here are a couple that most inspiration was drawn from and that were instrumental during the development:
+
+- https://github.com/leggedrobotics/ocs2
+- https://github.com/qiayuanl/legged_control
+- https://github.com/leggedrobotics/legged_gym
+- https://github.com/leggedrobotics/rsl_rl
+- https://github.com/ANYbotics/elevation_mapping
+- https://github.com/leggedrobotics/elevation_mapping_cupy
+- https://github.com/bernhardpg/quadruped_locomotion
+- https://github.com/stack-of-tasks/pinocchio
+- https://x-io.co.uk/open-source-imu-and-ahrs-algorithms/
+- https://github.com/mayataka/robotoc
+- https://github.com/mayataka/legged_state_estimator
+- https://github.com/RossHartley/invariant-ekf
+- https://github.com/dfki-ric-underactuated-lab/dfki-quad
+- https://github.com/iit-DLSLab/muse
+- https://github.com/zeonsunlightyu/LocomotionWithNP3O
+- https://github.com/letaicodeit/DreamWaQ_Go2W
+- https://cmp.felk.cvut.cz/~peckama2/ (supervision, access to a DGX station)
+- http://www.michaelsebek.cz/cs
+- https://github.com/HansZ8/RoboJuDo
+- https://hier-robotics.github.io/ (professor Jaemin Lee, supervision, access to Go2s)
+- hundreds of others ...
+
+Thank you all 🤗
