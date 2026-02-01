@@ -61,22 +61,22 @@ Go2WRobotInterface::Go2WRobotInterface(Go2WRobotInterfaceArgs args) {
     // Initialize motor 2 id map (16 DOF for Go2W)
     // Real robot order: FR leg (0-2), FL leg (3-5), RR leg (6-8), RL leg (9-11), wheels (12-15)
     // Joint names match URDF naming convention
-    motor_id_map["FR_hip_joint"] = 0;
-    motor_id_map["FR_thigh_joint"] = 1;
-    motor_id_map["FR_calf_joint"] = 2;
-    motor_id_map["FL_hip_joint"] = 3;
-    motor_id_map["FL_thigh_joint"] = 4;
-    motor_id_map["FL_calf_joint"] = 5;
-    motor_id_map["RR_hip_joint"] = 6;
-    motor_id_map["RR_thigh_joint"] = 7;
-    motor_id_map["RR_calf_joint"] = 8;
-    motor_id_map["RL_hip_joint"] = 9;
-    motor_id_map["RL_thigh_joint"] = 10;
-    motor_id_map["RL_calf_joint"] = 11;
-    motor_id_map["FR_foot_joint"] = 12;
-    motor_id_map["FL_foot_joint"] = 13;
-    motor_id_map["RR_foot_joint"] = 14;
-    motor_id_map["RL_foot_joint"] = 15;
+    motorIdMap_["FR_hip_joint"] = 0;
+    motorIdMap_["FR_thigh_joint"] = 1;
+    motorIdMap_["FR_calf_joint"] = 2;
+    motorIdMap_["FL_hip_joint"] = 3;
+    motorIdMap_["FL_thigh_joint"] = 4;
+    motorIdMap_["FL_calf_joint"] = 5;
+    motorIdMap_["RR_hip_joint"] = 6;
+    motorIdMap_["RR_thigh_joint"] = 7;
+    motorIdMap_["RR_calf_joint"] = 8;
+    motorIdMap_["RL_hip_joint"] = 9;
+    motorIdMap_["RL_thigh_joint"] = 10;
+    motorIdMap_["RL_calf_joint"] = 11;
+    motorIdMap_["FR_foot_joint"] = 12;
+    motorIdMap_["FL_foot_joint"] = 13;
+    motorIdMap_["RR_foot_joint"] = 14;
+    motorIdMap_["RL_foot_joint"] = 15;
 
     TBAI_LOG_INFO(logger_, "Initializing publisher: Topic: {}", GO2W_TOPIC_LOWCMD);
     lowcmd_publisher.reset(new ChannelPublisher<unitree_go::msg::dds_::LowCmd_>(GO2W_TOPIC_LOWCMD));
@@ -196,10 +196,10 @@ void Go2WRobotInterface::lowStateCallback(const void *message) {
     state.contactFlags = contactFlags;
 
     // Update the latest state
-    std::lock_guard<std::mutex> lock(latest_state_mutex_);
+    std::lock_guard<std::mutex> lock(latestStateMutex_);
     state_ = std::move(state);
 
-    initialized = true;
+    initialized_ = true;
 }
 
 /*********************************************************************************************************************/
@@ -221,7 +221,7 @@ void Go2WRobotInterface::publish(std::vector<MotorCommand> commands) {
     }
 
     for (const auto &command : commands) {
-        int motor_id = motor_id_map[command.joint_name];
+        int motor_id = motorIdMap_[command.joint_name];
         low_cmd.motor_cmd()[motor_id].mode() = (0x01);  // motor switch to servo (PMSM) mode
         low_cmd.motor_cmd()[motor_id].q() = (command.desired_position);
         low_cmd.motor_cmd()[motor_id].kp() = command.kp;
@@ -241,7 +241,7 @@ void Go2WRobotInterface::publish(std::vector<MotorCommand> commands) {
 /*********************************************************************************************************************/
 void Go2WRobotInterface::waitTillInitialized() {
     TBAI_LOG_INFO(logger_, "Waiting for the robot to initialize...");
-    while (!initialized) {
+    while (!initialized_) {
         TBAI_LOG_INFO_THROTTLE(logger_, 1.0, "Waiting for the robot to initialize...");
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -252,7 +252,7 @@ void Go2WRobotInterface::waitTillInitialized() {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 State Go2WRobotInterface::getLatestState() {
-    std::lock_guard<std::mutex> lock(latest_state_mutex_);
+    std::lock_guard<std::mutex> lock(latestStateMutex_);
     return state_;
 }
 

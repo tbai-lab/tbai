@@ -46,43 +46,43 @@ namespace tbai {
 void G1RobotInterface::initMotorMapping() {
     // G1 29DOF motor mapping according to unitree documentation
     // Left leg (6 DOF)
-    motor_id_map["left_hip_pitch_joint"] = 0;
-    motor_id_map["left_hip_roll_joint"] = 1;
-    motor_id_map["left_hip_yaw_joint"] = 2;
-    motor_id_map["left_knee_joint"] = 3;
-    motor_id_map["left_ankle_pitch_joint"] = 4;
-    motor_id_map["left_ankle_roll_joint"] = 5;
+    motorIdMap_["left_hip_pitch_joint"] = 0;
+    motorIdMap_["left_hip_roll_joint"] = 1;
+    motorIdMap_["left_hip_yaw_joint"] = 2;
+    motorIdMap_["left_knee_joint"] = 3;
+    motorIdMap_["left_ankle_pitch_joint"] = 4;
+    motorIdMap_["left_ankle_roll_joint"] = 5;
 
     // Right leg (6 DOF)
-    motor_id_map["right_hip_pitch_joint"] = 6;
-    motor_id_map["right_hip_roll_joint"] = 7;
-    motor_id_map["right_hip_yaw_joint"] = 8;
-    motor_id_map["right_knee_joint"] = 9;
-    motor_id_map["right_ankle_pitch_joint"] = 10;
-    motor_id_map["right_ankle_roll_joint"] = 11;
+    motorIdMap_["right_hip_pitch_joint"] = 6;
+    motorIdMap_["right_hip_roll_joint"] = 7;
+    motorIdMap_["right_hip_yaw_joint"] = 8;
+    motorIdMap_["right_knee_joint"] = 9;
+    motorIdMap_["right_ankle_pitch_joint"] = 10;
+    motorIdMap_["right_ankle_roll_joint"] = 11;
 
     // Waist (3 DOF)
-    motor_id_map["waist_yaw_joint"] = 12;
-    motor_id_map["waist_roll_joint"] = 13;
-    motor_id_map["waist_pitch_joint"] = 14;
+    motorIdMap_["waist_yaw_joint"] = 12;
+    motorIdMap_["waist_roll_joint"] = 13;
+    motorIdMap_["waist_pitch_joint"] = 14;
 
     // Left arm (7 DOF)
-    motor_id_map["left_shoulder_pitch_joint"] = 15;
-    motor_id_map["left_shoulder_roll_joint"] = 16;
-    motor_id_map["left_shoulder_yaw_joint"] = 17;
-    motor_id_map["left_elbow_joint"] = 18;
-    motor_id_map["left_wrist_roll_joint"] = 19;
-    motor_id_map["left_wrist_pitch_joint"] = 20;
-    motor_id_map["left_wrist_yaw_joint"] = 21;
+    motorIdMap_["left_shoulder_pitch_joint"] = 15;
+    motorIdMap_["left_shoulder_roll_joint"] = 16;
+    motorIdMap_["left_shoulder_yaw_joint"] = 17;
+    motorIdMap_["left_elbow_joint"] = 18;
+    motorIdMap_["left_wrist_roll_joint"] = 19;
+    motorIdMap_["left_wrist_pitch_joint"] = 20;
+    motorIdMap_["left_wrist_yaw_joint"] = 21;
 
     // Right arm (7 DOF)
-    motor_id_map["right_shoulder_pitch_joint"] = 22;
-    motor_id_map["right_shoulder_roll_joint"] = 23;
-    motor_id_map["right_shoulder_yaw_joint"] = 24;
-    motor_id_map["right_elbow_joint"] = 25;
-    motor_id_map["right_wrist_roll_joint"] = 26;
-    motor_id_map["right_wrist_pitch_joint"] = 27;
-    motor_id_map["right_wrist_yaw_joint"] = 28;
+    motorIdMap_["right_shoulder_pitch_joint"] = 22;
+    motorIdMap_["right_shoulder_roll_joint"] = 23;
+    motorIdMap_["right_shoulder_yaw_joint"] = 24;
+    motorIdMap_["right_elbow_joint"] = 25;
+    motorIdMap_["right_wrist_roll_joint"] = 26;
+    motorIdMap_["right_wrist_pitch_joint"] = 27;
+    motorIdMap_["right_wrist_yaw_joint"] = 28;
 }
 
 /*********************************************************************************************************************/
@@ -218,7 +218,7 @@ void G1RobotInterface::lowStateCallback(const void *message) {
     state_ = std::move(state);
     baseQuaternion_ = std::move(baseOrientation);
 
-    initialized = true;
+    initialized_ = true;
 }
 
 /*********************************************************************************************************************/
@@ -240,18 +240,13 @@ void G1RobotInterface::publish(std::vector<MotorCommand> commands) {
     }
 
     for (const auto &command : commands) {
-        auto it = motor_id_map.find(command.joint_name);
-        if (it == motor_id_map.end()) {
-            TBAI_LOG_WARN(logger_, "Unknown joint name: {}", command.joint_name);
-            continue;
-        }
-        int motor_id = it->second;
-        low_cmd.motor_cmd()[motor_id].mode() = 1;  // Position mode
-        low_cmd.motor_cmd()[motor_id].q() = command.desired_position;
-        low_cmd.motor_cmd()[motor_id].kp() = command.kp;
-        low_cmd.motor_cmd()[motor_id].dq() = command.desired_velocity;
-        low_cmd.motor_cmd()[motor_id].kd() = command.kd;
-        low_cmd.motor_cmd()[motor_id].tau() = command.torque_ff;
+        const int motorId = motorIdMap_[command.joint_name];
+        low_cmd.motor_cmd()[motorId].mode() = 1;  // Position mode
+        low_cmd.motor_cmd()[motorId].q() = command.desired_position;
+        low_cmd.motor_cmd()[motorId].kp() = command.kp;
+        low_cmd.motor_cmd()[motorId].dq() = command.desired_velocity;
+        low_cmd.motor_cmd()[motorId].kd() = command.kd;
+        low_cmd.motor_cmd()[motorId].tau() = command.torque_ff;
     }
 
     low_cmd.crc() = crc32_core((uint32_t *)&low_cmd, (sizeof(unitree_hg::msg::dds_::LowCmd_) >> 2) - 1);
@@ -264,7 +259,7 @@ void G1RobotInterface::publish(std::vector<MotorCommand> commands) {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 void G1RobotInterface::waitTillInitialized() {
-    while (!initialized) {
+    while (!initialized_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(350));
         TBAI_LOG_INFO_THROTTLE(logger_, 3.0, "Waiting for the G1 robot to initialize...");
     }

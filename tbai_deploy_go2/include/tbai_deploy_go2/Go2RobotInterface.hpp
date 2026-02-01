@@ -58,26 +58,23 @@ class Go2RobotInterface : public RobotInterface {
    private:
     void lowStateCallback(const void *message);
 
-    unitree_go::msg::dds_::LowCmd_ low_cmd{};  // default init
-    // unitree_go::msg::dds_::LowState_ low_state{};  // default init
+    unitree_go::msg::dds_::LowCmd_ low_cmd{};
 
-    /*publisher*/
+    /* Publishers */
     ChannelPublisherPtr<unitree_go::msg::dds_::LowCmd_> lowcmd_publisher;
-    /*subscriber*/
+
+    /* Subscribers */
     ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> lowstate_subscriber;
     ChannelSubscriberPtr<sensor_msgs::msg::dds_::PointCloud2_> lidar_subscriber;
 
-    /*LowCmd write thread*/
-    ThreadPtr lowCmdWriteThreadPtr;
-
-    std::unordered_map<std::string, int> motor_id_map;
-    std::unordered_map<std::string, int> foot_id_map;
-    bool initialized = false;
+    std::unordered_map<std::string, int> motorIdMap_;
+    std::unordered_map<std::string, int> footIdMap_;
+    bool initialized_ = false;
 
     std::unique_ptr<tbai::inekf::InEKFEstimator> estimator_;
 
     scalar_t lastYaw_ = 0.0;
-    std::mutex latest_state_mutex_;
+    std::mutex latestStateMutex_;
     State state_;
 
     std::shared_ptr<spdlog::logger> logger_;

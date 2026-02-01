@@ -46,21 +46,19 @@ class Go2WRobotInterface : public RobotInterface {
 
     unitree_go::msg::dds_::LowCmd_ low_cmd{};
 
-    // Publisher
+    /* Publishers */
     ChannelPublisherPtr<unitree_go::msg::dds_::LowCmd_> lowcmd_publisher;
-    // Subscriber
+
+    /* Subscribers */
     ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> lowstate_subscriber;
 
-    // Low cmd write thread
-    ThreadPtr lowCmdWriteThreadPtr;
+    /* Motor name to ID mapping */
+    std::unordered_map<std::string, int> motorIdMap_;
 
-    // Motor name to ID mapping (16 DOF for Go2W)
-    std::unordered_map<std::string, int> motor_id_map;
-
-    bool initialized = false;
+    bool initialized_ = false;
 
     scalar_t lastYaw_ = 0.0;
-    std::mutex latest_state_mutex_;
+    std::mutex latestStateMutex_;
     State state_;
 
     std::shared_ptr<spdlog::logger> logger_;

@@ -57,16 +57,14 @@ class G1RobotInterface : public RobotInterface {
 
     unitree_hg::msg::dds_::LowCmd_ low_cmd{};
 
+    /* Publishers */
     ChannelPublisherPtr<unitree_hg::msg::dds_::LowCmd_> lowcmd_publisher;
+
+    /* Subscribers */
     ChannelSubscriberPtr<unitree_hg::msg::dds_::LowState_> lowstate_subscriber;
 
-    // Low cmd write thread
-    ThreadPtr lowCmdWriteThreadPtr;
-
-    // Motor name to ID mapping (29 DOF)
-    std::unordered_map<std::string, int> motor_id_map;
-
-    bool initialized = false;
+    std::unordered_map<std::string, int> motorIdMap_;
+    bool initialized_ = false;
 
     scalar_t lastYaw_ = 0.0;
     std::mutex latestStateMutex_;

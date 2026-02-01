@@ -66,23 +66,23 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     }
 
     // Initialize motor 2 id map
-    motor_id_map["RF_HAA"] = 0;
-    motor_id_map["RF_HFE"] = 1;
-    motor_id_map["RF_KFE"] = 2;
-    motor_id_map["LF_HAA"] = 3;
-    motor_id_map["LF_HFE"] = 4;
-    motor_id_map["LF_KFE"] = 5;
-    motor_id_map["RH_HAA"] = 6;
-    motor_id_map["RH_HFE"] = 7;
-    motor_id_map["RH_KFE"] = 8;
-    motor_id_map["LH_HAA"] = 9;
-    motor_id_map["LH_HFE"] = 10;
-    motor_id_map["LH_KFE"] = 11;
+    motorIdMap_["RF_HAA"] = 0;
+    motorIdMap_["RF_HFE"] = 1;
+    motorIdMap_["RF_KFE"] = 2;
+    motorIdMap_["LF_HAA"] = 3;
+    motorIdMap_["LF_HFE"] = 4;
+    motorIdMap_["LF_KFE"] = 5;
+    motorIdMap_["RH_HAA"] = 6;
+    motorIdMap_["RH_HFE"] = 7;
+    motorIdMap_["RH_KFE"] = 8;
+    motorIdMap_["LH_HAA"] = 9;
+    motorIdMap_["LH_HFE"] = 10;
+    motorIdMap_["LH_KFE"] = 11;
 
-    foot_id_map["RF_FOOT"] = 0;
-    foot_id_map["LF_FOOT"] = 1;
-    foot_id_map["RH_FOOT"] = 2;
-    foot_id_map["LH_FOOT"] = 3;
+    footIdMap_["RF_FOOT"] = 0;
+    footIdMap_["LF_FOOT"] = 1;
+    footIdMap_["RH_FOOT"] = 2;
+    footIdMap_["LH_FOOT"] = 3;
 
     TBAI_LOG_INFO(logger_, "Initializing publisher: Topic: {}", TOPIC_LOWCMD);
     lowcmd_publisher.reset(new ChannelPublisher<unitree_go::msg::dds_::LowCmd_>(TOPIC_LOWCMD));
@@ -141,41 +141,41 @@ void Go2RobotInterface::lowStateCallback(const void *message) {
 
     // Map joints in order: LF_HAA, LF_HFE, LF_KFE, LH_HAA, LH_HFE, LH_KFE, RF_HAA, RF_HFE, RF_KFE, RH_HAA, RH_HFE,
     // RH_KFE
-    jointAngles[0] = low_state.motor_state()[motor_id_map["LF_HAA"]].q();  // LF_HAA
-    jointAngles[1] = low_state.motor_state()[motor_id_map["LF_HFE"]].q();  // LF_HFE
-    jointAngles[2] = low_state.motor_state()[motor_id_map["LF_KFE"]].q();  // LF_KFE
+    jointAngles[0] = low_state.motor_state()[motorIdMap_["LF_HAA"]].q();  // LF_HAA
+    jointAngles[1] = low_state.motor_state()[motorIdMap_["LF_HFE"]].q();  // LF_HFE
+    jointAngles[2] = low_state.motor_state()[motorIdMap_["LF_KFE"]].q();  // LF_KFE
 
     // Left Hind leg
-    jointAngles[3] = low_state.motor_state()[motor_id_map["LH_HAA"]].q();  // LH_HAA
-    jointAngles[4] = low_state.motor_state()[motor_id_map["LH_HFE"]].q();  // LH_HFE
-    jointAngles[5] = low_state.motor_state()[motor_id_map["LH_KFE"]].q();  // LH_KFE
+    jointAngles[3] = low_state.motor_state()[motorIdMap_["LH_HAA"]].q();  // LH_HAA
+    jointAngles[4] = low_state.motor_state()[motorIdMap_["LH_HFE"]].q();  // LH_HFE
+    jointAngles[5] = low_state.motor_state()[motorIdMap_["LH_KFE"]].q();  // LH_KFE
 
     // Right Front leg
-    jointAngles[6] = low_state.motor_state()[motor_id_map["RF_HAA"]].q();  // RF_HAA
-    jointAngles[7] = low_state.motor_state()[motor_id_map["RF_HFE"]].q();  // RF_HFE
-    jointAngles[8] = low_state.motor_state()[motor_id_map["RF_KFE"]].q();  // RF_KFE
+    jointAngles[6] = low_state.motor_state()[motorIdMap_["RF_HAA"]].q();  // RF_HAA
+    jointAngles[7] = low_state.motor_state()[motorIdMap_["RF_HFE"]].q();  // RF_HFE
+    jointAngles[8] = low_state.motor_state()[motorIdMap_["RF_KFE"]].q();  // RF_KFE
 
     // Right Hind leg
-    jointAngles[9] = low_state.motor_state()[motor_id_map["RH_HAA"]].q();   // RH_HAA
-    jointAngles[10] = low_state.motor_state()[motor_id_map["RH_HFE"]].q();  // RH_HFE
-    jointAngles[11] = low_state.motor_state()[motor_id_map["RH_KFE"]].q();  // RH_KFE
+    jointAngles[9] = low_state.motor_state()[motorIdMap_["RH_HAA"]].q();   // RH_HAA
+    jointAngles[10] = low_state.motor_state()[motorIdMap_["RH_HFE"]].q();  // RH_HFE
+    jointAngles[11] = low_state.motor_state()[motorIdMap_["RH_KFE"]].q();  // RH_KFE
 
     // Extract joint velocities in the same order
-    jointVelocities[0] = low_state.motor_state()[motor_id_map["LF_HAA"]].dq();  // LF_HAA
-    jointVelocities[1] = low_state.motor_state()[motor_id_map["LF_HFE"]].dq();  // LF_HFE
-    jointVelocities[2] = low_state.motor_state()[motor_id_map["LF_KFE"]].dq();  // LF_KFE
+    jointVelocities[0] = low_state.motor_state()[motorIdMap_["LF_HAA"]].dq();  // LF_HAA
+    jointVelocities[1] = low_state.motor_state()[motorIdMap_["LF_HFE"]].dq();  // LF_HFE
+    jointVelocities[2] = low_state.motor_state()[motorIdMap_["LF_KFE"]].dq();  // LF_KFE
 
-    jointVelocities[3] = low_state.motor_state()[motor_id_map["LH_HAA"]].dq();  // LH_HAA
-    jointVelocities[4] = low_state.motor_state()[motor_id_map["LH_HFE"]].dq();  // LH_HFE
-    jointVelocities[5] = low_state.motor_state()[motor_id_map["LH_KFE"]].dq();  // LH_KFE
+    jointVelocities[3] = low_state.motor_state()[motorIdMap_["LH_HAA"]].dq();  // LH_HAA
+    jointVelocities[4] = low_state.motor_state()[motorIdMap_["LH_HFE"]].dq();  // LH_HFE
+    jointVelocities[5] = low_state.motor_state()[motorIdMap_["LH_KFE"]].dq();  // LH_KFE
 
-    jointVelocities[6] = low_state.motor_state()[motor_id_map["RF_HAA"]].dq();  // RF_HAA
-    jointVelocities[7] = low_state.motor_state()[motor_id_map["RF_HFE"]].dq();  // RF_HFE
-    jointVelocities[8] = low_state.motor_state()[motor_id_map["RF_KFE"]].dq();  // RF_KFE
+    jointVelocities[6] = low_state.motor_state()[motorIdMap_["RF_HAA"]].dq();  // RF_HAA
+    jointVelocities[7] = low_state.motor_state()[motorIdMap_["RF_HFE"]].dq();  // RF_HFE
+    jointVelocities[8] = low_state.motor_state()[motorIdMap_["RF_KFE"]].dq();  // RF_KFE
 
-    jointVelocities[9] = low_state.motor_state()[motor_id_map["RH_HAA"]].dq();   // RH_HAA
-    jointVelocities[10] = low_state.motor_state()[motor_id_map["RH_HFE"]].dq();  // RH_HFE
-    jointVelocities[11] = low_state.motor_state()[motor_id_map["RH_KFE"]].dq();  // RH_KFE
+    jointVelocities[9] = low_state.motor_state()[motorIdMap_["RH_HAA"]].dq();   // RH_HAA
+    jointVelocities[10] = low_state.motor_state()[motorIdMap_["RH_HFE"]].dq();  // RH_HFE
+    jointVelocities[11] = low_state.motor_state()[motorIdMap_["RH_KFE"]].dq();  // RH_KFE
 
     // Extract IMU data
     vector4_t baseOrientation;
@@ -202,10 +202,10 @@ void Go2RobotInterface::lowStateCallback(const void *message) {
     // Extract ground reaction forces from foot sensors
     // Assuming the order is: LF, LH, RF, RH
     std::vector<double> grf = {
-        static_cast<double>(low_state.foot_force()[foot_id_map["LF_FOOT"]]),  // LF
-        static_cast<double>(low_state.foot_force()[foot_id_map["RF_FOOT"]]),  // RF
-        static_cast<double>(low_state.foot_force()[foot_id_map["LH_FOOT"]]),  // LH
-        static_cast<double>(low_state.foot_force()[foot_id_map["RH_FOOT"]])   // RH
+        static_cast<double>(low_state.foot_force()[footIdMap_["LF_FOOT"]]),  // LF
+        static_cast<double>(low_state.foot_force()[footIdMap_["RF_FOOT"]]),  // RF
+        static_cast<double>(low_state.foot_force()[footIdMap_["LH_FOOT"]]),  // LH
+        static_cast<double>(low_state.foot_force()[footIdMap_["RH_FOOT"]])   // RH
     };
 
     // Set contact to true if ground reaction force exceeds threshold
@@ -268,14 +268,14 @@ void Go2RobotInterface::lowStateCallback(const void *message) {
                            std::chrono::duration_cast<std::chrono::microseconds>(t12 - t11).count());
 
     // Update the latest state
-    std::lock_guard<std::mutex> lock(latest_state_mutex_);
+    std::lock_guard<std::mutex> lock(latestStateMutex_);
     state_ = std::move(state);
     auto t13 = std::chrono::high_resolution_clock::now();
 
     TBAI_LOG_INFO_THROTTLE(logger_, 8.0, "Total callback time: {} us",
                            std::chrono::duration_cast<std::chrono::microseconds>(t13 - t11).count());
 
-    initialized = true;
+    initialized_ = true;
 }
 
 /*********************************************************************************************************************/
@@ -297,7 +297,7 @@ void Go2RobotInterface::publish(std::vector<MotorCommand> commands) {
     }
 
     for (const auto &command : commands) {
-        int motor_id = motor_id_map[command.joint_name];
+        const int motor_id = motorIdMap_[command.joint_name];
         low_cmd.motor_cmd()[motor_id].mode() = (0x01);  // motor switch to servo (PMSM) mode
         low_cmd.motor_cmd()[motor_id].q() = (command.desired_position);
         low_cmd.motor_cmd()[motor_id].kp() = command.kp;
@@ -317,7 +317,7 @@ void Go2RobotInterface::publish(std::vector<MotorCommand> commands) {
 /*********************************************************************************************************************/
 void Go2RobotInterface::waitTillInitialized() {
     TBAI_LOG_INFO(logger_, "Waiting for the robot to initialize...");
-    while (!initialized) {
+    while (!initialized_) {
         TBAI_LOG_INFO_THROTTLE(logger_, 1.0, "Waiting for the robot to initialize...");
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -328,7 +328,7 @@ void Go2RobotInterface::waitTillInitialized() {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 State Go2RobotInterface::getLatestState() {
-    std::lock_guard<std::mutex> lock(latest_state_mutex_);
+    std::lock_guard<std::mutex> lock(latestStateMutex_);
     return state_;
 }
 

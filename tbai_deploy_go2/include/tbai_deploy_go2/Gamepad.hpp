@@ -79,13 +79,13 @@ class Gamepad {
         left.update(key.components.left);
     }
 
-    float smooth = 0.03;
-    float dead_zone = 0.01;
+    float smooth = 0.03f;
+    float dead_zone = 0.01f;
 
-    float lx = 0.;
-    float rx = 0.;
-    float ry = 0.;
-    float ly = 0.;
+    float lx = 0.0f;
+    float rx = 0.0f;
+    float ry = 0.0f;
+    float ly = 0.0f;
 
     Button R1;
     Button L1;
