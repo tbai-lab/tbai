@@ -140,10 +140,6 @@ class PyWtwController : public tbai::WtwController {
         preStep(currentTime, 0.0);
     }
 
-    void atPositions(matrix_t &positions) override {
-        // Do nothing
-    }
-
     bool ok() const override { return true; }
 
     void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
@@ -168,7 +164,7 @@ typedef tbai::CentralController<tbai::SystemRate<scalar_t>, tbai::SystemTime<std
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(tbai_python, m) {
+PYBIND11_MODULE(_C, m) {
     m.def("write_init_time", py::overload_cast<>(&tbai::writeInitTime));
     m.def("write_init_time", py::overload_cast<const long, const long>(&tbai::writeInitTime));
     m.def("write_init_time", py::overload_cast<const double>(&tbai::writeInitTime));

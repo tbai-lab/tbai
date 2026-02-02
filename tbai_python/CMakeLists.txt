@@ -8,10 +8,10 @@ project(tbai_python)
 find_package(pybind11 CONFIG REQUIRED)
 find_package(pinocchio CONFIG REQUIRED)
 
-pybind11_add_module(tbai_python 
+pybind11_add_module(_C
     src/bindings.cpp
 )
-target_link_libraries(tbai_python
+target_link_libraries(_C
     PUBLIC
         tbai_core
         tbai_bob
@@ -24,11 +24,14 @@ target_link_libraries(tbai_python
 )
 
 if(TBAI_BUILD_DEPLOY_GO2)
-    target_link_libraries(tbai_python PUBLIC tbai_deploy_go2)
-    target_compile_definitions(tbai_python PRIVATE TBAI_HAS_DEPLOY_GO2)
+    target_link_libraries(_C PUBLIC tbai_deploy_go2)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_GO2)
 endif()
-target_include_directories(tbai_python
+target_include_directories(_C
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
+
+# Install the _C extension module into the tbai package
+install(TARGETS _C LIBRARY DESTINATION tbai)

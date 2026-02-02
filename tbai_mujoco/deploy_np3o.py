@@ -4,16 +4,17 @@ import sys
 import argparse
 import time
 
-import tbai_python
+import tbai as tbai_python
 
-from tbai_python import (
+from tbai import (
     StateSubscriber,
     ChangeControllerSubscriber,
     ReferenceVelocity,
     ReferenceVelocityGenerator,
 )
 
-from tbai_python.rotations import ocs2rpy2quat
+from tbai import rotations
+
 
 import tbai_logging
 from tbai_logging.rerun.robot_logger import RobotLogger
@@ -101,7 +102,7 @@ class RerunLoggerNode:
             "RR_calf_joint": joint_positions[11],
         }
 
-        orientation = ocs2rpy2quat(orientation)
+        orientation = rotations.ocs2rpy2quat(orientation)
 
         self.robot_logger.log_state(
             logtime=current_state.timestamp,
