@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from pathlib import Path
 
@@ -51,6 +52,21 @@ class CMakeBuild(build_ext):
             check=True,
         )
 
+    def run(self):
+        super().run()
+
+        build_lib = Path(self.build_lib).resolve()
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(build_lib)
+
+        stub_out = str(build_lib)
+        subprocess.run(
+            [sys.executable, "-m", "pybind11_stubgen", "tbai._C", "-o", stub_out],
+            env=env,
+            cwd=str(build_lib),
+            check=True,
+        )
+
 
 setup(
     name="tbai",
@@ -61,5 +77,6 @@ setup(
     ext_modules=[CMakeExtension("tbai._C", sourcedir="..")],
     cmdclass={"build_ext": CMakeBuild},
     python_requires=">=3.10",
+    setup_requires=["pybind11-stubgen"],
     zip_safe=False,
 )
