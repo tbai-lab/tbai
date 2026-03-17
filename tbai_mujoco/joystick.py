@@ -143,21 +143,22 @@ class UIController:
         self.linear_y = 0.0
         self.angular_z = 0.0
 
-        self.linear_scale = 2.0  # m/s
-        self.angular_scale = 10.0  # rad/s
+        self.linear_x_scale = 1.0  # m/s
+        self.linear_y_scale = 0.5  # m/s
+        self.angular_scale = 0.5  # rad/s
 
         self.root.update_idletasks()
         self.root.after(100, self.update_gui)
 
     def update_xy_velocity(self, x, y, z):
         """Handle X+Y velocity from left joystick"""
-        self.linear_x = y * self.linear_scale
-        self.linear_y = -x * self.linear_scale
+        self.linear_x = y * self.linear_x_scale
+        self.linear_y = -x * self.linear_y_scale
 
     def update_x_yaw_velocity(self, x, y, z):
         """Handle X+Yaw velocity from right joystick"""
-        self.linear_x = y * self.linear_scale
-        self.angular_z = -x * self.angular_scale / 4.0
+        self.linear_x = y * self.linear_x_scale
+        self.angular_z = -x * self.angular_scale
 
     def get_state(self):
         """Return current joystick state"""
