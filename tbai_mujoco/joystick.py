@@ -144,8 +144,8 @@ class UIController:
         self.angular_z = 0.0
 
         self.linear_x_scale = 1.0  # m/s
-        self.linear_y_scale = 0.5  # m/s
-        self.angular_scale = 0.5  # rad/s
+        self.linear_y_scale = 1.0  # m/s
+        self.angular_scale = 1.0  # rad/s
 
         self.root.update_idletasks()
         self.root.after(100, self.update_gui)

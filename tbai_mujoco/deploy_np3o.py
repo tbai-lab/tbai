@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import sys
-import argparse
+import dataclasses
 import time
+
+import tyro
 
 import tbai as tbai_python
 
@@ -15,12 +17,15 @@ from tbai import (
 
 from tbai import rotations
 
-
-import tbai_logging
-from tbai_logging.rerun.robot_logger import RobotLogger
-from tbai_logging.rerun.utils import rerun_initialize, rerun_store
-
 from joystick import UIController
+
+
+@dataclasses.dataclass
+class Args:
+    net: str = "lo"
+    channel: int = 1
+    no_lidar: bool = False
+    log: bool = False
 
 
 class Go2ChangeControllerSubscriber(ChangeControllerSubscriber):
@@ -51,20 +56,41 @@ class Go2ChangeControllerSubscriber(ChangeControllerSubscriber):
 
 
 class Go2ReferenceVelocityGenerator(ReferenceVelocityGenerator):
-    def __init__(self, ui_controller: UIController):
+    def __init__(self, ui_controller: UIController, ramped_velocity: float = 5.0):
         super().__init__()
         self.ui_controller = ui_controller
+        self.ramped_velocity = ramped_velocity
+        self.current_x = 0.0
+        self.current_y = 0.0
+        self.current_yaw = 0.0
 
     def getReferenceVelocity(self, time, dt):
+        desired_x = self.ui_controller.linear_x
+        desired_y = self.ui_controller.linear_y
+        desired_yaw = self.ui_controller.angular_z
+
+        max_step = self.ramped_velocity * dt
+
+        x_diff = desired_x - self.current_x
+        y_diff = desired_y - self.current_y
+        yaw_diff = desired_yaw - self.current_yaw
+
+        sign = lambda v: 1.0 if v >= 0.0 else -1.0
+        self.current_x += sign(x_diff) * min(abs(x_diff), max_step)
+        self.current_y += sign(y_diff) * min(abs(y_diff), max_step)
+        self.current_yaw += sign(yaw_diff) * min(abs(yaw_diff), max_step)
+
         ref = ReferenceVelocity()
-        ref.velocity_x = self.ui_controller.linear_x
-        ref.velocity_y = self.ui_controller.linear_y
-        ref.yaw_rate = self.ui_controller.angular_z
+        ref.velocity_x = self.current_x
+        ref.velocity_y = self.current_y
+        ref.yaw_rate = self.current_yaw
         return ref
 
 
 class RerunLoggerNode:
     def __init__(self, state_subscriber: StateSubscriber, freq=10):
+        from tbai_logging.rerun.robot_logger import RobotLogger
+        from tbai_logging.rerun.utils import rerun_initialize
         rerun_initialize("go2_deploy_np3o", spawn=False)
         self.robot_logger = RobotLogger.from_zoo("go2_description")
         self.state_subscriber = state_subscriber
@@ -113,20 +139,12 @@ class RerunLoggerNode:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Deploy NP3O controller on Go2")
-    parser.add_argument("--net", type=str, default="lo",
-                        help="Network interface for Unitree SDK (default: lo)")
-    parser.add_argument("--channel", type=int, default=1,
-                        help="Unitree channel ID (default: 1)")
-    parser.add_argument("--no-lidar", action="store_true",
-                        help="Disable lidar subscription")
-    args = parser.parse_args()
+    args = tyro.cli(Args)
 
     if not tbai_python.HAS_DEPLOY_GO2:
         print("Error: tbai_python was built without Go2 support (TBAI_BUILD_DEPLOY_GO2=OFF)")
         sys.exit(1)
 
-    # Create Go2RobotInterface
     robot_args = tbai_python.Go2RobotInterfaceArgs()
     robot_args.set_network_interface(args.net)
     robot_args.set_unitree_channel(args.channel)
@@ -140,10 +158,9 @@ def main():
     robot.waitTillInitialized()
     print("Robot initialized.")
 
-    # Set up controller switching
     controller_sub = Go2ChangeControllerSubscriber()
 
-    rerun_logger = RerunLoggerNode(robot)
+    rerun_logger = RerunLoggerNode(robot) if args.log else None
 
     ui_controller = UIController(
         stand_callback=controller_sub.stand_callback,
@@ -155,7 +172,6 @@ def main():
 
     tbai_python.write_init_time()
 
-    # Go2RobotInterface is both a CommandPublisher and StateSubscriber
     central_controller = tbai_python.CentralController.create(robot, controller_sub)
 
     static_ctrl = tbai_python.StaticController(robot, rerun_logger)
@@ -175,7 +191,9 @@ def main():
     finally:
         print("Stopping controller...")
         central_controller.stopThread()
-        rerun_store("go2_deploy_np3o.rrd")
+        if args.log:
+            from tbai_logging.rerun.utils import rerun_store
+            rerun_store("go2_deploy_np3o.rrd")
         print("Done.")
 
 
