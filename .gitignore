@@ -4,3 +4,4 @@ build/
 ocs2_robotic_assets/
 *.rrd
 pixi.lock
+*.egg-info/
