@@ -1,5 +1,8 @@
 robot_name: 'go2'
 
+joint_names: ["LF_HAA", "LF_HFE", "LF_KFE", "LH_HAA", "LH_HFE", "LH_KFE", "RF_HAA", "RF_HFE", "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE"]
+base_name: "base"
+
 state_publisher:
   update_rate: 400 # Hz
 
@@ -46,4 +49,4 @@ np3o:
   kd: 1.0
   use_action_filter: true
   hf_repo: "kubjonai/tbai-models"
-  hf_model: "np3o_model_1_original.pt"
+  hf_model: "np3o_model3_put_feet_higher.pt"

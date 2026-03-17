@@ -60,12 +60,13 @@ class CMakeBuild(build_ext):
         env["PYTHONPATH"] = str(build_lib)
 
         stub_out = str(build_lib)
-        subprocess.run(
+        result = subprocess.run(
             [sys.executable, "-m", "pybind11_stubgen", "tbai._C", "-o", stub_out],
             env=env,
             cwd=str(build_lib),
-            check=True,
         )
+        if result.returncode != 0:
+            print("WARNING: stub generation failed — skipping. IDE type hints for tbai._C will not be available.")
 
 
 setup(
