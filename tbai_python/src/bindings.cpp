@@ -66,6 +66,7 @@ class PyStaticController : public tbai::static_::StaticController {
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
         if (postStepCallback_) {
+            pybind11::gil_scoped_acquire acquire;
             postStepCallback_(currentTime, dt);
         }
     }
@@ -82,6 +83,7 @@ class PyBobController : public tbai::BobController {
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
         if (postStepCallback_) {
+            pybind11::gil_scoped_acquire acquire;
             postStepCallback_(currentTime, dt);
         }
     }
@@ -108,6 +110,7 @@ class PyNp3oController : public tbai::Np3oController {
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
         if (postStepCallback_) {
+            pybind11::gil_scoped_acquire acquire;
             postStepCallback_(currentTime, dt);
         }
     }
@@ -130,6 +133,7 @@ class PyWtwController : public tbai::WtwController {
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
         if (postStepCallback_) {
+            pybind11::gil_scoped_acquire acquire;
             postStepCallback_(currentTime, dt);
         }
     }
@@ -248,13 +252,13 @@ PYBIND11_MODULE(_C, m) {
                         return std::make_shared<tbai::CentralControllerPython>(commandPublisherPtr,
                                                                                changeControllerSubscriberPtr);
                     })
-        .def("start", &tbai::CentralControllerPython::start)
-        .def("startThread", &tbai::CentralControllerPython::startThread)
-        .def("stopThread", &tbai::CentralControllerPython::stopThread)
+        .def("start", &tbai::CentralControllerPython::start, py::call_guard<py::gil_scoped_release>())
+        .def("startThread", &tbai::CentralControllerPython::startThread, py::call_guard<py::gil_scoped_release>())
+        .def("stopThread", &tbai::CentralControllerPython::stopThread, py::call_guard<py::gil_scoped_release>())
         .def("add_controller", &tbai::CentralControllerPython::addController, py::arg("controller"),
              py::arg("make_active") = false)
-        .def("initialize", &tbai::CentralControllerPython::initialize)
-        .def("step", &tbai::CentralControllerPython::step)
+        .def("initialize", &tbai::CentralControllerPython::initialize, py::call_guard<py::gil_scoped_release>())
+        .def("step", &tbai::CentralControllerPython::step, py::call_guard<py::gil_scoped_release>())
         .def("getRate", &tbai::CentralControllerPython::getRate);
 
     // Bind rotation helper functions
@@ -288,7 +292,7 @@ PYBIND11_MODULE(_C, m) {
 
     py::class_<tbai::muse::MuseEstimator>(m, "MuseEstimator")
         .def(py::init<std::vector<std::string>>())
-        .def("update", &tbai::muse::MuseEstimator::update)
+        .def("update", &tbai::muse::MuseEstimator::update, py::call_guard<py::gil_scoped_release>())
         .def("getBasePosition", &tbai::muse::MuseEstimator::getBasePosition)
         .def("getBaseVelocity", &tbai::muse::MuseEstimator::getBaseVelocity);
 
@@ -337,9 +341,11 @@ PYBIND11_MODULE(_C, m) {
     py::class_<tbai::Go2RobotInterface, tbai::RobotInterface, std::shared_ptr<tbai::Go2RobotInterface>>(
         m, "Go2RobotInterface")
         .def(py::init<tbai::Go2RobotInterfaceArgs>())
-        .def("publish", &tbai::Go2RobotInterface::publish)
-        .def("waitTillInitialized", &tbai::Go2RobotInterface::waitTillInitialized)
-        .def("getLatestState", &tbai::Go2RobotInterface::getLatestState);
+        .def("publish", &tbai::Go2RobotInterface::publish, py::call_guard<py::gil_scoped_release>())
+        .def("waitTillInitialized", &tbai::Go2RobotInterface::waitTillInitialized,
+             py::call_guard<py::gil_scoped_release>())
+        .def("getLatestState", &tbai::Go2RobotInterface::getLatestState,
+             py::call_guard<py::gil_scoped_release>());
 #endif
 
     m.attr("HAS_DEPLOY_GO2") =
