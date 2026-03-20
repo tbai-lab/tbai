@@ -20,8 +20,24 @@
 #include <tbai_static/StaticController.hpp>
 #include <tbai_wtw/WtwController.hpp>
 
+#if defined(TBAI_HAS_DEPLOY_GO2) || defined(TBAI_HAS_DEPLOY_G1)
+#include <tbai_core/control/RobotInterface.hpp>
+#endif
+
 #ifdef TBAI_HAS_DEPLOY_GO2
 #include <tbai_deploy_go2/Go2RobotInterface.hpp>
+#endif
+
+#ifdef TBAI_HAS_DEPLOY_G1
+#include <tbai_deploy_g1/G1RobotInterface.hpp>
+#include <tbai_deploy_g1/G1RLController.hpp>
+#include <tbai_deploy_g1/G1MimicController.hpp>
+#include <tbai_deploy_g1/G1ASAPController.hpp>
+#include <tbai_deploy_g1/G1ASAPMimicController.hpp>
+#include <tbai_deploy_g1/G1PBHCController.hpp>
+#include <tbai_deploy_g1/G1Twist2Controller.hpp>
+#include <tbai_deploy_g1/G1SpinkickController.hpp>
+#include <tbai_deploy_g1/G1BeyondMimicController.hpp>
 #endif
 
 // Python wrappers around virtual classes
@@ -175,6 +191,8 @@ PYBIND11_MODULE(_C, m) {
     m.def("write_init_time", py::overload_cast<const long, const long>(&tbai::writeInitTime));
     m.def("write_init_time", py::overload_cast<const double>(&tbai::writeInitTime));
     m.def("read_init_time", &tbai::readInitTime);
+    m.def("download_from_huggingface", &tbai::downloadFromHuggingFace, py::arg("repo_id"), py::arg("filename"),
+          py::call_guard<py::gil_scoped_release>());
 
     py::class_<tbai::MotorCommand>(m, "MotorCommand")
         .def_readwrite("kp", &tbai::MotorCommand::kp)
@@ -298,6 +316,11 @@ PYBIND11_MODULE(_C, m) {
         .def("getBasePosition", &tbai::muse::MuseEstimator::getBasePosition)
         .def("getBaseVelocity", &tbai::muse::MuseEstimator::getBaseVelocity);
 
+#if defined(TBAI_HAS_DEPLOY_GO2) || defined(TBAI_HAS_DEPLOY_G1)
+    py::class_<tbai::RobotInterface, tbai::CommandPublisher, tbai::StateSubscriber,
+               std::shared_ptr<tbai::RobotInterface>>(m, "RobotInterface");
+#endif
+
 #ifdef TBAI_HAS_DEPLOY_GO2
     py::object cv2_imdecode = py::module_::import("cv2").attr("imdecode");
     py::object np_frombuffer = py::module_::import("numpy").attr("frombuffer");
@@ -362,9 +385,6 @@ PYBIND11_MODULE(_C, m) {
             },
             py::return_value_policy::reference_internal);
 
-    py::class_<tbai::RobotInterface, tbai::CommandPublisher, tbai::StateSubscriber,
-               std::shared_ptr<tbai::RobotInterface>>(m, "RobotInterface");
-
     py::class_<tbai::Go2RobotInterface, tbai::RobotInterface, std::shared_ptr<tbai::Go2RobotInterface>>(
         m, "Go2RobotInterface")
         .def(py::init<tbai::Go2RobotInterfaceArgs>())
@@ -408,6 +428,131 @@ PYBIND11_MODULE(_C, m) {
 
     m.attr("HAS_DEPLOY_GO2") =
 #ifdef TBAI_HAS_DEPLOY_GO2
+        true;
+#else
+        false;
+#endif
+
+#ifdef TBAI_HAS_DEPLOY_G1
+    py::class_<tbai::G1RobotInterfaceArgs>(m, "G1RobotInterfaceArgs")
+        .def(py::init<>())
+        .def(
+            "set_network_interface",
+            [](tbai::G1RobotInterfaceArgs &self, const std::string &val) -> tbai::G1RobotInterfaceArgs & {
+                self.networkInterface(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_unitree_channel",
+            [](tbai::G1RobotInterfaceArgs &self, int val) -> tbai::G1RobotInterfaceArgs & {
+                self.unitreeChannel(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_channel_init",
+            [](tbai::G1RobotInterfaceArgs &self, bool val) -> tbai::G1RobotInterfaceArgs & {
+                self.channelInit(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_enable_state_estim",
+            [](tbai::G1RobotInterfaceArgs &self, bool val) -> tbai::G1RobotInterfaceArgs & {
+                self.enableStateEstim(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal);
+
+    py::class_<tbai::G1RobotInterface, tbai::RobotInterface, std::shared_ptr<tbai::G1RobotInterface>>(
+        m, "G1RobotInterface")
+        .def(py::init<tbai::G1RobotInterfaceArgs>())
+        .def("publish", &tbai::G1RobotInterface::publish, py::call_guard<py::gil_scoped_release>())
+        .def("waitTillInitialized", &tbai::G1RobotInterface::waitTillInitialized,
+             py::call_guard<py::gil_scoped_release>())
+        .def("getLatestState", &tbai::G1RobotInterface::getLatestState,
+             py::call_guard<py::gil_scoped_release>())
+        .def("getBaseQuaternion", &tbai::G1RobotInterface::getBaseQuaternion);
+
+    py::class_<tbai::g1::G1RLController, tbai::Controller, std::shared_ptr<tbai::g1::G1RLController>>(
+        m, "G1RLController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+                      const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &, const std::string &>(),
+             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("policy_path"));
+
+    py::class_<tbai::g1::G1MimicController, tbai::Controller, std::shared_ptr<tbai::g1::G1MimicController>>(
+        m, "G1MimicController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, float,
+                      float, float, const std::string &>(),
+             py::arg("state_subscriber"), py::arg("policy_path"), py::arg("motion_file_path"),
+             py::arg("motion_fps") = 60.0f, py::arg("time_start") = 0.0f, py::arg("time_end") = -1.0f,
+             py::arg("controller_name") = "G1MimicController")
+        .def("isMotionComplete", &tbai::g1::G1MimicController::isMotionComplete)
+        .def("getMotionTime", &tbai::g1::G1MimicController::getMotionTime);
+
+    py::class_<tbai::g1::G1ASAPController, tbai::Controller, std::shared_ptr<tbai::g1::G1ASAPController>>(
+        m, "G1ASAPController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+                      const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &, const std::string &,
+                      const std::string &>(),
+             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("policy_path"),
+             py::arg("controller_name") = "G1ASAPLocomotion");
+
+    py::class_<tbai::g1::G1ASAPMimicController, tbai::Controller, std::shared_ptr<tbai::g1::G1ASAPMimicController>>(
+        m, "G1ASAPMimicController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, float,
+                      const std::string &>(),
+             py::arg("state_subscriber"), py::arg("policy_path"), py::arg("motion_length"),
+             py::arg("controller_name") = "G1ASAPMimic")
+        .def("isMotionComplete", &tbai::g1::G1ASAPMimicController::isMotionComplete)
+        .def("getMotionPhase", &tbai::g1::G1ASAPMimicController::getMotionPhase);
+
+    py::class_<tbai::g1::G1PBHCController, tbai::Controller, std::shared_ptr<tbai::g1::G1PBHCController>>(
+        m, "G1PBHCController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, float,
+                      float, const std::string &>(),
+             py::arg("state_subscriber"), py::arg("policy_path"), py::arg("motion_file_path"),
+             py::arg("time_start") = 0.0f, py::arg("time_end") = -1.0f,
+             py::arg("controller_name") = "G1PBHCController")
+        .def("isMotionComplete", &tbai::g1::G1PBHCController::isMotionComplete)
+        .def("getMotionTime", &tbai::g1::G1PBHCController::getMotionTime);
+
+    py::class_<tbai::g1::G1Twist2Controller, tbai::Controller, std::shared_ptr<tbai::g1::G1Twist2Controller>>(
+        m, "G1Twist2Controller")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, float,
+                      float, const std::string &>(),
+             py::arg("state_subscriber"), py::arg("policy_path"), py::arg("motion_file_path"),
+             py::arg("time_start") = 0.0f, py::arg("time_end") = -1.0f,
+             py::arg("controller_name") = "G1Twist2Controller")
+        .def("isMotionComplete", &tbai::g1::G1Twist2Controller::isMotionComplete)
+        .def("getMotionTime", &tbai::g1::G1Twist2Controller::getMotionTime);
+
+    py::class_<tbai::g1::G1SpinkickController, tbai::Controller, std::shared_ptr<tbai::g1::G1SpinkickController>>(
+        m, "G1SpinkickController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, bool,
+                      float>(),
+             py::arg("state_subscriber"), py::arg("policy_path"),
+             py::arg("controller_name") = "G1SpinkickController", py::arg("use_model_meta_config") = true,
+             py::arg("action_beta") = 1.0f)
+        .def("isMotionComplete", &tbai::g1::G1SpinkickController::isMotionComplete)
+        .def("getTimestep", &tbai::g1::G1SpinkickController::getTimestep)
+        .def("getMaxTimestep", &tbai::g1::G1SpinkickController::getMaxTimestep);
+
+    py::class_<tbai::g1::G1BeyondMimicController, tbai::Controller,
+               std::shared_ptr<tbai::g1::G1BeyondMimicController>>(m, "G1BeyondMimicController")
+        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, bool,
+                      float>(),
+             py::arg("state_subscriber"), py::arg("policy_path"),
+             py::arg("controller_name") = "G1BeyondMimicController", py::arg("use_model_meta_config") = true,
+             py::arg("action_beta") = 1.0f)
+        .def("isMotionComplete", &tbai::g1::G1BeyondMimicController::isMotionComplete)
+        .def("getTimestep", &tbai::g1::G1BeyondMimicController::getTimestep)
+        .def("getMaxTimestep", &tbai::g1::G1BeyondMimicController::getMaxTimestep);
+#endif
+
+    m.attr("HAS_DEPLOY_G1") =
+#ifdef TBAI_HAS_DEPLOY_G1
         true;
 #else
         false;

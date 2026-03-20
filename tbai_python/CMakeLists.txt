@@ -27,6 +27,11 @@ if(TBAI_BUILD_DEPLOY_GO2)
     target_link_libraries(_C PUBLIC tbai_deploy_go2)
     target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_GO2)
 endif()
+
+if(TBAI_BUILD_DEPLOY_G1)
+    target_link_libraries(_C PUBLIC tbai_deploy_g1)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_G1)
+endif()
 target_include_directories(_C
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
