@@ -7,6 +7,7 @@
 // TODO: remove this define, the code does not compile without it though (missing dependency?)
 #define SCHED_DEADLINE 6
 
+#include <atomic>
 #include <math.h>
 #include <stdint.h>
 
@@ -19,6 +20,7 @@
 #include <unitree/robot/b2/motion_switcher/motion_switcher_client.hpp>
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
+#include <unitree/robot/go2/video/video_client.hpp>
 
 using namespace unitree::common;
 using namespace unitree::robot;
@@ -27,6 +29,7 @@ using namespace unitree::robot::b2;
 #define TOPIC_LOWCMD "rt/lowcmd"
 #define TOPIC_LOWSTATE "rt/lowstate"
 #define TOPIC_LIDAR "rt/utlidar/cloud"
+#define TOPIC_POINTCLOUD "rt/pointcloud"
 
 constexpr double PosStopF = (2.146E+9f);
 constexpr double VelStopF = (16000.0f);
@@ -39,6 +42,9 @@ struct Go2RobotInterfaceArgs {
     TBAI_ARG_DEFAULT(bool, channelInit, true);
     TBAI_ARG_DEFAULT(bool, enableStateEstim, true);
     TBAI_ARG_DEFAULT(bool, subscribeLidar, true);
+    TBAI_ARG_DEFAULT(bool, enableVideo, false);
+    TBAI_ARG_DEFAULT(bool, subscribePointcloud, false);
+    TBAI_ARG_DEFAULT(std::string, pointcloudTopic, "rt/pointcloud");
 };
 
 class Go2RobotInterface : public RobotInterface {
@@ -55,8 +61,12 @@ class Go2RobotInterface : public RobotInterface {
         // Do nothing by default, a user is expected to override this method, but does not have to
     };
 
+    std::vector<uint8_t> getLatestImage();
+    std::vector<float> getLatestPointcloud();
+
    private:
     void lowStateCallback(const void *message);
+    void pointcloudCallback(const void *message);
 
     unitree_go::msg::dds_::LowCmd_ low_cmd{};
 
@@ -66,6 +76,7 @@ class Go2RobotInterface : public RobotInterface {
     /* Subscribers */
     ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> lowstate_subscriber;
     ChannelSubscriberPtr<sensor_msgs::msg::dds_::PointCloud2_> lidar_subscriber;
+    ChannelSubscriberPtr<sensor_msgs::msg::dds_::PointCloud2_> pointcloud_subscriber;
 
     std::unordered_map<std::string, int> motorIdMap_;
     std::unordered_map<std::string, int> footIdMap_;
@@ -76,6 +87,11 @@ class Go2RobotInterface : public RobotInterface {
     scalar_t lastYaw_ = 0.0;
     std::mutex latestStateMutex_;
     State state_;
+
+    std::unique_ptr<unitree::robot::go2::VideoClient> videoClient_;
+
+    std::mutex pointcloudMutex_;
+    std::vector<float> latestPointcloud_;  // Nx3 flattened (x,y,z,x,y,z,...)
 
     std::shared_ptr<spdlog::logger> logger_;
 

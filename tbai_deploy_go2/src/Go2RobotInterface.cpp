@@ -1,5 +1,6 @@
 #include "tbai_deploy_go2/Go2RobotInterface.hpp"
 
+#include <cstring>
 #include <stdint.h>
 
 #include <chrono>
@@ -65,6 +66,18 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
         lidar_subscriber->InitChannel(std::bind(&Go2RobotInterface::lidarCallback, this, std::placeholders::_1), 1);
     }
 
+    // Subscribe pointcloud (depth camera)
+    if (args.subscribePointcloud()) {
+        std::string topic = args.pointcloudTopic();
+        TBAI_LOG_INFO(logger_, "Initializing pointcloud subscriber on topic '{}' (domain {})", topic, args.unitreeChannel());
+        pointcloud_subscriber.reset(new ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>(topic));
+        pointcloud_subscriber->InitChannel(
+            std::bind(&Go2RobotInterface::pointcloudCallback, this, std::placeholders::_1), 1);
+        TBAI_LOG_INFO(logger_, "Pointcloud subscriber initialized");
+    } else {
+        TBAI_LOG_INFO(logger_, "Pointcloud subscriber disabled");
+    }
+
     // Initialize motor 2 id map
     motorIdMap_["RF_HAA"] = 0;
     motorIdMap_["RF_HFE"] = 1;
@@ -97,6 +110,15 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", TOPIC_LOWSTATE);
     lowstate_subscriber.reset(new ChannelSubscriber<unitree_go::msg::dds_::LowState_>(TOPIC_LOWSTATE));
     lowstate_subscriber->InitChannel(std::bind(&Go2RobotInterface::lowStateCallback, this, std::placeholders::_1), 1);
+
+    // Initialize video client
+    if (args.enableVideo()) {
+        TBAI_LOG_INFO(logger_, "Initializing video client");
+        videoClient_ = std::make_unique<unitree::robot::go2::VideoClient>();
+        videoClient_->SetTimeout(1.0f);
+        videoClient_->Init();
+        TBAI_LOG_INFO(logger_, "Video client initialized");
+    }
 
     // Initialize estimator parameters
     rectifyOrientation_ = tbai::fromGlobalConfig<bool>("inekf_estimator/rectify_orientation", true);
@@ -330,6 +352,58 @@ void Go2RobotInterface::waitTillInitialized() {
 State Go2RobotInterface::getLatestState() {
     std::lock_guard<std::mutex> lock(latestStateMutex_);
     return state_;
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+std::vector<uint8_t> Go2RobotInterface::getLatestImage() {
+    if (!videoClient_) {
+        throw std::runtime_error("Video client is not initialized. Set enableVideo=true in Go2RobotInterfaceArgs.");
+    }
+    std::vector<uint8_t> data;
+    videoClient_->GetImageSample(data);
+    return data;
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+void Go2RobotInterface::pointcloudCallback(const void *message) {
+    auto &msg = *(sensor_msgs::msg::dds_::PointCloud2_ *)message;
+
+    uint32_t point_step = msg.point_step();
+    uint32_t num_points = msg.width() * msg.height();
+    const auto &data = msg.data();
+
+    if (num_points == 0 || data.empty() || point_step < 12) return;
+
+    // Find x, y, z field offsets
+    uint32_t x_off = 0, y_off = 4, z_off = 8;
+    for (const auto &field : msg.fields()) {
+        if (field.name() == "x") x_off = field.offset();
+        else if (field.name() == "y") y_off = field.offset();
+        else if (field.name() == "z") z_off = field.offset();
+    }
+
+    std::vector<float> points(num_points * 3);
+    for (uint32_t i = 0; i < num_points; ++i) {
+        const uint8_t *ptr = data.data() + i * point_step;
+        std::memcpy(&points[i * 3 + 0], ptr + x_off, sizeof(float));
+        std::memcpy(&points[i * 3 + 1], ptr + y_off, sizeof(float));
+        std::memcpy(&points[i * 3 + 2], ptr + z_off, sizeof(float));
+    }
+
+    std::lock_guard<std::mutex> lock(pointcloudMutex_);
+    latestPointcloud_.swap(points);
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+std::vector<float> Go2RobotInterface::getLatestPointcloud() {
+    std::lock_guard<std::mutex> lock(pointcloudMutex_);
+    return latestPointcloud_;
 }
 
 }  // namespace tbai

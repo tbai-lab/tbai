@@ -1,6 +1,8 @@
+#include <cstring>
 #include <iostream>
 
 #include <pybind11/eigen.h>
+#include <pybind11/numpy.h>
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -333,6 +335,27 @@ PYBIND11_MODULE(_C, m) {
                 self.subscribeLidar(val);
                 return self;
             },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_enable_video",
+            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
+                self.enableVideo(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_subscribe_pointcloud",
+            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
+                self.subscribePointcloud(val);
+                return self;
+            },
+            py::return_value_policy::reference_internal)
+        .def(
+            "set_pointcloud_topic",
+            [](tbai::Go2RobotInterfaceArgs &self, const std::string &val) -> tbai::Go2RobotInterfaceArgs & {
+                self.pointcloudTopic(val);
+                return self;
+            },
             py::return_value_policy::reference_internal);
 
     py::class_<tbai::RobotInterface, tbai::CommandPublisher, tbai::StateSubscriber,
@@ -345,7 +368,42 @@ PYBIND11_MODULE(_C, m) {
         .def("waitTillInitialized", &tbai::Go2RobotInterface::waitTillInitialized,
              py::call_guard<py::gil_scoped_release>())
         .def("getLatestState", &tbai::Go2RobotInterface::getLatestState,
-             py::call_guard<py::gil_scoped_release>());
+             py::call_guard<py::gil_scoped_release>())
+        .def("getLatestImage", [](tbai::Go2RobotInterface &self) -> py::object {
+            static py::object cv2_imdecode = py::module_::import("cv2").attr("imdecode");
+            static py::object np_frombuffer = py::module_::import("numpy").attr("frombuffer");
+            static py::object np_uint8 = py::module_::import("numpy").attr("uint8");
+
+            std::vector<uint8_t> jpeg_data;
+            {
+                py::gil_scoped_release release;
+                jpeg_data = self.getLatestImage();
+            }
+            if (jpeg_data.empty()) {
+                return py::none();
+            }
+            py::bytes raw(reinterpret_cast<const char *>(jpeg_data.data()), jpeg_data.size());
+            py::object buf = np_frombuffer(raw, np_uint8);
+            py::object img = cv2_imdecode(buf, 1);  // cv2.IMREAD_COLOR = 1
+            if (img.is_none()) {
+                throw std::runtime_error("Failed to decode JPEG image");
+            }
+            return img;
+        })
+        .def("getLatestPointcloud", [](tbai::Go2RobotInterface &self) -> py::object {
+            std::vector<float> data;
+            {
+                py::gil_scoped_release release;
+                data = self.getLatestPointcloud();
+            }
+            if (data.empty()) {
+                return py::none();
+            }
+            size_t num_points = data.size() / 3;
+            py::array_t<float> arr({static_cast<py::ssize_t>(num_points), py::ssize_t(3)});
+            std::memcpy(arr.mutable_data(), data.data(), data.size() * sizeof(float));
+            return arr;
+        });
 #endif
 
     m.attr("HAS_DEPLOY_GO2") =

@@ -26,6 +26,9 @@ class Args:
     channel: int = 1
     no_lidar: bool = False
     log: bool = False
+    video: bool = False
+    pointcloud: bool = False
+    pointcloud_topic: str = "rt/pointcloud"
 
 
 class Go2ChangeControllerSubscriber(ChangeControllerSubscriber):
@@ -150,6 +153,9 @@ def main():
     robot_args.set_unitree_channel(args.channel)
     robot_args.set_channel_init(True)
     robot_args.set_subscribe_lidar(not args.no_lidar)
+    robot_args.set_enable_video(args.video)
+    robot_args.set_subscribe_pointcloud(args.pointcloud)
+    robot_args.set_pointcloud_topic(args.pointcloud_topic)
 
     print(f"Connecting to Go2 on {args.net} (channel {args.channel})...")
     robot = tbai_python.Go2RobotInterface(robot_args)
@@ -167,6 +173,9 @@ def main():
         sit_callback=controller_sub.sit_callback,
         np3o_callback=controller_sub.np3o_callback,
         bob_callback=controller_sub.bob_callback,
+        robot=robot if (args.video or args.pointcloud) else None,
+        show_video=args.video,
+        show_pointcloud=args.pointcloud,
     )
     ref_vel_gen = Go2ReferenceVelocityGenerator(ui_controller)
 
