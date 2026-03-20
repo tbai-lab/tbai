@@ -299,6 +299,10 @@ PYBIND11_MODULE(_C, m) {
         .def("getBaseVelocity", &tbai::muse::MuseEstimator::getBaseVelocity);
 
 #ifdef TBAI_HAS_DEPLOY_GO2
+    py::object cv2_imdecode = py::module_::import("cv2").attr("imdecode");
+    py::object np_frombuffer = py::module_::import("numpy").attr("frombuffer");
+    py::object np_uint8 = py::module_::import("numpy").attr("uint8");
+
     py::class_<tbai::Go2RobotInterfaceArgs>(m, "Go2RobotInterfaceArgs")
         .def(py::init<>())
         .def(
@@ -369,11 +373,7 @@ PYBIND11_MODULE(_C, m) {
              py::call_guard<py::gil_scoped_release>())
         .def("getLatestState", &tbai::Go2RobotInterface::getLatestState,
              py::call_guard<py::gil_scoped_release>())
-        .def("getLatestImage", [](tbai::Go2RobotInterface &self) -> py::object {
-            static py::object cv2_imdecode = py::module_::import("cv2").attr("imdecode");
-            static py::object np_frombuffer = py::module_::import("numpy").attr("frombuffer");
-            static py::object np_uint8 = py::module_::import("numpy").attr("uint8");
-
+        .def("getLatestImage", [cv2_imdecode, np_frombuffer, np_uint8](tbai::Go2RobotInterface &self) -> py::object {
             std::vector<uint8_t> jpeg_data;
             {
                 py::gil_scoped_release release;
