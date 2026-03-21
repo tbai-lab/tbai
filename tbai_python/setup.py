@@ -78,6 +78,7 @@ setup(
     ext_modules=[CMakeExtension("tbai._C", sourcedir="..")],
     cmdclass={"build_ext": CMakeBuild},
     python_requires=">=3.10",
+    install_requires=["numpy", "opencv-python"],
     setup_requires=["pybind11-stubgen"],
     zip_safe=False,
 )
