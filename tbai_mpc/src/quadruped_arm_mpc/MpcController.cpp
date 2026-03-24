@@ -46,25 +46,28 @@ MpcController::~MpcController() {
 void MpcController::initialize(const std::string &urdfString, const std::string &taskSettingsFile,
                                const std::string &frameDeclarationFile, const std::string &controllerConfigFile,
                                const std::string &targetCommandFile, scalar_t trajdt, size_t trajKnots) {
+    // Load frame declaration once for use in both interface and WBC
+    const auto frameDeclaration = frameDeclarationFromFile(frameDeclarationFile);
+
     // Create quadruped interface
     if (robotName_ == "anymal_d" || robotName_ == "anymal_b" || robotName_ == "anymal_c") {
         quadrupedInterfacePtr_ = getAnymalInterface(urdfString, loadQuadrupedSettings(taskSettingsFile),
-                                                    frameDeclarationFromFile(frameDeclarationFile));
+                                                    frameDeclaration);
     } else if (robotName_ == "go2") {
         quadrupedInterfacePtr_ = getGo2Interface(urdfString, loadQuadrupedSettings(taskSettingsFile),
-                                                 frameDeclarationFromFile(frameDeclarationFile));
+                                                 frameDeclaration);
     } else if (robotName_ == "spot" || robotName_ == "spot_arm") {
         quadrupedInterfacePtr_ = getSpotInterface(urdfString, loadQuadrupedSettings(taskSettingsFile),
-                                                  frameDeclarationFromFile(frameDeclarationFile));
+                                                  frameDeclaration);
     } else {
         TBAI_THROW("Robot {} not implemented. Available robots: anymal_d, anymal_b, anymal_c, go2, spot, spot_arm",
                    robotName_);
     }
 
-    // Create WBC (arm version - jointNames are stored internally in WbcBase)
+    // Create WBC using the same frame declaration as MPC to ensure consistent EE frame and joint names
     wbcPtr_ =
         tbai::mpc::quadruped_arm::getWbcUnique(controllerConfigFile, urdfString, quadrupedInterfacePtr_->getComModel(),
-                                               quadrupedInterfacePtr_->getKinematicModel());
+                                               quadrupedInterfacePtr_->getKinematicModel(), frameDeclaration);
 
     // Create reference trajectory generator
     auto kinematicsPtr =

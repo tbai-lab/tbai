@@ -6,6 +6,7 @@
 #include <pinocchio/fwd.hpp>
 #include <tbai_mpc/quadruped_arm_mpc/core/MotionPhaseDefinition.h>
 #include <tbai_mpc/quadruped_arm_mpc/core/Rotations.h>
+#include <tbai_mpc/quadruped_arm_mpc/quadruped_models/FrameDeclaration.h>
 #include <tbai_mpc/quadruped_arm_mpc/quadruped_models/QuadrupedCom.h>
 
 // pinocchio
@@ -23,7 +24,7 @@ namespace quadruped_arm {
 WbcBase::WbcBase(const std::string &configFile, const std::string &urdfString,
                  const tbai::mpc::quadruped_arm::ComModelBase<scalar_t> &comModel,
                  const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics,
-                 const std::string &configPrefix)
+                 const tbai::mpc::quadruped_arm::FrameDeclaration &frameDeclaration, const std::string &configPrefix)
     : pinocchioInterfaceMeasured_(
           tbai::mpc::quadruped_arm::createQuadrupedPinocchioInterfaceFromUrdfString(urdfString)),
       comModelPtr_(comModel.clone()),
@@ -37,16 +38,16 @@ WbcBase::WbcBase(const std::string &configFile, const std::string &urdfString,
     qMeasured_ = vector_t(nGeneralizedCoordinates_ + 1);  // quaternion (+1 for quat vs euler)
     vMeasured_ = vector_t(nGeneralizedCoordinates_);
 
-    footNames_ = {"LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"};
+    // Foot names from frame declaration
+    for (const auto &leg : frameDeclaration.legs) {
+        footNames_.push_back(leg.tip);
+    }
 
-    // Arm joint names (Spot arm)
-    armJointNames_ = {"arm_sh0", "arm_sh1", "arm_el0", "arm_el1", "arm_wr0", "arm_wr1"};
+    // Arm joint names from frame declaration
+    armJointNames_ = frameDeclaration.arm.joints;
 
-    // All joint names (legs + arm)
-    jointNames_ = {"front_left_hip_x", "front_left_hip_y", "front_left_knee", "front_right_hip_x", "front_right_hip_y",
-                   "front_right_knee", "rear_left_hip_x",  "rear_left_hip_y", "rear_left_knee",    "rear_right_hip_x",
-                   "rear_right_hip_y", "rear_right_knee",  "arm_sh0",         "arm_sh1",           "arm_el0",
-                   "arm_el1",          "arm_wr0",          "arm_wr1"};
+    // All joint names (legs + arm) from frame declaration
+    jointNames_ = getJointNames(frameDeclaration);
 
     Jcontact_ = matrix_t(3 * tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS, nGeneralizedCoordinates_);
     dJcontactdt_ = matrix_t(3 * tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS, nGeneralizedCoordinates_);
@@ -55,9 +56,9 @@ WbcBase::WbcBase(const std::string &configFile, const std::string &urdfString,
     Jarm_ = matrix_t(6, nGeneralizedCoordinates_);
     dJarmdt_ = matrix_t(6, nGeneralizedCoordinates_);
 
-    // Get arm end-effector frame ID
+    // Get arm end-effector frame ID from frame declaration (same as MPC)
     const auto &model = pinocchioInterfaceMeasured_.getModel();
-    armEEFrameId_ = model.getBodyId("arm_ee");
+    armEEFrameId_ = model.getBodyId(frameDeclaration.arm.tip);
 
     loadSettings(configFile, configPrefix);
 }
