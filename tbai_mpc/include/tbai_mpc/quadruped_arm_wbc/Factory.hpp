@@ -13,11 +13,13 @@ namespace quadruped_arm {
 
 std::unique_ptr<WbcBase> getWbcUnique(const std::string &controllerConfigFile, const std::string &urdfString,
                                       const tbai::mpc::quadruped_arm::ComModelBase<scalar_t> &comModel,
-                                      const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics);
+                                      const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics,
+                                      const tbai::mpc::quadruped_arm::FrameDeclaration &frameDeclaration);
 
 std::shared_ptr<WbcBase> getWbcShared(const std::string &controllerConfigFile, const std::string &urdfString,
                                       const tbai::mpc::quadruped_arm::ComModelBase<scalar_t> &comModel,
-                                      const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics);
+                                      const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics,
+                                      const tbai::mpc::quadruped_arm::FrameDeclaration &frameDeclaration);
 
 }  // namespace quadruped_arm
 }  // namespace mpc

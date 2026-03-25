@@ -6,6 +6,7 @@
 #include <ocs2_core/Types.h>
 #include <tbai_core/control/Controllers.hpp>
 #include <tbai_mpc/quadruped_arm_mpc/core/SwitchedModel.h>
+#include <tbai_mpc/quadruped_arm_mpc/quadruped_models/FrameDeclaration.h>
 #include <tbai_mpc/quadruped_arm_mpc/quadruped_models/QuadrupedCom.h>
 #include <tbai_mpc/quadruped_arm_mpc/quadruped_models/QuadrupedKinematics.h>
 #include <tbai_mpc/quadruped_arm_wbc/WbcBase.hpp>
@@ -19,8 +20,9 @@ class HqpWbc : public WbcBase {
    public:
     HqpWbc(const std::string &configFile, const std::string &urdfString,
            const tbai::mpc::quadruped_arm::ComModelBase<scalar_t> &comModel,
-           const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics)
-        : WbcBase(configFile, urdfString, comModel, kinematics, "hqpWbc.") {
+           const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics,
+           const tbai::mpc::quadruped_arm::FrameDeclaration &frameDeclaration)
+        : WbcBase(configFile, urdfString, comModel, kinematics, frameDeclaration, "hqpWbc.") {
         loadSettings(configFile);
     }
 

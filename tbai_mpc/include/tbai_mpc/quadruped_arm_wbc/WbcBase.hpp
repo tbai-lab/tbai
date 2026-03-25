@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <tbai_core/control/Controllers.hpp>
+#include <tbai_mpc/quadruped_arm_mpc/quadruped_models/FrameDeclaration.h>
 #include <tbai_mpc/quadruped_arm_mpc/quadruped_models/QuadrupedCom.h>
 #include <tbai_mpc/quadruped_arm_mpc/quadruped_models/QuadrupedKinematics.h>
 #include <tbai_mpc/wbc/Task.hpp>
@@ -30,7 +31,8 @@ class WbcBase {
    public:
     WbcBase(const std::string &configFile, const std::string &urdfString,
             const tbai::mpc::quadruped_arm::ComModelBase<scalar_t> &comModel,
-            const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics, const std::string &configPrefix);
+            const tbai::mpc::quadruped_arm::KinematicsModelBase<scalar_t> &kinematics,
+            const tbai::mpc::quadruped_arm::FrameDeclaration &frameDeclaration, const std::string &configPrefix);
 
     virtual ~WbcBase() = default;
 
