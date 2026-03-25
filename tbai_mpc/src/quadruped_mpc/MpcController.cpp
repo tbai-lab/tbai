@@ -47,21 +47,12 @@ void MpcController::initialize(const std::string &urdfString, const std::string 
                                const std::string &frameDeclarationFile, const std::string &controllerConfigFile,
                                const std::string &targetCommandFile, scalar_t trajdt, size_t trajKnots) {
     // Create quadruped interface
-    if (robotName_ == "anymal_d" || robotName_ == "anymal_b" || robotName_ == "anymal_c") {
-        quadrupedInterfacePtr_ = tbai::mpc::quadruped::getAnymalInterface(
-            urdfString, tbai::mpc::quadruped::loadQuadrupedSettings(taskSettingsFile),
-            tbai::mpc::quadruped::frameDeclarationFromFile(frameDeclarationFile));
-    } else if (robotName_ == "go2") {
-        quadrupedInterfacePtr_ = tbai::mpc::quadruped::getGo2Interface(
-            urdfString, tbai::mpc::quadruped::loadQuadrupedSettings(taskSettingsFile),
-            tbai::mpc::quadruped::frameDeclarationFromFile(frameDeclarationFile));
-    } else if (robotName_ == "spot" || robotName_ == "spot_arm") {
+    if (robotName_ == "spot_arm") {
         quadrupedInterfacePtr_ = tbai::mpc::quadruped::getSpotInterface(
             urdfString, tbai::mpc::quadruped::loadQuadrupedSettings(taskSettingsFile),
             tbai::mpc::quadruped::frameDeclarationFromFile(frameDeclarationFile));
     } else {
-        TBAI_THROW("Robot {} not implemented. Available robots: anymal_d, anymal_b, anymal_c, go2, spot, spot_arm",
-                   robotName_);
+        TBAI_THROW("Robot {} not implemented. Available robots: spot_arm", robotName_);
     }
 
     // Create WBC
