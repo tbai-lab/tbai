@@ -13,6 +13,9 @@ option(TBAI_BUILD_PYTHON "Build the Python bindings" OFF)
 option(TBAI_BUILD_DEPLOY_GO2 "Build the deploy go2" ON)
 option(TBAI_BUILD_DEPLOY_GO2W "Build the deploy go2w (wheeled)" ON)
 option(TBAI_BUILD_DEPLOY_G1 "Build the deploy g1" ON)
+option(TBAI_BUILD_DEPLOY_FRANKA "Build the deploy franka" ON)
+option(TBAI_BUILD_DEPLOY_SPOT "Build the deploy spot" ON)
+option(TBAI_BUILD_DEPLOY_ANYMAL_D "Build the deploy anymal_d" ON)
 option(TBAI_BUILD_OCS2 "Build the ocs2" ON)
 option(TBAI_BUILD_MPC "Build the mpc" ON)
 option(TBAI_BUILD_DTC "Build the dtc" ON)
@@ -53,15 +56,7 @@ if(TBAI_BUILD_NP3O)
   add_subdirectory(tbai_np3o)
 endif()
 
-set(GET_USE_UNITREE_SDK2
-    ${TBAI_BUILD_DEPLOY_GO2}
-    OR ${TBAI_BUILD_DEPLOY_GO2W}
-    OR ${TBAI_BUILD_DEPLOY_G1}
-)
-
-if(GET_USE_UNITREE_SDK2)
-  include(cmake/unitree_sdk2.cmake)
-endif()
+## unitree_sdk2 no longer needed - all robots use tbai_sdk/zenoh
 
 if(TBAI_BUILD_DEPLOY_GO2)
   add_subdirectory(tbai_deploy_go2)
@@ -77,6 +72,18 @@ endif()
 
 if(TBAI_BUILD_DEPLOY_G1)
   add_subdirectory(tbai_deploy_g1)
+endif()
+
+if(TBAI_BUILD_DEPLOY_FRANKA)
+  add_subdirectory(tbai_deploy_franka)
+endif()
+
+if(TBAI_BUILD_DEPLOY_SPOT)
+  add_subdirectory(tbai_deploy_spot)
+endif()
+
+if(TBAI_BUILD_DEPLOY_ANYMAL_D)
+  add_subdirectory(tbai_deploy_anymal_d)
 endif()
 
 if(TBAI_BUILD_OCS2)
