@@ -3,36 +3,19 @@
 #include <stdint.h>
 
 #include <cmath>
+#include <mutex>
+#include <atomic>
 
-#include "unitree/idl/go2/WirelessController_.hpp"
-#include <tbai_deploy_go2/Gamepad.hpp>
-
-// #include <go2_idl/WirelessController_.hpp>
-#include "unitree/common/thread/thread.hpp"
-#include "unitree/idl/go2/WirelessController_.hpp"
-#include "unitree/robot/channel/channel_subscriber.hpp"
 #include <tbai_core/Logging.hpp>
-
-using namespace unitree;
-using namespace unitree::common;
 
 namespace tbai {
 namespace go2 {
-
-#define TOPIC_JOYSTICK "rt/wirelesscontroller"
-
-using namespace unitree::common;
-using namespace unitree::robot;
 
 class Go2JoystickInterface {
    public:
     Go2JoystickInterface();
     virtual ~Go2JoystickInterface() = default;
 
-    void InitDdsModel(const std::string &networkInterface = "enp3s0");
-    void SetGamepadDeadZone(float deadzone) { gamepad.dead_zone = deadzone; }
-    void setGamepadSmooth(float smooth) { gamepad.smooth = smooth; }
-    void MessageHandler(const void *message);
     virtual void onPressA() { TBAI_LOG_WARN(logger_, "A pressed"); }
     virtual void onPressB() { TBAI_LOG_WARN(logger_, "B pressed"); }
     virtual void onPressX() { TBAI_LOG_WARN(logger_, "X pressed"); }
@@ -56,20 +39,13 @@ class Go2JoystickInterface {
     virtual void onReleaseRight() { TBAI_LOG_WARN(logger_, "Right released"); }
     virtual void onReleaseDown() { TBAI_LOG_WARN(logger_, "Down released"); }
     virtual void onReleaseLeft() { TBAI_LOG_WARN(logger_, "Left released"); }
-    void Step();
-    void Start();
+    virtual void Start() {}
 
    protected:
-    ChannelSubscriberPtr<unitree_go::msg::dds_::WirelessController_> joystick_subscriber;
-    unitree_go::msg::dds_::WirelessController_ joystick_msg;
-
-    Gamepad gamepad;
-
-    ThreadPtr control_thread_ptr;
-
-    std::mutex joystick_mutex;
-
-    int press_count = 0;
+    float lx = 0.0f;
+    float rx = 0.0f;
+    float ry = 0.0f;
+    float ly = 0.0f;
 
     std::shared_ptr<spdlog::logger> logger_;
 };

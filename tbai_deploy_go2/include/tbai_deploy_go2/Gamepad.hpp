@@ -4,7 +4,7 @@
 
 #include <cmath>
 
-#include "unitree/idl/go2/WirelessController_.hpp"
+#include <tbai_sdk/messages/robot_msgs.hpp>
 
 namespace unitree::common {
 // union for keys
@@ -51,15 +51,15 @@ class Gamepad {
    public:
     Gamepad() {}
 
-    void Update(unitree_go::msg::dds_::WirelessController_ &key_msg) {
+    void Update(const robot_msgs::WirelessController &key_msg) {
         // update stick values with smooth and deadzone
-        lx = lx * (1 - smooth) + (std::fabs(key_msg.lx()) < dead_zone ? 0.0 : key_msg.lx()) * smooth;
-        rx = rx * (1 - smooth) + (std::fabs(key_msg.rx()) < dead_zone ? 0.0 : key_msg.rx()) * smooth;
-        ry = ry * (1 - smooth) + (std::fabs(key_msg.ry()) < dead_zone ? 0.0 : key_msg.ry()) * smooth;
-        ly = ly * (1 - smooth) + (std::fabs(key_msg.ly()) < dead_zone ? 0.0 : key_msg.ly()) * smooth;
+        lx = lx * (1 - smooth) + (std::fabs(key_msg.lx) < dead_zone ? 0.0f : key_msg.lx) * smooth;
+        rx = rx * (1 - smooth) + (std::fabs(key_msg.rx) < dead_zone ? 0.0f : key_msg.rx) * smooth;
+        ry = ry * (1 - smooth) + (std::fabs(key_msg.ry) < dead_zone ? 0.0f : key_msg.ry) * smooth;
+        ly = ly * (1 - smooth) + (std::fabs(key_msg.ly) < dead_zone ? 0.0f : key_msg.ly) * smooth;
 
         // update button states
-        key.value = key_msg.keys();
+        key.value = key_msg.keys;
 
         R1.update(key.components.R1);
         L1.update(key.components.L1);

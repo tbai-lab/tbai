@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(tbai_deploy_go2)
 
+# ── tbai_sdk (header-only, zenoh-based) ──────────────────────────────────
+set(TBAI_SDK_DIR "/home/kb/projects/tbai_sdk" CACHE PATH "Path to tbai_sdk")
+set(ZENOH_INSTALL "${TBAI_SDK_DIR}/deps/zenoh-install" CACHE PATH "Zenoh install prefix")
+
 add_library(tbai_deploy_go2
     src/Go2RobotInterface.cpp
     src/Go2JoystickInterface.cpp
@@ -15,27 +19,27 @@ target_include_directories(tbai_deploy_go2
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+        ${TBAI_SDK_DIR}/include
+        ${ZENOH_INSTALL}/include
 )
+
+target_compile_definitions(tbai_deploy_go2 PUBLIC ZENOHCXX_ZENOHC)
+
+target_link_directories(tbai_deploy_go2 PUBLIC ${ZENOH_INSTALL}/lib)
 
 target_link_libraries(tbai_deploy_go2
     PUBLIC
         tbai_core
         tbai_estim
-        unitree_sdk2
+        zenohc
+        pthread
 )
 
 
 add_executable(test_stand_sit_tbai src/test_stand_sit_tbai.cpp)
 target_link_libraries(test_stand_sit_tbai
     PUBLIC
-    unitree_sdk2
     tbai_deploy_go2
-)
-
-add_executable(test_stand_sit_unitree src/test_stand_sit_unitree.cpp)
-target_link_libraries(test_stand_sit_unitree
-    PUBLIC
-    unitree_sdk2
 )
 
 add_executable(test_lidar src/test_lidar.cpp)

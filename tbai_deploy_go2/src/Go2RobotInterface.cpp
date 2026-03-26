@@ -11,34 +11,6 @@
 #include <tbai_core/config/Config.hpp>
 #include <tbai_core/control/Rate.hpp>
 
-/*********************************************************************************************************************/
-/*********************************************************************************************************************/
-/*********************************************************************************************************************/
-static uint32_t crc32_core(uint32_t *ptr, uint32_t len) {
-    unsigned int xbit = 0;
-    unsigned int data = 0;
-    unsigned int CRC32 = 0xFFFFFFFF;
-    const unsigned int dwPolynomial = 0x04c11db7;
-
-    for (unsigned int i = 0; i < len; i++) {
-        xbit = 1 << 31;
-        data = ptr[i];
-        for (unsigned int bits = 0; bits < 32; bits++) {
-            if (CRC32 & 0x80000000) {
-                CRC32 <<= 1;
-                CRC32 ^= dwPolynomial;
-            } else {
-                CRC32 <<= 1;
-            }
-
-            if (data & xbit) CRC32 ^= dwPolynomial;
-            xbit >>= 1;
-        }
-    }
-
-    return CRC32;
-}
-
 namespace tbai {
 
 /*********************************************************************************************************************/
@@ -47,32 +19,24 @@ namespace tbai {
 Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     logger_ = tbai::getLogger("tbai_deploy_go2");
     TBAI_LOG_INFO(logger_, "Go2RobotInterface constructor");
-    TBAI_LOG_INFO(logger_, "Network interface: {}", args.networkInterface());
-    TBAI_LOG_INFO(logger_, "Initializing Go2RobotInterface");
-    TBAI_LOG_INFO(logger_, "Unitree channel: {}", args.unitreeChannel());
-    TBAI_LOG_INFO(logger_, "Channel init: {}", args.channelInit());
+    TBAI_LOG_INFO(logger_, "Initializing Go2RobotInterface (tbai_sdk/zenoh backend)");
     TBAI_LOG_INFO(logger_, "Subscribe lidar: {}", args.subscribeLidar());
-    if (args.channelInit()) {
-        TBAI_LOG_INFO(logger_, "Initializing channel factory: {}", args.networkInterface());
-        unitree::robot::ChannelFactory::Instance()->Init(args.unitreeChannel(), args.networkInterface());
-    } else {
-        throw std::runtime_error("Channel init is disabled");
-    }
 
     // Subscribe lidar
     if (args.subscribeLidar()) {
         TBAI_LOG_INFO(logger_, "Initializing lidar subscriber: {}", TOPIC_LIDAR);
-        lidar_subscriber.reset(new ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>(TOPIC_LIDAR));
-        lidar_subscriber->InitChannel(std::bind(&Go2RobotInterface::lidarCallback, this, std::placeholders::_1), 1);
+        lidar_subscriber = std::make_unique<tbai::Subscriber<robot_msgs::PointCloud2>>(
+            TOPIC_LIDAR,
+            [this](const robot_msgs::PointCloud2 &msg) { lidarCallback(msg); });
     }
 
     // Subscribe pointcloud (depth camera)
     if (args.subscribePointcloud()) {
         std::string topic = args.pointcloudTopic();
-        TBAI_LOG_INFO(logger_, "Initializing pointcloud subscriber on topic '{}' (domain {})", topic, args.unitreeChannel());
-        pointcloud_subscriber.reset(new ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>(topic));
-        pointcloud_subscriber->InitChannel(
-            std::bind(&Go2RobotInterface::pointcloudCallback, this, std::placeholders::_1), 1);
+        TBAI_LOG_INFO(logger_, "Initializing pointcloud subscriber on topic '{}'", topic);
+        pointcloud_subscriber = std::make_unique<tbai::Subscriber<robot_msgs::PointCloud2>>(
+            topic,
+            [this](const robot_msgs::PointCloud2 &msg) { pointcloudCallback(msg); });
         TBAI_LOG_INFO(logger_, "Pointcloud subscriber initialized");
     } else {
         TBAI_LOG_INFO(logger_, "Pointcloud subscriber disabled");
@@ -98,8 +62,7 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     footIdMap_["LH_FOOT"] = 3;
 
     TBAI_LOG_INFO(logger_, "Initializing publisher: Topic: {}", TOPIC_LOWCMD);
-    lowcmd_publisher.reset(new ChannelPublisher<unitree_go::msg::dds_::LowCmd_>(TOPIC_LOWCMD));
-    lowcmd_publisher->InitChannel();
+    lowcmd_publisher = std::make_unique<tbai::Publisher<robot_msgs::MotorCommands>>(TOPIC_LOWCMD);
 
     // Initialize estimator
     std::vector<std::string> footNames = {"LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"};
@@ -108,16 +71,13 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     TBAI_LOG_INFO(logger_, "Estimator initialized");
 
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", TOPIC_LOWSTATE);
-    lowstate_subscriber.reset(new ChannelSubscriber<unitree_go::msg::dds_::LowState_>(TOPIC_LOWSTATE));
-    lowstate_subscriber->InitChannel(std::bind(&Go2RobotInterface::lowStateCallback, this, std::placeholders::_1), 1);
+    lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
+        TOPIC_LOWSTATE,
+        [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); },
+        1);
 
-    // Initialize video client
     if (args.enableVideo()) {
-        TBAI_LOG_INFO(logger_, "Initializing video client");
-        videoClient_ = std::make_unique<unitree::robot::go2::VideoClient>();
-        videoClient_->SetTimeout(1.0f);
-        videoClient_->Init();
-        TBAI_LOG_INFO(logger_, "Video client initialized");
+        TBAI_LOG_WARN(logger_, "Video client not supported with tbai_sdk backend");
     }
 
     // Initialize estimator parameters
@@ -125,6 +85,11 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     removeGyroscopeBias_ = tbai::fromGlobalConfig<bool>("inekf_estimator/remove_gyroscope_bias", true);
     TBAI_LOG_INFO(logger_, "Rectify orientation: {}", rectifyOrientation_);
     TBAI_LOG_INFO(logger_, "Remove gyroscope bias: {}", removeGyroscopeBias_);
+
+    useGroundTruthState_ = args.useGroundTruthState();
+    if (useGroundTruthState_) {
+        TBAI_LOG_INFO(logger_, "Using ground-truth position/velocity from LowState (when available)");
+    }
 }
 
 /*********************************************************************************************************************/
@@ -132,24 +97,24 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
 /*********************************************************************************************************************/
 Go2RobotInterface::~Go2RobotInterface() {
     TBAI_LOG_INFO(logger_, "Destroying Go2RobotInterface");
+    if (lowstate_subscriber) lowstate_subscriber->stop();
+    if (lidar_subscriber) lidar_subscriber->stop();
+    if (pointcloud_subscriber) pointcloud_subscriber->stop();
 }
 
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
-void Go2RobotInterface::lowStateCallback(const void *message) {
+void Go2RobotInterface::lowStateCallback(const robot_msgs::LowState &low_state) {
     auto t11 = std::chrono::high_resolution_clock::now();
     scalar_t currentTime = tbai::SystemTime<std::chrono::high_resolution_clock>::rightNow();
-
-    // Create a copy of the low level state
-    unitree_go::msg::dds_::LowState_ &low_state = *(unitree_go::msg::dds_::LowState_ *)message;
 
     // Calculate callback rate
     static auto last_time2 = currentTime;
     static int count = 0;
     count++;
 
-    constexpr int N = 1000;  // Print every 100th callback to avoid spam
+    constexpr int N = 1000;  // Print every 1000th callback to avoid spam
     if (count % N == 0) {
         scalar_t time_diff = currentTime - last_time2;
         double rate = N / time_diff;
@@ -163,71 +128,70 @@ void Go2RobotInterface::lowStateCallback(const void *message) {
 
     // Map joints in order: LF_HAA, LF_HFE, LF_KFE, LH_HAA, LH_HFE, LH_KFE, RF_HAA, RF_HFE, RF_KFE, RH_HAA, RH_HFE,
     // RH_KFE
-    jointAngles[0] = low_state.motor_state()[motorIdMap_["LF_HAA"]].q();  // LF_HAA
-    jointAngles[1] = low_state.motor_state()[motorIdMap_["LF_HFE"]].q();  // LF_HFE
-    jointAngles[2] = low_state.motor_state()[motorIdMap_["LF_KFE"]].q();  // LF_KFE
+    jointAngles[0] = low_state.motor_states[motorIdMap_["LF_HAA"]].q;  // LF_HAA
+    jointAngles[1] = low_state.motor_states[motorIdMap_["LF_HFE"]].q;  // LF_HFE
+    jointAngles[2] = low_state.motor_states[motorIdMap_["LF_KFE"]].q;  // LF_KFE
 
     // Left Hind leg
-    jointAngles[3] = low_state.motor_state()[motorIdMap_["LH_HAA"]].q();  // LH_HAA
-    jointAngles[4] = low_state.motor_state()[motorIdMap_["LH_HFE"]].q();  // LH_HFE
-    jointAngles[5] = low_state.motor_state()[motorIdMap_["LH_KFE"]].q();  // LH_KFE
+    jointAngles[3] = low_state.motor_states[motorIdMap_["LH_HAA"]].q;  // LH_HAA
+    jointAngles[4] = low_state.motor_states[motorIdMap_["LH_HFE"]].q;  // LH_HFE
+    jointAngles[5] = low_state.motor_states[motorIdMap_["LH_KFE"]].q;  // LH_KFE
 
     // Right Front leg
-    jointAngles[6] = low_state.motor_state()[motorIdMap_["RF_HAA"]].q();  // RF_HAA
-    jointAngles[7] = low_state.motor_state()[motorIdMap_["RF_HFE"]].q();  // RF_HFE
-    jointAngles[8] = low_state.motor_state()[motorIdMap_["RF_KFE"]].q();  // RF_KFE
+    jointAngles[6] = low_state.motor_states[motorIdMap_["RF_HAA"]].q;  // RF_HAA
+    jointAngles[7] = low_state.motor_states[motorIdMap_["RF_HFE"]].q;  // RF_HFE
+    jointAngles[8] = low_state.motor_states[motorIdMap_["RF_KFE"]].q;  // RF_KFE
 
     // Right Hind leg
-    jointAngles[9] = low_state.motor_state()[motorIdMap_["RH_HAA"]].q();   // RH_HAA
-    jointAngles[10] = low_state.motor_state()[motorIdMap_["RH_HFE"]].q();  // RH_HFE
-    jointAngles[11] = low_state.motor_state()[motorIdMap_["RH_KFE"]].q();  // RH_KFE
+    jointAngles[9] = low_state.motor_states[motorIdMap_["RH_HAA"]].q;   // RH_HAA
+    jointAngles[10] = low_state.motor_states[motorIdMap_["RH_HFE"]].q;  // RH_HFE
+    jointAngles[11] = low_state.motor_states[motorIdMap_["RH_KFE"]].q;  // RH_KFE
 
     // Extract joint velocities in the same order
-    jointVelocities[0] = low_state.motor_state()[motorIdMap_["LF_HAA"]].dq();  // LF_HAA
-    jointVelocities[1] = low_state.motor_state()[motorIdMap_["LF_HFE"]].dq();  // LF_HFE
-    jointVelocities[2] = low_state.motor_state()[motorIdMap_["LF_KFE"]].dq();  // LF_KFE
+    jointVelocities[0] = low_state.motor_states[motorIdMap_["LF_HAA"]].dq;  // LF_HAA
+    jointVelocities[1] = low_state.motor_states[motorIdMap_["LF_HFE"]].dq;  // LF_HFE
+    jointVelocities[2] = low_state.motor_states[motorIdMap_["LF_KFE"]].dq;  // LF_KFE
 
-    jointVelocities[3] = low_state.motor_state()[motorIdMap_["LH_HAA"]].dq();  // LH_HAA
-    jointVelocities[4] = low_state.motor_state()[motorIdMap_["LH_HFE"]].dq();  // LH_HFE
-    jointVelocities[5] = low_state.motor_state()[motorIdMap_["LH_KFE"]].dq();  // LH_KFE
+    jointVelocities[3] = low_state.motor_states[motorIdMap_["LH_HAA"]].dq;  // LH_HAA
+    jointVelocities[4] = low_state.motor_states[motorIdMap_["LH_HFE"]].dq;  // LH_HFE
+    jointVelocities[5] = low_state.motor_states[motorIdMap_["LH_KFE"]].dq;  // LH_KFE
 
-    jointVelocities[6] = low_state.motor_state()[motorIdMap_["RF_HAA"]].dq();  // RF_HAA
-    jointVelocities[7] = low_state.motor_state()[motorIdMap_["RF_HFE"]].dq();  // RF_HFE
-    jointVelocities[8] = low_state.motor_state()[motorIdMap_["RF_KFE"]].dq();  // RF_KFE
+    jointVelocities[6] = low_state.motor_states[motorIdMap_["RF_HAA"]].dq;  // RF_HAA
+    jointVelocities[7] = low_state.motor_states[motorIdMap_["RF_HFE"]].dq;  // RF_HFE
+    jointVelocities[8] = low_state.motor_states[motorIdMap_["RF_KFE"]].dq;  // RF_KFE
 
-    jointVelocities[9] = low_state.motor_state()[motorIdMap_["RH_HAA"]].dq();   // RH_HAA
-    jointVelocities[10] = low_state.motor_state()[motorIdMap_["RH_HFE"]].dq();  // RH_HFE
-    jointVelocities[11] = low_state.motor_state()[motorIdMap_["RH_KFE"]].dq();  // RH_KFE
+    jointVelocities[9] = low_state.motor_states[motorIdMap_["RH_HAA"]].dq;   // RH_HAA
+    jointVelocities[10] = low_state.motor_states[motorIdMap_["RH_HFE"]].dq;  // RH_HFE
+    jointVelocities[11] = low_state.motor_states[motorIdMap_["RH_KFE"]].dq;  // RH_KFE
 
     // Extract IMU data
     vector4_t baseOrientation;
-    baseOrientation[0] = low_state.imu_state().quaternion()[1];  // x
-    baseOrientation[1] = low_state.imu_state().quaternion()[2];  // y
-    baseOrientation[2] = low_state.imu_state().quaternion()[3];  // z
-    baseOrientation[3] = low_state.imu_state().quaternion()[0];  // w
+    baseOrientation[0] = low_state.imu_state.quaternion[1];  // x
+    baseOrientation[1] = low_state.imu_state.quaternion[2];  // y
+    baseOrientation[2] = low_state.imu_state.quaternion[3];  // z
+    baseOrientation[3] = low_state.imu_state.quaternion[0];  // w
 
     vector3_t baseAcc;
-    baseAcc[0] = low_state.imu_state().accelerometer()[0];
-    baseAcc[1] = low_state.imu_state().accelerometer()[1];
-    baseAcc[2] = low_state.imu_state().accelerometer()[2];
+    baseAcc[0] = low_state.imu_state.accelerometer[0];
+    baseAcc[1] = low_state.imu_state.accelerometer[1];
+    baseAcc[2] = low_state.imu_state.accelerometer[2];
 
     vector3_t baseAngVel;
-    baseAngVel[0] = low_state.imu_state().gyroscope()[0];
-    baseAngVel[1] = low_state.imu_state().gyroscope()[1];
-    baseAngVel[2] = low_state.imu_state().gyroscope()[2];
+    baseAngVel[0] = low_state.imu_state.gyroscope[0];
+    baseAngVel[1] = low_state.imu_state.gyroscope[1];
+    baseAngVel[2] = low_state.imu_state.gyroscope[2];
 
-    // Contact states (assuming all feet are in contact for now)
+    // Contact states
     // Determine contact states based on ground reaction forces
     std::vector<bool> contactFlags(4, false);
     const double contact_threshold = 19.0;  // N, threshold for contact detection
 
     // Extract ground reaction forces from foot sensors
-    // Assuming the order is: LF, LH, RF, RH
     std::vector<double> grf = {
-        static_cast<double>(low_state.foot_force()[footIdMap_["LF_FOOT"]]),  // LF
-        static_cast<double>(low_state.foot_force()[footIdMap_["RF_FOOT"]]),  // RF
-        static_cast<double>(low_state.foot_force()[footIdMap_["LH_FOOT"]]),  // LH
-        static_cast<double>(low_state.foot_force()[footIdMap_["RH_FOOT"]])   // RH
+        static_cast<double>(low_state.foot_force[footIdMap_["LF_FOOT"]]),  // LF
+        static_cast<double>(low_state.foot_force[footIdMap_["RF_FOOT"]]),  // RF
+        static_cast<double>(low_state.foot_force[footIdMap_["LH_FOOT"]]),  // LH
+        static_cast<double>(low_state.foot_force[footIdMap_["RH_FOOT"]])   // RH
     };
 
     // Set contact to true if ground reaction force exceeds threshold
@@ -263,8 +227,16 @@ void Go2RobotInterface::lowStateCallback(const void *message) {
     // Base orientation - Euler zyx as {roll, pitch, yaw}
     state.x.segment<3>(0) = rpy;
 
-    // Base position
-    state.x.segment<3>(3) = estimator_->getBasePosition();
+    // Base position and linear velocity
+    if (useGroundTruthState_ && low_state.has_position && low_state.has_velocity) {
+        vector3_t gtPos(low_state.position[0], low_state.position[1], low_state.position[2]);
+        vector3_t gtVel(low_state.velocity[0], low_state.velocity[1], low_state.velocity[2]);
+        state.x.segment<3>(3) = gtPos;
+        state.x.segment<3>(9) = R_base_world * gtVel;
+    } else {
+        state.x.segment<3>(3) = estimator_->getBasePosition();
+        state.x.segment<3>(9) = R_base_world * estimator_->getBaseVelocity();
+    }
 
     // Base angular velocity
     if (removeGyroscopeBias_) {
@@ -272,9 +244,6 @@ void Go2RobotInterface::lowStateCallback(const void *message) {
     } else {
         state.x.segment<3>(6) = baseAngVel;
     }
-
-    // Base linear velocity
-    state.x.segment<3>(9) = R_base_world * estimator_->getBaseVelocity();
 
     // Joint positions
     state.x.segment<12>(12) = jointAngles;
@@ -308,7 +277,7 @@ void Go2RobotInterface::publish(std::vector<MotorCommand> commands) {
     static int publish_count = 0;
     publish_count++;
 
-    constexpr int PUBLISH_N = 1000;  // Print every 100 publishes (roughly 100 ms at 1kHz)
+    constexpr int PUBLISH_N = 1000;  // Print every 1000 publishes (roughly 1s at 1kHz)
     if (publish_count % PUBLISH_N == 0) {
         auto current_time = std::chrono::high_resolution_clock::now();
         auto time_diff =
@@ -318,20 +287,19 @@ void Go2RobotInterface::publish(std::vector<MotorCommand> commands) {
         last_publish_time = current_time;
     }
 
+    robot_msgs::MotorCommands motor_commands;
+    motor_commands.commands.resize(12);
+
     for (const auto &command : commands) {
         const int motor_id = motorIdMap_[command.joint_name];
-        low_cmd.motor_cmd()[motor_id].mode() = (0x01);  // motor switch to servo (PMSM) mode
-        low_cmd.motor_cmd()[motor_id].q() = (command.desired_position);
-        low_cmd.motor_cmd()[motor_id].kp() = command.kp;
-        low_cmd.motor_cmd()[motor_id].dq() = (command.desired_velocity);
-        low_cmd.motor_cmd()[motor_id].kd() = command.kd;
-        low_cmd.motor_cmd()[motor_id].tau() = command.torque_ff;
+        motor_commands.commands[motor_id].q = command.desired_position;
+        motor_commands.commands[motor_id].dq = command.desired_velocity;
+        motor_commands.commands[motor_id].kp = command.kp;
+        motor_commands.commands[motor_id].kd = command.kd;
+        motor_commands.commands[motor_id].tau = command.torque_ff;
     }
 
-    low_cmd.crc() = crc32_core((uint32_t *)&low_cmd, (sizeof(unitree_go::msg::dds_::LowCmd_) >> 2) - 1);
-
-    // Publish the low level command
-    lowcmd_publisher->Write(low_cmd);
+    lowcmd_publisher->publish(motor_commands);
 }
 
 /*********************************************************************************************************************/
@@ -357,38 +325,23 @@ State Go2RobotInterface::getLatestState() {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
-std::vector<uint8_t> Go2RobotInterface::getLatestImage() {
-    if (!videoClient_) {
-        throw std::runtime_error("Video client is not initialized. Set enableVideo=true in Go2RobotInterfaceArgs.");
-    }
-    std::vector<uint8_t> data;
-    videoClient_->GetImageSample(data);
-    return data;
-}
+void Go2RobotInterface::pointcloudCallback(const robot_msgs::PointCloud2 &msg) {
+    uint32_t num_points = msg.width * msg.height;
+    const auto &data = msg.data;
 
-/*********************************************************************************************************************/
-/*********************************************************************************************************************/
-/*********************************************************************************************************************/
-void Go2RobotInterface::pointcloudCallback(const void *message) {
-    auto &msg = *(sensor_msgs::msg::dds_::PointCloud2_ *)message;
-
-    uint32_t point_step = msg.point_step();
-    uint32_t num_points = msg.width() * msg.height();
-    const auto &data = msg.data();
-
-    if (num_points == 0 || data.empty() || point_step < 12) return;
+    if (num_points == 0 || data.empty() || msg.point_step < 12) return;
 
     // Find x, y, z field offsets
     uint32_t x_off = 0, y_off = 4, z_off = 8;
-    for (const auto &field : msg.fields()) {
-        if (field.name() == "x") x_off = field.offset();
-        else if (field.name() == "y") y_off = field.offset();
-        else if (field.name() == "z") z_off = field.offset();
+    for (const auto &field : msg.fields) {
+        if (field.name == "x") x_off = field.offset;
+        else if (field.name == "y") y_off = field.offset;
+        else if (field.name == "z") z_off = field.offset;
     }
 
     std::vector<float> points(num_points * 3);
     for (uint32_t i = 0; i < num_points; ++i) {
-        const uint8_t *ptr = data.data() + i * point_step;
+        const uint8_t *ptr = data.data() + i * msg.point_step;
         std::memcpy(&points[i * 3 + 0], ptr + x_off, sizeof(float));
         std::memcpy(&points[i * 3 + 1], ptr + y_off, sizeof(float));
         std::memcpy(&points[i * 3 + 2], ptr + z_off, sizeof(float));
