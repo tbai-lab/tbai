@@ -127,18 +127,14 @@ std::vector<MotorCommand> MpcController::getMotorCommands(scalar_t currentTime, 
     constexpr size_t numJoints = JOINT_COORDINATE_SIZE;  // 18
     ocs2::vector_t joint_accelerations = (dummyInput.tail(numJoints) - desiredInput.tail(numJoints)) / time_eps;
 
-    // Extract desired arm EE position and orientation from MPC solution
-    // For now, use the desired state to compute arm EE targets via forward kinematics
-    // In a full implementation, these would come from a dedicated arm task reference
+    // Compute desired arm EE position and orientation from MPC solution via FK
     const auto basePose = getBasePose(desiredState);
     const auto legJointPositions = getLegJointPositions(desiredState);
     const auto armJointPositions = getArmJointPositions(desiredState);
 
-    // Compute desired arm EE position from forward kinematics
     ocs2::vector_t desiredArmEEPosition = quadrupedInterfacePtr_->getKinematicModel().armEEPositionInOriginFrame(
         basePose, legJointPositions, armJointPositions);
 
-    // Compute desired arm EE orientation as quaternion (w, x, y, z)
     auto desiredArmEERotation = quadrupedInterfacePtr_->getKinematicModel().armEEOrientationInOriginFrame(
         basePose, legJointPositions, armJointPositions);
     Eigen::Quaternion<scalar_t> desiredArmEEQuat(desiredArmEERotation);

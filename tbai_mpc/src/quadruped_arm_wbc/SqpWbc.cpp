@@ -69,7 +69,7 @@ std::vector<tbai::MotorCommand> SqpWbc::getMotorCommands(scalar_t currentTime, c
     const vector_t &qDesired = desiredState.tail(tbai::mpc::quadruped_arm::JOINT_COORDINATE_SIZE);
     const vector_t &vDesired = desiredInput.tail(tbai::mpc::quadruped_arm::JOINT_COORDINATE_SIZE);
 
-    // Swap leg torques for correct ordering (LF, RF, LH, RH)
+    // Swap leg torques for correct ordering
     std::swap(legTorques(3), legTorques(6));
     std::swap(legTorques(4), legTorques(7));
     std::swap(legTorques(5), legTorques(8));

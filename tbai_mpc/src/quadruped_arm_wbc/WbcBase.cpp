@@ -645,7 +645,7 @@ void WbcBase::loadSettings(const std::string &configFile, const std::string &con
     loadCppDataType<scalar_t>(configFile, configPrefix + "armJointKd", armJointKd_);
 
     // Arm home position (stowed position for spot arm)
-    armJointHomePosition_ << 0.0, -3.1, 2.1, 0.0, 0.0, 0.0;
+    armJointHomePosition_ << 0.0, -3.14, 3.06, 0.0, 0.0, 0.0;
 
     // Try to load from config (if available)
     boost::property_tree::ptree pt;

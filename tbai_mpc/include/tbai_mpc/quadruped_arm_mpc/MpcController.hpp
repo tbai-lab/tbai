@@ -128,6 +128,14 @@ class MpcController : public tbai::Controller {
     std::atomic<bool> stopReferenceThread_{false};
     std::thread referenceThread_;
     scalar_t referenceThreadRate_ = 5.0;
+
+    // EE tracking delay: use stowed arm until this time has elapsed
+    scalar_t eeTrackingEnableDelay_ = 5.0;  // seconds
+    scalar_t timeSinceStart_ = 0.0;
+
+    // Target EE position in world frame (when EE tracking is enabled)
+    ocs2::vector_t targetEEPosition_ = (ocs2::vector_t(3) << 1.0, 0.0, 0.7).finished();
+    ocs2::vector_t targetEEOrientation_ = (ocs2::vector_t(4) << 1.0, 0.0, 0.0, 0.0).finished();  // w,x,y,z
 };
 
 }  // namespace tbai::mpc::quadruped_arm
