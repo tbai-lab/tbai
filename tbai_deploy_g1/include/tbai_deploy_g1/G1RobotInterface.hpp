@@ -4,20 +4,13 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 
-#define SCHED_DEADLINE 6
-
 #include <math.h>
 #include <stdint.h>
 
-#include <unitree/common/thread/thread.hpp>
-#include <unitree/common/time/time_tool.hpp>
-#include <unitree/idl/hg/LowCmd_.hpp>
-#include <unitree/idl/hg/LowState_.hpp>
-#include <unitree/robot/channel/channel_publisher.hpp>
-#include <unitree/robot/channel/channel_subscriber.hpp>
-
-using namespace unitree::common;
-using namespace unitree::robot;
+#include <tbai_estim/inekf/InEKFEstimator.hpp>
+#include <tbai_sdk/publisher.hpp>
+#include <tbai_sdk/subscriber.hpp>
+#include <tbai_sdk/messages/robot_msgs.hpp>
 
 #define G1_TOPIC_LOWCMD "rt/lowcmd"
 #define G1_TOPIC_LOWSTATE "rt/lowstate"
@@ -35,6 +28,7 @@ struct G1RobotInterfaceArgs {
     TBAI_ARG_DEFAULT(int, unitreeChannel, 0);
     TBAI_ARG_DEFAULT(bool, channelInit, true);
     TBAI_ARG_DEFAULT(bool, enableStateEstim, true);
+    TBAI_ARG_DEFAULT(bool, useGroundTruthState, false);
 };
 
 class G1RobotInterface : public RobotInterface {
@@ -52,19 +46,16 @@ class G1RobotInterface : public RobotInterface {
     }
 
    private:
-    void lowStateCallback(const void *message);
+    void lowStateCallback(const robot_msgs::LowState &message);
     void initMotorMapping();
 
-    unitree_hg::msg::dds_::LowCmd_ low_cmd{};
-
-    /* Publishers */
-    ChannelPublisherPtr<unitree_hg::msg::dds_::LowCmd_> lowcmd_publisher;
-
-    /* Subscribers */
-    ChannelSubscriberPtr<unitree_hg::msg::dds_::LowState_> lowstate_subscriber;
+    std::unique_ptr<tbai::Publisher<robot_msgs::MotorCommands>> lowcmd_publisher;
+    std::unique_ptr<tbai::QueuedSubscriber<robot_msgs::LowState>> lowstate_subscriber;
 
     std::unordered_map<std::string, int> motorIdMap_;
     bool initialized_ = false;
+
+    std::unique_ptr<tbai::inekf::InEKFEstimator> estimator_;
 
     scalar_t lastYaw_ = 0.0;
     std::mutex latestStateMutex_;
@@ -72,8 +63,12 @@ class G1RobotInterface : public RobotInterface {
     State state_;
     vector4_t baseQuaternion_;
 
-   private:
     std::shared_ptr<spdlog::logger> logger_;
+
+    bool rectifyOrientation_ = true;
+    bool removeGyroscopeBias_ = true;
+
+    bool useGroundTruthState_ = false;
 
     bool enable_ = false;
     void enable() override { enable_ = true; }

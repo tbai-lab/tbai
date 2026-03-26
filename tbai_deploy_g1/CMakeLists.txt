@@ -63,12 +63,26 @@ target_include_directories(tbai_deploy_g1
         $<INSTALL_INTERFACE:include>
 )
 
+# ── tbai_sdk (header-only, zenoh-based) ──────────────────────────────────
+set(TBAI_SDK_DIR "/home/kb/projects/tbai_sdk" CACHE PATH "Path to tbai_sdk")
+set(ZENOH_INSTALL "${TBAI_SDK_DIR}/deps/zenoh-install" CACHE PATH "Zenoh install prefix")
+
+target_include_directories(tbai_deploy_g1
+    PUBLIC
+        ${TBAI_SDK_DIR}/include
+        ${ZENOH_INSTALL}/include
+)
+target_compile_definitions(tbai_deploy_g1 PUBLIC ZENOHCXX_ZENOHC)
+target_link_directories(tbai_deploy_g1 PUBLIC ${ZENOH_INSTALL}/lib)
+
 target_link_libraries(tbai_deploy_g1
     PUBLIC
         tbai_core
         tbai_reference
+        tbai_estim
         tbai_torch
-        unitree_sdk2
+        zenohc
+        pthread
         onnxruntime
         ${TORCH_LIBRARIES}
 )
