@@ -9,6 +9,9 @@ project(tbai_deploy_go2w)
 
 find_package(Torch REQUIRED)
 
+set(TBAI_SDK_DIR "/home/kb/projects/tbai_sdk" CACHE PATH "Path to tbai_sdk")
+set(ZENOH_INSTALL "${TBAI_SDK_DIR}/deps/zenoh-install" CACHE PATH "Zenoh install prefix")
+
 add_library(tbai_deploy_go2w
     src/Go2WRobotInterface.cpp
     src/Go2WDreamWaQController.cpp
@@ -19,17 +22,22 @@ target_include_directories(tbai_deploy_go2w
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+        ${TBAI_SDK_DIR}/include
+        ${ZENOH_INSTALL}/include
 )
+
+target_compile_definitions(tbai_deploy_go2w PUBLIC ZENOHCXX_ZENOHC)
+target_link_directories(tbai_deploy_go2w PUBLIC ${ZENOH_INSTALL}/lib)
 
 target_link_libraries(tbai_deploy_go2w
     PUBLIC
         tbai_core
         tbai_reference
-        unitree_sdk2
+        zenohc
+        pthread
         ${TORCH_LIBRARIES}
 )
 
-## Installation rules
 include(GNUInstallDirs)
 
 install(TARGETS tbai_deploy_go2w
@@ -40,12 +48,9 @@ install(TARGETS tbai_deploy_go2w
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(DIRECTORY include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 install(EXPORT tbai_deploy_go2w-targets
-    NAMESPACE tbai::
-    FILE tbai-deploy_go2w-targets.cmake
+    NAMESPACE tbai:: FILE tbai-deploy_go2w-targets.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tbai
 )

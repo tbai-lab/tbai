@@ -5,20 +5,12 @@
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_go2w/Go2WConstants.hpp>
 
-#define SCHED_DEADLINE 6
-
 #include <math.h>
 #include <stdint.h>
 
-#include <unitree/common/thread/thread.hpp>
-#include <unitree/common/time/time_tool.hpp>
-#include <unitree/idl/go2/LowCmd_.hpp>
-#include <unitree/idl/go2/LowState_.hpp>
-#include <unitree/robot/channel/channel_publisher.hpp>
-#include <unitree/robot/channel/channel_subscriber.hpp>
-
-using namespace unitree::common;
-using namespace unitree::robot;
+#include <tbai_sdk/publisher.hpp>
+#include <tbai_sdk/subscriber.hpp>
+#include <tbai_sdk/messages/robot_msgs.hpp>
 
 #define GO2W_TOPIC_LOWCMD "rt/lowcmd"
 #define GO2W_TOPIC_LOWSTATE "rt/lowstate"
@@ -29,6 +21,7 @@ struct Go2WRobotInterfaceArgs {
     TBAI_ARG_DEFAULT(std::string, networkInterface, "eth0");
     TBAI_ARG_DEFAULT(int, unitreeChannel, 0);
     TBAI_ARG_DEFAULT(bool, channelInit, true);
+    TBAI_ARG_DEFAULT(bool, useGroundTruthState, false);
 };
 
 class Go2WRobotInterface : public RobotInterface {
@@ -41,18 +34,12 @@ class Go2WRobotInterface : public RobotInterface {
     State getLatestState() override;
 
    private:
-    void lowStateCallback(const void *message);
+    void lowStateCallback(const robot_msgs::LowState &message);
     void initMotorMapping();
 
-    unitree_go::msg::dds_::LowCmd_ low_cmd{};
+    std::unique_ptr<tbai::Publisher<robot_msgs::MotorCommands>> lowcmd_publisher;
+    std::unique_ptr<tbai::QueuedSubscriber<robot_msgs::LowState>> lowstate_subscriber;
 
-    /* Publishers */
-    ChannelPublisherPtr<unitree_go::msg::dds_::LowCmd_> lowcmd_publisher;
-
-    /* Subscribers */
-    ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> lowstate_subscriber;
-
-    /* Motor name to ID mapping */
     std::unordered_map<std::string, int> motorIdMap_;
 
     bool initialized_ = false;
@@ -62,6 +49,8 @@ class Go2WRobotInterface : public RobotInterface {
     State state_;
 
     std::shared_ptr<spdlog::logger> logger_;
+
+    bool useGroundTruthState_ = false;
 
     bool enable_ = false;
     void enable() override { enable_ = true; }
