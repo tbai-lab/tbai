@@ -40,45 +40,22 @@ endif()
 add_subdirectory(tbai_core)
 add_subdirectory(tbai_torch)
 add_subdirectory(tbai_reference)
-add_subdirectory(tbai_static)
 
 if(TBAI_BUILD_MUSE)
   add_subdirectory(tbai_estim)
-endif()
-
-if(TBAI_BUILD_BOB)
-  add_subdirectory(tbai_bob)
-endif()
-
-if(TBAI_BUILD_WTW)
-  add_subdirectory(tbai_wtw)
-endif()
-
-if(TBAI_BUILD_NP3O)
-  add_subdirectory(tbai_np3o)
-endif()
-
-## unitree_sdk2 no longer needed - all robots use tbai_sdk/zenoh
-add_subdirectory(tbai_robots)
-
-if(TBAI_BUILD_PYTHON)
-  add_subdirectory(tbai_python)
 endif()
 
 if(TBAI_BUILD_OCS2)
   add_subdirectory(tbai_ocs2)
 endif()
 
-if(TBAI_BUILD_MPC)
-  add_subdirectory(tbai_mpc)
-endif()
+add_subdirectory(tbai_controllers)
 
-if(TBAI_BUILD_DTC)
-  add_subdirectory(tbai_dtc)
-endif()
+## unitree_sdk2 no longer needed - all robots use tbai_sdk/zenoh
+add_subdirectory(tbai_robots)
 
-if(TBAI_BUILD_JOE)
-  add_subdirectory(tbai_joe)
+if(TBAI_BUILD_PYTHON)
+  add_subdirectory(tbai_python)
 endif()
 
 if(TBAI_BUILD_DOCS)
