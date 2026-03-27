@@ -87,7 +87,6 @@ Go2RobotInterface::~Go2RobotInterface() {
     TBAI_LOG_INFO(logger_, "Destroying Go2RobotInterface");
     if (lowstate_subscriber) lowstate_subscriber->stop();
     if (lidar_subscriber) lidar_subscriber->stop();
-    if (pointcloud_subscriber) pointcloud_subscriber->stop();
 }
 
 /*********************************************************************************************************************/
