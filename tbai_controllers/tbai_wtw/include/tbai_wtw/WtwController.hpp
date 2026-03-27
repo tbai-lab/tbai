@@ -12,7 +12,7 @@
 #include <pinocchio/multibody/model.hpp>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 #include <tbai_wtw/HistoryBuffer.hpp>
 #include <tbai_wtw/State.hpp>
@@ -25,10 +25,10 @@ using torch::jit::script::Module;
 
 class WtwController : public tbai::Controller {
    public:
-    WtwController(const std::string &urdfPathOrString, const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    WtwController(const std::string &urdfPathOrString, const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                   const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen);
 
-    WtwController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    WtwController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                   const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen);
 
     std::vector<tbai::MotorCommand> getMotorCommands(scalar_t currentTime, scalar_t dt) override;
@@ -43,14 +43,14 @@ class WtwController : public tbai::Controller {
 
     void postStep(scalar_t currentTime, scalar_t dt) override {}
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
-    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
+    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = robotInterfacePtr_->getLatestState(); }
 
     std::string getName() const override { return "WTW"; }
 
    protected:
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
 
     scalar_t kp_;
     scalar_t kd_;

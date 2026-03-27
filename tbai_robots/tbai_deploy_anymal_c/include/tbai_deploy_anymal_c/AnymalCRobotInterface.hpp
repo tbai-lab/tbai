@@ -72,8 +72,8 @@ class AnymalCRobotInterface : public RobotInterface {
     bool removeGyroscopeBias_ = true;
 
     bool enable_ = false;
-    void enable() override { enable_ = true; }
-    void disable() override { enable_ = false; }
+    void enableEstimator() override { enable_ = true; }
+    void disableEstimator() override { enable_ = false; }
 };
 
 }  // namespace tbai

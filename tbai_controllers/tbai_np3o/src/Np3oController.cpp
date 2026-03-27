@@ -34,18 +34,18 @@ static inline scalar_t clip(scalar_t x, scalar_t min, scalar_t max) {
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
-Np3oController::Np3oController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+Np3oController::Np3oController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen)
-    : Np3oController::Np3oController(tbai::getEnvAs<std::string>("TBAI_ROBOT_DESCRIPTION_PATH"), stateSubscriberPtr,
+    : Np3oController::Np3oController(tbai::getEnvAs<std::string>("TBAI_ROBOT_DESCRIPTION_PATH"), robotInterfacePtr,
                                      refVelGen) {}
 
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 Np3oController::Np3oController(const std::string &urdfPathOrString,
-                               const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+                               const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen)
-    : stateSubscriberPtr_(stateSubscriberPtr), refVelGen_(refVelGen), historyBuffer_(45, 10) {
+    : robotInterfacePtr_(robotInterfacePtr), refVelGen_(refVelGen), historyBuffer_(45, 10) {
     logger_ = tbai::getLogger("np3o");
 
     gaitIndex_ = 0.0;

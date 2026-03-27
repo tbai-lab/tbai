@@ -9,7 +9,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_go2w/Go2WConstants.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 #include <torch/script.h>
@@ -22,13 +22,13 @@ using torch::jit::script::Module;
 
 class Go2WDreamWaQController : public tbai::Controller {
    public:
-    Go2WDreamWaQController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    Go2WDreamWaQController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                            const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGenPtr,
                            const std::string &modelDir);
 
     ~Go2WDreamWaQController() = default;
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void preStep(scalar_t currentTime, scalar_t dt) override;
 
@@ -62,7 +62,7 @@ class Go2WDreamWaQController : public tbai::Controller {
     void transReal2Sim(vector_t &qj);
     void transSim2Real(vector_t &qj);
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
     std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> refVelGenPtr_;
 
     // TorchScript models

@@ -8,10 +8,10 @@
 namespace tbai {
 namespace g1 {
 
-G1MimicController::G1MimicController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+G1MimicController::G1MimicController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                      const std::string &policyPath, const std::string &motionFilePath, float motionFps,
                                      float timeStart, float timeEnd, const std::string &controllerName)
-    : stateSubscriberPtr_(stateSubscriberPtr),
+    : robotInterfacePtr_(robotInterfacePtr),
       timeStart_(timeStart),
       currentMotionTime_(0.0f),
       motionActive_(false),
@@ -96,7 +96,7 @@ void G1MimicController::initOnnxRuntime(const std::string &policyPath) {
 }
 
 void G1MimicController::preStep(scalar_t currentTime, scalar_t dt) {
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Update motion time
     if (motionActive_) {
@@ -280,7 +280,7 @@ void G1MimicController::changeController(const std::string &controllerType, scal
     lastAction_.setZero();
 
     // Get current state
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Compute robot root orientation (using OCS2 convention)
     vector3_t rpy = state_.x.segment<3>(0);

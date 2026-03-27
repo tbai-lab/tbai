@@ -27,7 +27,7 @@
 #include <tbai_core/Types.hpp>
 #include <tbai_core/Utils.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_mpc/quadruped_mpc/QuadrupedMpc.h>
 #include <tbai_mpc/quadruped_mpc/core/MotionPhaseDefinition.h>
 #include <tbai_mpc/quadruped_mpc/quadruped_commands/ReferenceExtrapolation.h>
@@ -74,7 +74,7 @@ class TerrainInterface {
  */
 class DtcController : public tbai::Controller {
    public:
-    DtcController(const std::string &robotName, const std::shared_ptr<tbai::StateSubscriber> &stateSubscriber,
+    DtcController(const std::string &robotName, const std::shared_ptr<tbai::RobotInterface> &robotInterface,
                   std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> velocityGenerator,
                   std::function<scalar_t()> getCurrentTimeFunction);
 
@@ -97,9 +97,9 @@ class DtcController : public tbai::Controller {
 
     bool checkStability() const override;
 
-    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
+    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = robotInterfacePtr_->getLatestState(); }
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     std::string getName() const override { return "DtcController"; }
 
@@ -216,7 +216,7 @@ class DtcController : public tbai::Controller {
     BaseReferenceState getBaseReferenceState(scalar_t time);
     BaseReferenceCommand getBaseReferenceCommand(scalar_t time, const vector_t &command);
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
     std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> refVelGen_;
     std::function<scalar_t()> getCurrentTimeFunction_;
 

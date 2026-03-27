@@ -9,7 +9,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_g1/G1Constants.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 
@@ -81,13 +81,13 @@ constexpr int ASAP_TOTAL_OBS_SIZE = ASAP_CURRENT_OBS_SIZE + ASAP_HISTORY_OBS_SIZ
  */
 class G1ASAPController : public tbai::Controller {
    public:
-    G1ASAPController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    G1ASAPController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                      const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGenPtr,
                      const std::string &policyPath, const std::string &controllerName = "G1ASAPLocomotion");
 
     ~G1ASAPController();
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void preStep(scalar_t currentTime, scalar_t dt) override;
 
@@ -125,7 +125,7 @@ class G1ASAPController : public tbai::Controller {
      */
     void updatePhase(scalar_t dt);
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
     std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> refVelGenPtr_;
 
     // ONNX Runtime

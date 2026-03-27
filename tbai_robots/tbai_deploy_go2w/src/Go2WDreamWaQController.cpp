@@ -9,9 +9,9 @@ namespace go2w {
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 Go2WDreamWaQController::Go2WDreamWaQController(
-    const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
     const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGenPtr, const std::string &modelDir)
-    : stateSubscriberPtr_(stateSubscriberPtr), refVelGenPtr_(refVelGenPtr) {
+    : robotInterfacePtr_(robotInterfacePtr), refVelGenPtr_(refVelGenPtr) {
     logger_ = tbai::getLogger("go2w_dreamwaq");
 
     TBAI_LOG_INFO(logger_, "Initializing Go2WDreamWaQController");
@@ -95,7 +95,7 @@ void Go2WDreamWaQController::loadModels(const std::string &modelDir) {
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 void Go2WDreamWaQController::preStep(scalar_t currentTime, scalar_t dt) {
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 }
 
 /***********************************************************************************************************************/

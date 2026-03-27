@@ -12,7 +12,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_mpc/quadruped_arm_mpc/QuadrupedInterface.h>
 #include <tbai_mpc/quadruped_arm_mpc/quadruped_reference/ReferenceTrajectoryGenerator.hpp>
 #include <tbai_mpc/quadruped_arm_wbc/WbcBase.hpp>
@@ -29,10 +29,10 @@ class MpcController : public tbai::Controller {
    public:
     /**
      * Constructor
-     * @param stateSubscriberPtr: State subscriber for getting robot state
+     * @param robotInterfacePtr: Robot interface for state and commands
      * @param velocityGeneratorPtr: Reference velocity generator
      */
-    MpcController(const std::string &robotName, const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    MpcController(const std::string &robotName, const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                   std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> velocityGeneratorPtr,
                   std::function<scalar_t()> getCurrentTimeFunction);
 
@@ -52,9 +52,9 @@ class MpcController : public tbai::Controller {
 
     bool checkStability() const override;
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
-    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
+    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = robotInterfacePtr_->getLatestState(); }
 
     void postStep(scalar_t currentTime, scalar_t dt) override {}
 
@@ -97,7 +97,7 @@ class MpcController : public tbai::Controller {
     void startReferenceThread();
     void stopReferenceThread();
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
     std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> velocityGeneratorPtr_;
 
     std::unique_ptr<tbai::mpc::quadruped_arm::QuadrupedInterface> quadrupedInterfacePtr_;

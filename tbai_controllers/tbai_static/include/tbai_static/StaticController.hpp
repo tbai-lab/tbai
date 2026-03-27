@@ -2,18 +2,18 @@
 
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 
 namespace tbai {
 namespace static_ {
 
 class StaticController : public tbai::Controller {
    public:
-    StaticController(std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr);
+    StaticController(std::shared_ptr<tbai::RobotInterface> robotInterfacePtr);
 
     std::vector<MotorCommand> getMotorCommands(scalar_t currentTime, scalar_t dt) override;
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     bool isSupported(const std::string &controllerType) override;
 
@@ -49,8 +49,8 @@ class StaticController : public tbai::Controller {
     /** Pack desired joint angles into a command message */
     std::vector<MotorCommand> packCommandMessage(const vector_t &jointAngles);
 
-    /** State subscriber */
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    /** Robot interface */
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
 
     /** PD constants */
     scalar_t kp_;

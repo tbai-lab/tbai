@@ -23,18 +23,18 @@ static inline int mod(int a, int b) {
     return (a % b + b) % b;
 }
 
-BobController::BobController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+BobController::BobController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                              const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen)
-    : BobController::BobController(tbai::getEnvAs<std::string>("TBAI_ROBOT_DESCRIPTION_PATH"), stateSubscriberPtr,
+    : BobController::BobController(tbai::getEnvAs<std::string>("TBAI_ROBOT_DESCRIPTION_PATH"), robotInterfacePtr,
                                    refVelGen) {}
 
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 BobController::BobController(const std::string &urdfPathOrString,
-                             const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+                             const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                              const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen)
-    : stateSubscriberPtr_(stateSubscriberPtr), refVelGen_(refVelGen) {
+    : robotInterfacePtr_(robotInterfacePtr), refVelGen_(refVelGen) {
     logger_ = tbai::getLogger("bob_controller");
 
     // Load parameters

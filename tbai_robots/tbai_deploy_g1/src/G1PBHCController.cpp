@@ -9,10 +9,10 @@
 namespace tbai {
 namespace g1 {
 
-G1PBHCController::G1PBHCController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+G1PBHCController::G1PBHCController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                    const std::string &policyPath, const std::string &motionFilePath, float timeStart,
                                    float timeEnd, const std::string &controllerName)
-    : stateSubscriberPtr_(stateSubscriberPtr),
+    : robotInterfacePtr_(robotInterfacePtr),
       modelLoaded_(false),
       timeStart_(timeStart),
       currentMotionTime_(0.0f),
@@ -155,7 +155,7 @@ void G1PBHCController::initOnnxModel(const std::string &policyPath) {
 }
 
 void G1PBHCController::preStep(scalar_t currentTime, scalar_t dt) {
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Update motion time
     if (motionActive_) {
@@ -184,7 +184,7 @@ void G1PBHCController::buildObservation(scalar_t currentTime, scalar_t dt) {
 
     // Get quaternion for gravity projection
     vector4_t quat;
-    auto *g1Interface = dynamic_cast<G1RobotInterface *>(stateSubscriberPtr_.get());
+    auto *g1Interface = dynamic_cast<G1RobotInterface *>(robotInterfacePtr_.get());
     if (g1Interface) {
         quat = g1Interface->getBaseQuaternion();
     } else {
@@ -441,7 +441,7 @@ void G1PBHCController::changeController(const std::string &controllerType, scala
     }
 
     // Get current state
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Reset motion loader
     motionLoader_->reset();

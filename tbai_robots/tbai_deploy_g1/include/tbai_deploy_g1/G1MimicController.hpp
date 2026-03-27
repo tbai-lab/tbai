@@ -9,7 +9,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_g1/G1Constants.hpp>
 #include <tbai_deploy_g1/MotionLoader.hpp>
 
@@ -27,13 +27,13 @@ constexpr int MIMIC_TOTAL_OBS_SIZE = MIMIC_OBS_MOTION_CMD + MIMIC_OBS_ANCHOR_ORI
 
 class G1MimicController : public tbai::Controller {
    public:
-    G1MimicController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr, const std::string &policyPath,
+    G1MimicController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr, const std::string &policyPath,
                       const std::string &motionFilePath, float motionFps = 60.0f, float timeStart = 0.0f,
                       float timeEnd = -1.0f, const std::string &controllerName = "G1MimicController");
 
     ~G1MimicController();
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void preStep(scalar_t currentTime, scalar_t dt) override;
 
@@ -69,7 +69,7 @@ class G1MimicController : public tbai::Controller {
     Eigen::Matrix<scalar_t, 6, 1> computeOrientationError(const quaternion_t &targetQuat,
                                                           const quaternion_t &actualQuat) const;
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
     std::unique_ptr<MotionLoader> motionLoader_;
 
     // ONNX Runtime

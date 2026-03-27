@@ -53,8 +53,8 @@ class Go2WRobotInterface : public RobotInterface {
     bool useGroundTruthState_ = false;
 
     bool enable_ = false;
-    void enable() override { enable_ = true; }
-    void disable() override { enable_ = false; }
+    void enableEstimator() override { enable_ = true; }
+    void disableEstimator() override { enable_ = false; }
 };
 
 }  // namespace tbai

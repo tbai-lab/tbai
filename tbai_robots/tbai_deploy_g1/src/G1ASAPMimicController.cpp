@@ -10,10 +10,10 @@
 namespace tbai {
 namespace g1 {
 
-G1ASAPMimicController::G1ASAPMimicController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+G1ASAPMimicController::G1ASAPMimicController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                              const std::string &policyPath, float motionLength,
                                              const std::string &controllerName)
-    : stateSubscriberPtr_(stateSubscriberPtr),
+    : robotInterfacePtr_(robotInterfacePtr),
       modelLoaded_(false),
       motionLength_(motionLength),
       motionStartTime_(0.0f),
@@ -168,7 +168,7 @@ void G1ASAPMimicController::initOnnxModel(const std::string &policyPath) {
 }
 
 void G1ASAPMimicController::preStep(scalar_t currentTime, scalar_t dt) {
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Update motion phase
     if (motionActive_ && !motionComplete_) {
@@ -206,7 +206,7 @@ void G1ASAPMimicController::buildObservation(scalar_t currentTime, scalar_t dt) 
 
     // Get quaternion for gravity projection
     vector4_t quat;
-    auto *g1Interface = dynamic_cast<G1RobotInterface *>(stateSubscriberPtr_.get());
+    auto *g1Interface = dynamic_cast<G1RobotInterface *>(robotInterfacePtr_.get());
     if (g1Interface) {
         quat = g1Interface->getBaseQuaternion();
     } else {
@@ -464,7 +464,7 @@ void G1ASAPMimicController::changeController(const std::string &controllerType, 
     }
 
     // Get current state
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     TBAI_LOG_INFO(logger_, "{} ready (motion_length={:.2f}s)", controllerName_, motionLength_);
 }

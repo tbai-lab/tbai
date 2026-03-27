@@ -15,7 +15,7 @@
 #include <pinocchio/multibody/model.hpp>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_np3o/HistoryBuffer.hpp>
 #include <tbai_np3o/State.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
@@ -29,17 +29,17 @@ using torch::jit::script::Module;
 class Np3oController : public tbai::Controller {
    public:
     Np3oController(const std::string &urdfPathOrString,
-                   const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+                   const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                    const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen);
 
-    Np3oController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    Np3oController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                    const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen);
 
     std::vector<tbai::MotorCommand> getMotorCommands(scalar_t currentTime, scalar_t dt) override;
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
-    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
+    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = robotInterfacePtr_->getLatestState(); }
 
     bool isSupported(const std::string &controllerType) override;
 
@@ -54,7 +54,7 @@ class Np3oController : public tbai::Controller {
     std::string getName() const override { return "NP3O"; }
 
    protected:
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
 
     scalar_t kp_;
     scalar_t kd_;

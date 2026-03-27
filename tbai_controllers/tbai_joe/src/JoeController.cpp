@@ -34,10 +34,10 @@ namespace LinearInterpolation = ocs2::LinearInterpolation;
 using namespace tbai::mpc::quadruped;
 
 JoeController::JoeController(const std::string &robotName,
-                             const std::shared_ptr<tbai::StateSubscriber> &stateSubscriber,
+                             const std::shared_ptr<tbai::RobotInterface> &robotInterface,
                              std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> velocityGenerator,
                              std::function<scalar_t()> getCurrentTimeFunction)
-    : stateSubscriberPtr_(stateSubscriber),
+    : robotInterfacePtr_(robotInterface),
       refVelGen_(std::move(velocityGenerator)),
       getCurrentTimeFunction_(std::move(getCurrentTimeFunction)),
       robotName_(robotName) {
@@ -791,7 +791,7 @@ bool JoeController::isSupported(const std::string &controllerType) {
 }
 
 ocs2::SystemObservation JoeController::generateSystemObservation() {
-    State state = stateSubscriberPtr_->getLatestState();
+    State state = robotInterfacePtr_->getLatestState();
     const tbai::vector_t &rbdState = state.x;
 
     // Set observation time
@@ -827,7 +827,7 @@ void JoeController::resetMpc() {
     TBAI_LOG_INFO(logger_, "Waiting for state subscriber to initialize...");
 
     // Wait to receive observation
-    stateSubscriberPtr_->waitTillInitialized();
+    robotInterfacePtr_->waitTillInitialized();
 
     TBAI_LOG_INFO(logger_, "State subscriber initialized");
 

@@ -9,7 +9,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_g1/G1Constants.hpp>
 #include <tbai_deploy_g1/Twist2MotionLoader.hpp>
 
@@ -52,20 +52,20 @@ class G1Twist2Controller : public tbai::Controller {
    public:
     /**
      * @brief Construct a new G1Twist2Controller (TWIST2)
-     * @param stateSubscriberPtr State subscriber for robot state
+     * @param robotInterfacePtr Robot interface for state and commands
      * @param policyPath Path to ONNX model (.onnx file)
      * @param motionFilePath Path to motion pkl file
      * @param timeStart Start time in motion file
      * @param timeEnd End time in motion file (-1 for full duration)
      * @param controllerName Name for logging
      */
-    G1Twist2Controller(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr, const std::string &policyPath,
+    G1Twist2Controller(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr, const std::string &policyPath,
                        const std::string &motionFilePath, float timeStart = 0.0f, float timeEnd = -1.0f,
                        const std::string &controllerName = "G1Twist2Controller");
 
     ~G1Twist2Controller();
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void preStep(scalar_t currentTime, scalar_t dt) override;
 
@@ -122,7 +122,7 @@ class G1Twist2Controller : public tbai::Controller {
      */
     Eigen::Vector2d quatToRollPitch(const vector4_t &quat) const;
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
     std::unique_ptr<Twist2MotionLoader> motionLoader_;
 
     // ONNX Runtime

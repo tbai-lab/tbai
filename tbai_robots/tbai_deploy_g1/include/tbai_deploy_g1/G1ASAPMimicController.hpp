@@ -9,7 +9,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_g1/G1Constants.hpp>
 
 // ONNX Runtime
@@ -60,13 +60,13 @@ constexpr int ASAP_MIMIC_TOTAL_OBS_SIZE =
  */
 class G1ASAPMimicController : public tbai::Controller {
    public:
-    G1ASAPMimicController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    G1ASAPMimicController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                           const std::string &policyPath, float motionLength,
                           const std::string &controllerName = "G1ASAPMimic");
 
     ~G1ASAPMimicController();
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void preStep(scalar_t currentTime, scalar_t dt) override;
 
@@ -108,7 +108,7 @@ class G1ASAPMimicController : public tbai::Controller {
      */
     void initJointMapping();
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
 
     // ONNX Runtime
     std::unique_ptr<Ort::Env> ortEnv_;

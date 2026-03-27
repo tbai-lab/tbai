@@ -11,10 +11,10 @@
 namespace tbai {
 namespace g1 {
 
-G1BeyondMimicController::G1BeyondMimicController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+G1BeyondMimicController::G1BeyondMimicController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                                  const std::string &policyPath, const std::string &controllerName,
                                                  bool useModelMetaConfig, float actionBeta)
-    : stateSubscriberPtr_(stateSubscriberPtr),
+    : robotInterfacePtr_(robotInterfacePtr),
       actionBeta_(actionBeta),
       useModelMetaConfig_(useModelMetaConfig),
       timestep_(0),
@@ -222,7 +222,7 @@ void G1BeyondMimicController::parseModelMetadata() {
 }
 
 void G1BeyondMimicController::preStep(scalar_t currentTime, scalar_t dt) {
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 }
 
 void G1BeyondMimicController::postStep(scalar_t currentTime, scalar_t dt) {
@@ -442,7 +442,7 @@ void G1BeyondMimicController::changeController(const std::string &controllerType
     motionActive_ = true;
 
     // Get current state
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
     vector3_t rpy = state_.x.segment<3>(0);
     vector_t jointPos = state_.x.segment(12, G1_NUM_JOINTS);
 

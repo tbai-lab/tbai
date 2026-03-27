@@ -9,10 +9,10 @@
 namespace tbai {
 namespace g1 {
 
-G1RLController::G1RLController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+G1RLController::G1RLController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGenPtr,
                                const std::string &policyPath)
-    : stateSubscriberPtr_(stateSubscriberPtr), refVelGenPtr_(refVelGenPtr) {
+    : robotInterfacePtr_(robotInterfacePtr), refVelGenPtr_(refVelGenPtr) {
     logger_ = tbai::getLogger("G1RLController");
     TBAI_LOG_INFO(logger_, "Initializing G1RLController");
 
@@ -92,7 +92,7 @@ void G1RLController::initOnnxRuntime(const std::string &policyPath) {
 }
 
 void G1RLController::preStep(scalar_t currentTime, scalar_t dt) {
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 }
 
 vector3_t G1RLController::computeProjectedGravity(const quaternion_t &orientation) const {
@@ -266,7 +266,7 @@ void G1RLController::changeController(const std::string &controllerType, scalar_
     lastAction_.setZero();
 
     // Get current state
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Compute current observation terms
     vector3_t rpy = state_.x.segment<3>(0);

@@ -10,10 +10,10 @@
 namespace tbai {
 namespace g1 {
 
-G1ASAPController::G1ASAPController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+G1ASAPController::G1ASAPController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                    const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGenPtr,
                                    const std::string &policyPath, const std::string &controllerName)
-    : stateSubscriberPtr_(stateSubscriberPtr),
+    : robotInterfacePtr_(robotInterfacePtr),
       refVelGenPtr_(refVelGenPtr),
       modelLoaded_(false),
       phaseTime_(0.0),
@@ -142,7 +142,7 @@ void G1ASAPController::initOnnxModel(const std::string &policyPath) {
 }
 
 void G1ASAPController::preStep(scalar_t currentTime, scalar_t dt) {
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Update phase based on dt and stand command
     updatePhase(dt);
@@ -197,7 +197,7 @@ void G1ASAPController::buildObservation(scalar_t currentTime, scalar_t dt) {
 
     // Get quaternion for gravity projection
     vector4_t quat;
-    auto *g1Interface = dynamic_cast<G1RobotInterface *>(stateSubscriberPtr_.get());
+    auto *g1Interface = dynamic_cast<G1RobotInterface *>(robotInterfacePtr_.get());
     if (g1Interface) {
         quat = g1Interface->getBaseQuaternion();
     } else {
@@ -576,7 +576,7 @@ void G1ASAPController::changeController(const std::string &controllerType, scala
     }
 
     // Get current state
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     TBAI_LOG_INFO(logger_, "{} ready", controllerName_);
 }

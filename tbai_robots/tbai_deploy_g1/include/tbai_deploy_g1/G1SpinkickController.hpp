@@ -9,7 +9,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_g1/G1Constants.hpp>
 
 namespace tbai {
@@ -29,13 +29,13 @@ constexpr int SPINKICK_NUM_BODIES = 14;
 
 class G1SpinkickController : public tbai::Controller {
    public:
-    G1SpinkickController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    G1SpinkickController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                          const std::string &policyPath, const std::string &controllerName = "G1SpinkickController",
                          bool useModelMetaConfig = true, float actionBeta = 1.0f);
 
     ~G1SpinkickController();
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void preStep(scalar_t currentTime, scalar_t dt) override;
 
@@ -74,7 +74,7 @@ class G1SpinkickController : public tbai::Controller {
     Eigen::Matrix<scalar_t, 6, 1> computeOrientationError(const quaternion_t &targetQuat,
                                                           const quaternion_t &actualQuat) const;
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
 
     // ONNX Runtime
     std::unique_ptr<Ort::Env> ortEnv_;

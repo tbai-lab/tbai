@@ -18,7 +18,7 @@
 #include <tbai_bob/InverseKinematics.hpp>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 #include <torch/script.h>
 
@@ -29,15 +29,15 @@ using torch::jit::script::Module;
 
 class BobController : public tbai::Controller {
    public:
-    BobController(const std::string &urdfPathOrString, const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    BobController(const std::string &urdfPathOrString, const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                   const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen);
 
-    BobController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    BobController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                   const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen);
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
-    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
+    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = robotInterfacePtr_->getLatestState(); }
 
     std::vector<tbai::MotorCommand> getMotorCommands(scalar_t currentTime, scalar_t dt) override;
 
@@ -65,7 +65,7 @@ class BobController : public tbai::Controller {
     constexpr static int N_CONTACTS = 4;
 
    protected:
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
 
     scalar_t kp_;
     scalar_t kd_;

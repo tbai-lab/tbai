@@ -22,11 +22,11 @@ namespace tbai::mpc::quadruped {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 MpcController::MpcController(const std::string &robotName,
-                             const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+                             const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                              std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> velocityGeneratorPtr,
                              std::function<scalar_t()> getCurrentTimeFunction)
     : robotName_(robotName),
-      stateSubscriberPtr_(stateSubscriberPtr),
+      robotInterfacePtr_(robotInterfacePtr),
       velocityGeneratorPtr_(std::move(velocityGeneratorPtr)),
       getCurrentTimeFunction_(getCurrentTimeFunction) {
     logger_ = tbai::getLogger("mpc_controller");
@@ -147,7 +147,7 @@ void MpcController::referenceThreadLoop() {
     TBAI_LOG_WARN(logger_, "Reference trajectory generator reset2");
 
     // Wait for initial observation
-    stateSubscriberPtr_->waitTillInitialized();
+    robotInterfacePtr_->waitTillInitialized();
     ocs2::SystemObservation observation = generateSystemObservation();
     referenceTrajectoryGeneratorPtr_->updateObservation(observation);
     TBAI_LOG_WARN(logger_, "Reference trajectory generator initialized");
@@ -240,7 +240,7 @@ bool MpcController::isSupported(const std::string &controllerType) {
 /*********************************************************************************************************************/
 void MpcController::resetMpc() {
     // Generate initial observation
-    stateSubscriberPtr_->waitTillInitialized();
+    robotInterfacePtr_->waitTillInitialized();
     auto initialObservation = generateSystemObservation();
     const ocs2::TargetTrajectories initTargetTrajectories({0.0}, {initialObservation.state},
                                                           {initialObservation.input});
@@ -270,7 +270,7 @@ void MpcController::setObservation() {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 ocs2::SystemObservation MpcController::generateSystemObservation() const {
-    auto state = stateSubscriberPtr_->getLatestState();
+    auto state = robotInterfacePtr_->getLatestState();
     const tbai::vector_t &rbdState = state.x;
 
     // Set observation time

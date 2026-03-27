@@ -14,8 +14,8 @@ namespace static_ {
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
-StaticController::StaticController(std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr)
-    : stateSubscriberPtr_(stateSubscriberPtr), alpha_(0.0), currentControllerType_("SIT"), first_(true) {
+StaticController::StaticController(std::shared_ptr<tbai::RobotInterface> robotInterfacePtr)
+    : robotInterfacePtr_(robotInterfacePtr), alpha_(0.0), currentControllerType_("SIT"), first_(true) {
     logger_ = tbai::getLogger("tbai_static");
     loadSettings();
 }
@@ -49,7 +49,7 @@ std::vector<MotorCommand> StaticController::getMotorCommands(scalar_t currentTim
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 void StaticController::changeController(const std::string &controllerType, scalar_t currentTime) {
-    stateSubscriberPtr_->disable();
+    robotInterfacePtr_->disableEstimator();
     TBAI_LOG_INFO(logger_, "Disabling state estimator");
     preStep(currentTime, 0.0);
     currentControllerType_ = controllerType;
@@ -121,7 +121,7 @@ std::vector<MotorCommand> StaticController::getInterpCommandMessage(scalar_t dt)
         // If the current controller is STAND, enable state estimator
         if (currentControllerType_ == "STAND") {
             TBAI_LOG_INFO(logger_, "Enabling state estimator");
-            stateSubscriberPtr_->enable();
+            robotInterfacePtr_->enableEstimator();
         }
     }
 

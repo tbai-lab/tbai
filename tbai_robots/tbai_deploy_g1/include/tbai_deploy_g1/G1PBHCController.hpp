@@ -9,7 +9,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_g1/G1Constants.hpp>
 #include <tbai_deploy_g1/PBHCMotionLoader.hpp>
 
@@ -61,13 +61,13 @@ constexpr int PBHC_TOTAL_OBS_SIZE = PBHC_CURRENT_OBS_SIZE + PBHC_HISTORY_OBS_SIZ
  */
 class G1PBHCController : public tbai::Controller {
    public:
-    G1PBHCController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr, const std::string &policyPath,
+    G1PBHCController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr, const std::string &policyPath,
                      const std::string &motionFilePath, float timeStart = 0.0f, float timeEnd = -1.0f,
                      const std::string &controllerName = "G1PBHCController");
 
     ~G1PBHCController();
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void preStep(scalar_t currentTime, scalar_t dt) override;
 
@@ -104,7 +104,7 @@ class G1PBHCController : public tbai::Controller {
      */
     vector_t getProjectedGravity(const vector4_t &quat) const;
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
     std::unique_ptr<PBHCMotionLoader> motionLoader_;
 
     // ONNX Runtime

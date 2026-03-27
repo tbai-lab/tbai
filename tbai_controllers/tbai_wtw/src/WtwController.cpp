@@ -28,18 +28,18 @@ static inline scalar_t clip(scalar_t x, scalar_t min, scalar_t max) {
     return std::max(min, std::min(x, max));
 }
 
-WtwController::WtwController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+WtwController::WtwController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                              const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen)
-    : WtwController::WtwController(tbai::getEnvAs<std::string>("TBAI_ROBOT_DESCRIPTION_PATH"), stateSubscriberPtr,
+    : WtwController::WtwController(tbai::getEnvAs<std::string>("TBAI_ROBOT_DESCRIPTION_PATH"), robotInterfacePtr,
                                    refVelGen) {}
 
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 /***********************************************************************************************************************/
 WtwController::WtwController(const std::string &urdfPathOrString,
-                             const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+                             const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                              const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen)
-    : stateSubscriberPtr_(stateSubscriberPtr), refVelGen_(refVelGen), historyBuffer_(70, 30) {
+    : robotInterfacePtr_(robotInterfacePtr), refVelGen_(refVelGen), historyBuffer_(70, 30) {
     logger_ = tbai::getLogger("wtw_controller");
 
     gaitIndex_ = 0.0;

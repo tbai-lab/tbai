@@ -10,7 +10,7 @@
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_g1/G1Constants.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 
@@ -19,13 +19,13 @@ namespace g1 {
 
 class G1RLController : public tbai::Controller {
    public:
-    G1RLController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    G1RLController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                    const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGenPtr,
                    const std::string &policyPath);
 
     ~G1RLController();
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void preStep(scalar_t currentTime, scalar_t dt) override;
 
@@ -54,7 +54,7 @@ class G1RLController : public tbai::Controller {
     void updateHistory();
     vector3_t computeProjectedGravity(const quaternion_t &orientation) const;
 
-    std::shared_ptr<tbai::StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<tbai::RobotInterface> robotInterfacePtr_;
     std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> refVelGenPtr_;
 
     // ONNX Runtime

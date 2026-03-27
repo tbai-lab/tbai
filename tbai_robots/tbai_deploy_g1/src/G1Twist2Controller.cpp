@@ -9,10 +9,10 @@
 namespace tbai {
 namespace g1 {
 
-G1Twist2Controller::G1Twist2Controller(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+G1Twist2Controller::G1Twist2Controller(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                                        const std::string &policyPath, const std::string &motionFilePath,
                                        float timeStart, float timeEnd, const std::string &controllerName)
-    : stateSubscriberPtr_(stateSubscriberPtr),
+    : robotInterfacePtr_(robotInterfacePtr),
       modelLoaded_(false),
       timeStart_(timeStart),
       currentMotionTime_(0.0f),
@@ -126,7 +126,7 @@ void G1Twist2Controller::initOnnxModel(const std::string &policyPath) {
 }
 
 void G1Twist2Controller::preStep(scalar_t currentTime, scalar_t dt) {
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Update motion time
     if (motionActive_) {
@@ -191,7 +191,7 @@ vector_t G1Twist2Controller::buildProprioObs() const {
     // 2. Roll & Pitch (2 dims) - compute from raw quaternion using TWIST2's formula
     // Try to get raw quaternion from G1RobotInterface for exact TWIST2 compatibility
     Eigen::Vector2d rollPitch;
-    auto *g1Interface = dynamic_cast<G1RobotInterface *>(stateSubscriberPtr_.get());
+    auto *g1Interface = dynamic_cast<G1RobotInterface *>(robotInterfacePtr_.get());
     if (g1Interface) {
         vector4_t quat = g1Interface->getBaseQuaternion();
         rollPitch = quatToRollPitch(quat);
@@ -369,7 +369,7 @@ void G1Twist2Controller::changeController(const std::string &controllerType, sca
     }
 
     // Get current state
-    state_ = stateSubscriberPtr_->getLatestState();
+    state_ = robotInterfacePtr_->getLatestState();
 
     // Reset motion loader
     motionLoader_->reset();
