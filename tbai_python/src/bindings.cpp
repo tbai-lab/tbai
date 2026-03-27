@@ -13,16 +13,12 @@
 #include <tbai_core/control/CentralController.hpp>
 #include <tbai_core/control/Controllers.hpp>
 #include <tbai_core/control/Rate.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_estim/muse/MuseEstimator.hpp>
 #include <tbai_np3o/Np3oController.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 #include <tbai_static/StaticController.hpp>
 #include <tbai_wtw/WtwController.hpp>
-
-#if defined(TBAI_HAS_DEPLOY_GO2) || defined(TBAI_HAS_DEPLOY_G1)
-#include <tbai_core/control/RobotInterface.hpp>
-#endif
 
 #ifdef TBAI_HAS_DEPLOY_GO2
 #include <tbai_deploy_go2/Go2RobotInterface.hpp>
@@ -43,20 +39,13 @@
 // Python wrappers around virtual classes
 namespace tbai {
 
-class PyStateSubscriber : public tbai::StateSubscriber {
+class PyRobotInterface : public tbai::RobotInterface {
    public:
-    using StateSubscriber::StateSubscriber;
-
-    void waitTillInitialized() override { PYBIND11_OVERRIDE_PURE(void, tbai::StateSubscriber, waitTillInitialized); }
-    State getLatestState() override { PYBIND11_OVERRIDE_PURE(State, tbai::StateSubscriber, getLatestState); }
-};
-
-class PyCommandPublisher : public tbai::CommandPublisher {
-   public:
-    using CommandPublisher::CommandPublisher;
-
+    using RobotInterface::RobotInterface;
+    void waitTillInitialized() override { PYBIND11_OVERRIDE_PURE(void, tbai::RobotInterface, waitTillInitialized); }
+    State getLatestState() override { PYBIND11_OVERRIDE_PURE(State, tbai::RobotInterface, getLatestState); }
     void publish(std::vector<MotorCommand> commands) override {
-        PYBIND11_OVERRIDE_PURE(void, tbai::CommandPublisher, publish, commands);
+        PYBIND11_OVERRIDE_PURE(void, tbai::RobotInterface, publish, commands);
     }
 };
 
@@ -74,13 +63,13 @@ class PyChangeControllerSubscriber : public tbai::ChangeControllerSubscriber {
 
 class PyStaticController : public tbai::static_::StaticController {
    public:
-    PyStaticController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    PyStaticController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                        std::function<void(scalar_t, scalar_t)> postStepCallback = nullptr)
-        : tbai::static_::StaticController(stateSubscriberPtr), postStepCallback_(postStepCallback) {}
+        : tbai::static_::StaticController(robotInterfacePtr), postStepCallback_(postStepCallback) {}
 
     bool ok() const override { return true; }
 
-    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
+    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = robotInterfacePtr_->getLatestState(); }
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
         if (postStepCallback_) {
@@ -94,10 +83,10 @@ class PyStaticController : public tbai::static_::StaticController {
 
 class PyBobController : public tbai::BobController {
    public:
-    PyBobController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    PyBobController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                     const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
                     std::function<void(scalar_t, scalar_t)> postStepCallback = nullptr)
-        : tbai::BobController(stateSubscriberPtr, refVelGen), postStepCallback_(postStepCallback) {}
+        : tbai::BobController(robotInterfacePtr, refVelGen), postStepCallback_(postStepCallback) {}
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
         if (postStepCallback_) {
@@ -121,10 +110,10 @@ class PyBobController : public tbai::BobController {
 
 class PyNp3oController : public tbai::Np3oController {
    public:
-    PyNp3oController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    PyNp3oController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                      const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
                      std::function<void(scalar_t, scalar_t)> postStepCallback = nullptr)
-        : tbai::Np3oController(stateSubscriberPtr, refVelGen), postStepCallback_(postStepCallback) {}
+        : tbai::Np3oController(robotInterfacePtr, refVelGen), postStepCallback_(postStepCallback) {}
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
         if (postStepCallback_) {
@@ -144,10 +133,10 @@ class PyNp3oController : public tbai::Np3oController {
 
 class PyWtwController : public tbai::WtwController {
    public:
-    PyWtwController(const std::shared_ptr<tbai::StateSubscriber> &stateSubscriberPtr,
+    PyWtwController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                     const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen,
                     std::function<void(scalar_t, scalar_t)> postStepCallback = nullptr)
-        : tbai::WtwController(stateSubscriberPtr, refVelGen), postStepCallback_(postStepCallback) {}
+        : tbai::WtwController(robotInterfacePtr, refVelGen), postStepCallback_(postStepCallback) {}
 
     void postStep(scalar_t currentTime, scalar_t dt) override {
         if (postStepCallback_) {
@@ -156,7 +145,7 @@ class PyWtwController : public tbai::WtwController {
         }
     }
 
-    void waitTillInitialized() override { stateSubscriberPtr_->waitTillInitialized(); }
+    void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
     void changeController(const std::string &controllerType, scalar_t currentTime) override {
         preStep(currentTime, 0.0);
@@ -164,7 +153,7 @@ class PyWtwController : public tbai::WtwController {
 
     bool ok() const override { return true; }
 
-    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = stateSubscriberPtr_->getLatestState(); }
+    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = robotInterfacePtr_->getLatestState(); }
 
     std::function<void(scalar_t, scalar_t)> postStepCallback_ = nullptr;
 };
@@ -208,16 +197,12 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("timestamp", &tbai::State::timestamp)
         .def_readwrite("contact_flags", &tbai::State::contactFlags);
 
-    py::class_<tbai::StateSubscriber, tbai::PyStateSubscriber, std::shared_ptr<tbai::StateSubscriber>>(
-        m, "StateSubscriber")
+    py::class_<tbai::RobotInterface, tbai::PyRobotInterface, std::shared_ptr<tbai::RobotInterface>>(
+        m, "RobotInterface")
         .def(py::init<>())
-        .def("waitTillInitialized", &tbai::StateSubscriber::waitTillInitialized)
-        .def("getLatestState", &tbai::StateSubscriber::getLatestState);
-
-    py::class_<tbai::CommandPublisher, tbai::PyCommandPublisher, std::shared_ptr<tbai::CommandPublisher>>(
-        m, "CommandPublisher")
-        .def(py::init<>())
-        .def("publish", &tbai::CommandPublisher::publish);
+        .def("waitTillInitialized", &tbai::RobotInterface::waitTillInitialized)
+        .def("getLatestState", &tbai::RobotInterface::getLatestState)
+        .def("publish", &tbai::RobotInterface::publish);
 
     py::class_<tbai::ChangeControllerSubscriber, tbai::PyChangeControllerSubscriber,
                std::shared_ptr<tbai::ChangeControllerSubscriber>>(m, "ChangeControllerSubscriber")
@@ -242,34 +227,34 @@ PYBIND11_MODULE(_C, m) {
     // Concrete controller types
     py::class_<tbai::PyStaticController, tbai::Controller, std::shared_ptr<tbai::PyStaticController>>(
         m, "StaticController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &,
                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
-             py::arg("state_subscriber"), py::arg("post_step_callback") = nullptr);
+             py::arg("robot_interface"), py::arg("post_step_callback") = nullptr);
 
     py::class_<tbai::PyNp3oController, tbai::Controller, std::shared_ptr<tbai::PyNp3oController>>(m, "Np3oController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &,
                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
-             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
+             py::arg("robot_interface"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
 
     py::class_<tbai::PyBobController, tbai::Controller, std::shared_ptr<tbai::PyBobController>>(m, "BobController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &,
                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
-             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
+             py::arg("robot_interface"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
 
     py::class_<tbai::PyWtwController, tbai::Controller, std::shared_ptr<tbai::PyWtwController>>(m, "WtwController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &,
                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
-             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
+             py::arg("robot_interface"), py::arg("ref_vel_gen"), py::arg("post_step_callback") = nullptr);
 
     // Central controller with generic add_controller
     py::class_<tbai::CentralControllerPython, std::shared_ptr<tbai::CentralControllerPython>>(m, "CentralController")
         .def_static("create",
-                    [](std::shared_ptr<tbai::CommandPublisher> commandPublisherPtr,
+                    [](std::shared_ptr<tbai::RobotInterface> robotInterfacePtr,
                        std::shared_ptr<tbai::ChangeControllerSubscriber> changeControllerSubscriberPtr) {
-                        return std::make_shared<tbai::CentralControllerPython>(commandPublisherPtr,
+                        return std::make_shared<tbai::CentralControllerPython>(robotInterfacePtr,
                                                                                changeControllerSubscriberPtr);
                     })
         .def("start", &tbai::CentralControllerPython::start, py::call_guard<py::gil_scoped_release>())
@@ -315,11 +300,6 @@ PYBIND11_MODULE(_C, m) {
         .def("update", &tbai::muse::MuseEstimator::update, py::call_guard<py::gil_scoped_release>())
         .def("getBasePosition", &tbai::muse::MuseEstimator::getBasePosition)
         .def("getBaseVelocity", &tbai::muse::MuseEstimator::getBaseVelocity);
-
-#if defined(TBAI_HAS_DEPLOY_GO2) || defined(TBAI_HAS_DEPLOY_G1)
-    py::class_<tbai::RobotInterface, tbai::CommandPublisher, tbai::StateSubscriber,
-               std::shared_ptr<tbai::RobotInterface>>(m, "RobotInterface");
-#endif
 
 #ifdef TBAI_HAS_DEPLOY_GO2
     py::class_<tbai::Go2RobotInterfaceArgs>(m, "Go2RobotInterfaceArgs")
@@ -428,15 +408,15 @@ PYBIND11_MODULE(_C, m) {
 
     py::class_<tbai::g1::G1RLController, tbai::Controller, std::shared_ptr<tbai::g1::G1RLController>>(
         m, "G1RLController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &,
                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &, const std::string &>(),
-             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("policy_path"));
+             py::arg("robot_interface"), py::arg("ref_vel_gen"), py::arg("policy_path"));
 
     py::class_<tbai::g1::G1MimicController, tbai::Controller, std::shared_ptr<tbai::g1::G1MimicController>>(
         m, "G1MimicController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, float,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, float,
                       float, float, const std::string &>(),
-             py::arg("state_subscriber"), py::arg("policy_path"), py::arg("motion_file_path"),
+             py::arg("robot_interface"), py::arg("policy_path"), py::arg("motion_file_path"),
              py::arg("motion_fps") = 60.0f, py::arg("time_start") = 0.0f, py::arg("time_end") = -1.0f,
              py::arg("controller_name") = "G1MimicController")
         .def("isMotionComplete", &tbai::g1::G1MimicController::isMotionComplete)
@@ -444,26 +424,26 @@ PYBIND11_MODULE(_C, m) {
 
     py::class_<tbai::g1::G1ASAPController, tbai::Controller, std::shared_ptr<tbai::g1::G1ASAPController>>(
         m, "G1ASAPController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &,
                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &, const std::string &,
                       const std::string &>(),
-             py::arg("state_subscriber"), py::arg("ref_vel_gen"), py::arg("policy_path"),
+             py::arg("robot_interface"), py::arg("ref_vel_gen"), py::arg("policy_path"),
              py::arg("controller_name") = "G1ASAPLocomotion");
 
     py::class_<tbai::g1::G1ASAPMimicController, tbai::Controller, std::shared_ptr<tbai::g1::G1ASAPMimicController>>(
         m, "G1ASAPMimicController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, float,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, float,
                       const std::string &>(),
-             py::arg("state_subscriber"), py::arg("policy_path"), py::arg("motion_length"),
+             py::arg("robot_interface"), py::arg("policy_path"), py::arg("motion_length"),
              py::arg("controller_name") = "G1ASAPMimic")
         .def("isMotionComplete", &tbai::g1::G1ASAPMimicController::isMotionComplete)
         .def("getMotionPhase", &tbai::g1::G1ASAPMimicController::getMotionPhase);
 
     py::class_<tbai::g1::G1PBHCController, tbai::Controller, std::shared_ptr<tbai::g1::G1PBHCController>>(
         m, "G1PBHCController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, float,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, float,
                       float, const std::string &>(),
-             py::arg("state_subscriber"), py::arg("policy_path"), py::arg("motion_file_path"),
+             py::arg("robot_interface"), py::arg("policy_path"), py::arg("motion_file_path"),
              py::arg("time_start") = 0.0f, py::arg("time_end") = -1.0f,
              py::arg("controller_name") = "G1PBHCController")
         .def("isMotionComplete", &tbai::g1::G1PBHCController::isMotionComplete)
@@ -471,9 +451,9 @@ PYBIND11_MODULE(_C, m) {
 
     py::class_<tbai::g1::G1Twist2Controller, tbai::Controller, std::shared_ptr<tbai::g1::G1Twist2Controller>>(
         m, "G1Twist2Controller")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, float,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, float,
                       float, const std::string &>(),
-             py::arg("state_subscriber"), py::arg("policy_path"), py::arg("motion_file_path"),
+             py::arg("robot_interface"), py::arg("policy_path"), py::arg("motion_file_path"),
              py::arg("time_start") = 0.0f, py::arg("time_end") = -1.0f,
              py::arg("controller_name") = "G1Twist2Controller")
         .def("isMotionComplete", &tbai::g1::G1Twist2Controller::isMotionComplete)
@@ -481,9 +461,9 @@ PYBIND11_MODULE(_C, m) {
 
     py::class_<tbai::g1::G1SpinkickController, tbai::Controller, std::shared_ptr<tbai::g1::G1SpinkickController>>(
         m, "G1SpinkickController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, bool,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, bool,
                       float>(),
-             py::arg("state_subscriber"), py::arg("policy_path"),
+             py::arg("robot_interface"), py::arg("policy_path"),
              py::arg("controller_name") = "G1SpinkickController", py::arg("use_model_meta_config") = true,
              py::arg("action_beta") = 1.0f)
         .def("isMotionComplete", &tbai::g1::G1SpinkickController::isMotionComplete)
@@ -492,9 +472,9 @@ PYBIND11_MODULE(_C, m) {
 
     py::class_<tbai::g1::G1BeyondMimicController, tbai::Controller,
                std::shared_ptr<tbai::g1::G1BeyondMimicController>>(m, "G1BeyondMimicController")
-        .def(py::init<const std::shared_ptr<tbai::StateSubscriber> &, const std::string &, const std::string &, bool,
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, bool,
                       float>(),
-             py::arg("state_subscriber"), py::arg("policy_path"),
+             py::arg("robot_interface"), py::arg("policy_path"),
              py::arg("controller_name") = "G1BeyondMimicController", py::arg("use_model_meta_config") = true,
              py::arg("action_beta") = 1.0f)
         .def("isMotionComplete", &tbai::g1::G1BeyondMimicController::isMotionComplete)
