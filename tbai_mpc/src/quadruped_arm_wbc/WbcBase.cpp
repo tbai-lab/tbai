@@ -4,6 +4,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <ocs2_core/misc/LoadData.h>
 #include <pinocchio/fwd.hpp>
+#include <stdexcept>
 #include <tbai_mpc/quadruped_arm_mpc/core/MotionPhaseDefinition.h>
 #include <tbai_mpc/quadruped_arm_mpc/core/Rotations.h>
 #include <tbai_mpc/quadruped_arm_mpc/quadruped_models/QuadrupedCom.h>
@@ -43,10 +44,8 @@ WbcBase::WbcBase(const std::string &configFile, const std::string &urdfString,
     armJointNames_ = {"arm_sh0", "arm_sh1", "arm_el0", "arm_el1", "arm_wr0", "arm_wr1"};
 
     // All joint names (legs + arm)
-    jointNames_ = {"front_left_hip_x", "front_left_hip_y", "front_left_knee", "front_right_hip_x", "front_right_hip_y",
-                   "front_right_knee", "rear_left_hip_x",  "rear_left_hip_y", "rear_left_knee",    "rear_right_hip_x",
-                   "rear_right_hip_y", "rear_right_knee",  "arm_sh0",         "arm_sh1",           "arm_el0",
-                   "arm_el1",          "arm_wr0",          "arm_wr1"};
+    jointNames_ = {"LF_HAA", "LF_HFE", "LF_KFE", "RF_HAA", "RF_HFE", "RF_KFE", "LH_HAA", "LH_HFE", "LH_KFE",
+                   "RH_HAA", "RH_HFE", "RH_KFE", "arm_sh0", "arm_sh1", "arm_el0", "arm_el1", "arm_wr0", "arm_wr1"};
 
     Jcontact_ = matrix_t(3 * tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS, nGeneralizedCoordinates_);
     dJcontactdt_ = matrix_t(3 * tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS, nGeneralizedCoordinates_);
@@ -55,9 +54,26 @@ WbcBase::WbcBase(const std::string &configFile, const std::string &urdfString,
     Jarm_ = matrix_t(6, nGeneralizedCoordinates_);
     dJarmdt_ = matrix_t(6, nGeneralizedCoordinates_);
 
+    // Resolve the arm tip from config so the WBC matches the arm frame used by MPC kinematics.
+    std::string armEEFrameName = "arm_ee";
+    try {
+        boost::property_tree::ptree pt;
+        boost::property_tree::read_info(configFile, pt);
+        armEEFrameName = pt.get<std::string>(configPrefix + "armEEFrame", armEEFrameName);
+    } catch (...) {
+        // Fall back to the default frame name.
+    }
+
     // Get arm end-effector frame ID
     const auto &model = pinocchioInterfaceMeasured_.getModel();
-    armEEFrameId_ = model.getBodyId("arm_ee");
+    if (model.existBodyName(armEEFrameName)) {
+        armEEFrameId_ = model.getBodyId(armEEFrameName);
+    } else if (model.existJointName(armEEFrameName)) {
+        armEEFrameId_ = model.getFrameId(armEEFrameName, pinocchio::JOINT);
+    } else {
+        throw std::runtime_error("[quadruped_arm_wbc] Arm end-effector frame '" + armEEFrameName +
+                                 "' does not exist in the model.");
+    }
 
     loadSettings(configFile, configPrefix);
 }
@@ -637,7 +653,7 @@ void WbcBase::loadSettings(const std::string &configFile, const std::string &con
     loadCppDataType<scalar_t>(configFile, configPrefix + "armJointKd", armJointKd_);
 
     // Arm home position (stowed position for spot arm)
-    armJointHomePosition_ << 0.0, -3.1, 2.1, 0.0, 0.0, 0.0;
+    armJointHomePosition_ << 0.0, -3.1, 3.0, 0.0, 0.0, 0.0;
 
     // Try to load from config (if available)
     boost::property_tree::ptree pt;

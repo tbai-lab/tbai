@@ -32,14 +32,12 @@ std::vector<tbai::MotorCommand> SqpWbc::getMotorCommands(scalar_t currentTime, c
         constraints = constraints + createStanceFootNoMotionTask();  // additional constraints for stance
     }
 
-    // QP cost function: base tracking + swing foot + contact force + arm EE tracking + arm joint centering
+    // Temporary test mode: disable arm EE tracking and keep only joint-space centering for the arm.
     Task weightedTasks =
         createBaseAccelerationTask(currentState, desiredState, desiredInput, desiredJointAcceleration) *
             weightBaseAcceleration_ +
         createContactForceMinimizationTask(desiredInput) * weightContactForce_ +
         createSwingFootAccelerationTask(currentState, currentInput, desiredState, desiredInput) * weightSwingLeg_ +
-        createArmEndEffectorPositionTask(desiredArmEEPosition) * weightArmEEPosition_ +
-        createArmEndEffectorOrientationTask(desiredArmEEOrientation) * weightArmEEOrientation_ +
         createArmJointCenteringTask() * weightArmJointCentering_;
 
     // solve QP
@@ -96,14 +94,15 @@ std::vector<tbai::MotorCommand> SqpWbc::getMotorCommands(scalar_t currentTime, c
     }
 
     // Arm joint commands (6 joints)
+    // Temporary test mode: hold the arm directly at the stowed joint configuration.
     for (size_t i = 0; i < numArmJoints; ++i) {
         tbai::MotorCommand command;
         command.joint_name = jointNames_[numLegJoints + i];
-        command.desired_position = qDesired[numLegJoints + i];
-        command.desired_velocity = vDesired[numLegJoints + i];
+        command.desired_position = armJointHomePosition_[i];
+        command.desired_velocity = 0.0;
         command.kp = armJointKp_;
         command.kd = armJointKd_;
-        command.torque_ff = armTorques[i];
+        command.torque_ff = 0.0;
         commands[numLegJoints + i] = std::move(command);
     }
 

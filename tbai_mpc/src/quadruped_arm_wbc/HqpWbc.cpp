@@ -27,8 +27,9 @@ std::vector<tbai::MotorCommand> HqpWbc::getMotorCommands(scalar_t currentTime, c
 
     // HQP task hierarchy with arm:
     // Priority 1: Dynamics + contact constraints + leg torque limits + arm torque limits
+    // Temporary test mode: disable arm EE tracking and keep only joint-space centering for the arm.
     // Priority 2: Swing foot tracking (if any swing legs)
-    // Priority 3: Base tracking + Arm EE tracking
+    // Priority 3: Base tracking
     // Priority 4: Arm joint centering (nullspace)
     // Priority 5: Contact force minimization
 
@@ -37,9 +38,7 @@ std::vector<tbai::MotorCommand> HqpWbc::getMotorCommands(scalar_t currentTime, c
         // All feet in contact: no swing leg task
         Task task1 = createDynamicsTask() + createStanceFootNoMotionTask() + createContactForceTask() +
                      createTorqueLimitTask() + createArmTorqueLimitTask();
-        Task task2 = createBaseAccelerationTask(currentState, desiredState, desiredInput, desiredJointAcceleration) +
-                     createArmEndEffectorPositionTask(desiredArmEEPosition) +
-                     createArmEndEffectorOrientationTask(desiredArmEEOrientation);
+        Task task2 = createBaseAccelerationTask(currentState, desiredState, desiredInput, desiredJointAcceleration);
         Task task3 = createArmJointCenteringTask();
         Task task4 = createContactForceMinimizationTask(desiredInput);
         std::vector<Task *> tasks = {&task1, &task2, &task3, &task4};
@@ -49,9 +48,7 @@ std::vector<tbai::MotorCommand> HqpWbc::getMotorCommands(scalar_t currentTime, c
         Task task1 = createDynamicsTask() + createStanceFootNoMotionTask() + createContactForceTask() +
                      createTorqueLimitTask() + createArmTorqueLimitTask();
         Task task2 = createSwingFootAccelerationTask(currentState, currentInput, desiredState, desiredInput);
-        Task task3 = createBaseAccelerationTask(currentState, desiredState, desiredInput, desiredJointAcceleration) +
-                     createArmEndEffectorPositionTask(desiredArmEEPosition) +
-                     createArmEndEffectorOrientationTask(desiredArmEEOrientation);
+        Task task3 = createBaseAccelerationTask(currentState, desiredState, desiredInput, desiredJointAcceleration);
         Task task4 = createArmJointCenteringTask();
         Task task5 = createContactForceMinimizationTask(desiredInput);
         std::vector<Task *> tasks = {&task1, &task2, &task3, &task4, &task5};
@@ -109,14 +106,15 @@ std::vector<tbai::MotorCommand> HqpWbc::getMotorCommands(scalar_t currentTime, c
     }
 
     // Arm joint commands (6 joints)
+    // Temporary test mode: hold the arm directly at the stowed joint configuration.
     for (size_t i = 0; i < numArmJoints; ++i) {
         tbai::MotorCommand command;
         command.joint_name = jointNames_[numLegJoints + i];
-        command.desired_position = qDesired[numLegJoints + i];
-        command.desired_velocity = vDesired[numLegJoints + i];
+        command.desired_position = armJointHomePosition_[i];
+        command.desired_velocity = 0.0;
         command.kp = armJointKp_;
         command.kd = armJointKd_;
-        command.torque_ff = armTorques[i];
+        command.torque_ff = 0.0;
         commands[numLegJoints + i] = std::move(command);
     }
 
