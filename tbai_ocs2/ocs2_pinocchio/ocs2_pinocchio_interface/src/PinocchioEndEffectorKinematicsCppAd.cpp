@@ -211,8 +211,8 @@ ad_vector_t PinocchioEndEffectorKinematicsCppAd::getVelocityCppAd(
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-auto PinocchioEndEffectorKinematicsCppAd::getVelocity(const vector_t &state,
-                                                      const vector_t &input) const -> std::vector<vector3_t> {
+auto PinocchioEndEffectorKinematicsCppAd::getVelocity(const vector_t &state, const vector_t &input) const
+    -> std::vector<vector3_t> {
     vector_t stateInput(state.rows() + input.rows());
     stateInput << state, input;
     const vector_t velocityValues = velocityCppAdInterfacePtr_->getFunctionValue(stateInput);

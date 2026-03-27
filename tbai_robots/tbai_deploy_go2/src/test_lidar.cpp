@@ -3,8 +3,8 @@
 #include <iostream>
 #include <string>
 
-#include <tbai_sdk/subscriber.hpp>
 #include <tbai_sdk/messages/robot_msgs.hpp>
+#include <tbai_sdk/subscriber.hpp>
 
 #define TOPIC_RAW "rt/utlidar/cloud"
 

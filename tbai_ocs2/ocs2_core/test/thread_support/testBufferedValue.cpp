@@ -37,10 +37,10 @@ namespace {
  */
 class MoveCounter {
    public:
-    MoveCounter() : count_(0){};
+    MoveCounter() : count_(0) {};
     MoveCounter(const MoveCounter &) = delete;
     MoveCounter &operator=(const MoveCounter &) = delete;
-    MoveCounter(MoveCounter &&other) : count_(other.count_ + 1){};
+    MoveCounter(MoveCounter &&other) : count_(other.count_ + 1) {};
     MoveCounter &operator=(MoveCounter &&other) {
         count_ = other.count_ + 1;
         return *this;

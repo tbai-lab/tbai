@@ -1,6 +1,7 @@
 #include "tbai_deploy_go2w/Go2WRobotInterface.hpp"
 
 #include <stdint.h>
+
 #include <chrono>
 #include <string>
 #include <thread>
@@ -44,9 +45,7 @@ Go2WRobotInterface::Go2WRobotInterface(Go2WRobotInterfaceArgs args) {
 
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", GO2W_TOPIC_LOWSTATE);
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
-        GO2W_TOPIC_LOWSTATE,
-        [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); },
-        1);
+        GO2W_TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
 }
 
 Go2WRobotInterface::~Go2WRobotInterface() {

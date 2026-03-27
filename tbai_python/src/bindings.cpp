@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include <pybind11/eigen.h>
-#include <pybind11/numpy.h>
 #include <pybind11/functional.h>
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <tbai_bob/BobController.hpp>
@@ -24,15 +24,15 @@
 #endif
 
 #ifdef TBAI_HAS_DEPLOY_G1
-#include <tbai_deploy_g1/G1RobotInterface.hpp>
-#include <tbai_deploy_g1/G1RLController.hpp>
-#include <tbai_deploy_g1/G1MimicController.hpp>
 #include <tbai_deploy_g1/G1ASAPController.hpp>
 #include <tbai_deploy_g1/G1ASAPMimicController.hpp>
-#include <tbai_deploy_g1/G1PBHCController.hpp>
-#include <tbai_deploy_g1/G1Twist2Controller.hpp>
-#include <tbai_deploy_g1/G1SpinkickController.hpp>
 #include <tbai_deploy_g1/G1BeyondMimicController.hpp>
+#include <tbai_deploy_g1/G1MimicController.hpp>
+#include <tbai_deploy_g1/G1PBHCController.hpp>
+#include <tbai_deploy_g1/G1RLController.hpp>
+#include <tbai_deploy_g1/G1RobotInterface.hpp>
+#include <tbai_deploy_g1/G1SpinkickController.hpp>
+#include <tbai_deploy_g1/G1Twist2Controller.hpp>
 #endif
 
 // Python wrappers around virtual classes
@@ -196,8 +196,7 @@ PYBIND11_MODULE(_C, m) {
         .def_readwrite("timestamp", &tbai::State::timestamp)
         .def_readwrite("contact_flags", &tbai::State::contactFlags);
 
-    py::class_<tbai::RobotInterface, tbai::PyRobotInterface, std::shared_ptr<tbai::RobotInterface>>(
-        m, "RobotInterface")
+    py::class_<tbai::RobotInterface, tbai::PyRobotInterface, std::shared_ptr<tbai::RobotInterface>>(m, "RobotInterface")
         .def(py::init<>())
         .def("waitTillInitialized", &tbai::RobotInterface::waitTillInitialized)
         .def("getLatestState", &tbai::RobotInterface::getLatestState)
@@ -294,7 +293,6 @@ PYBIND11_MODULE(_C, m) {
     rotations_module.def("rpy2mat", &tbai::rpy2mat, "Convert roll-pitch-yaw euler angles to rotation matrix");
     rotations_module.def("mat2aa", &tbai::mat2aa, "Convert rotation matrix to axis-angle representation");
 
-
 #ifdef TBAI_HAS_DEPLOY_GO2
     py::class_<tbai::Go2RobotInterfaceArgs>(m, "Go2RobotInterfaceArgs")
         .def(py::init<>())
@@ -347,8 +345,7 @@ PYBIND11_MODULE(_C, m) {
         .def("publish", &tbai::Go2RobotInterface::publish, py::call_guard<py::gil_scoped_release>())
         .def("waitTillInitialized", &tbai::Go2RobotInterface::waitTillInitialized,
              py::call_guard<py::gil_scoped_release>())
-        .def("getLatestState", &tbai::Go2RobotInterface::getLatestState,
-             py::call_guard<py::gil_scoped_release>());
+        .def("getLatestState", &tbai::Go2RobotInterface::getLatestState, py::call_guard<py::gil_scoped_release>());
 #endif
 
     m.attr("HAS_DEPLOY_GO2") =
@@ -396,12 +393,11 @@ PYBIND11_MODULE(_C, m) {
         .def("publish", &tbai::G1RobotInterface::publish, py::call_guard<py::gil_scoped_release>())
         .def("waitTillInitialized", &tbai::G1RobotInterface::waitTillInitialized,
              py::call_guard<py::gil_scoped_release>())
-        .def("getLatestState", &tbai::G1RobotInterface::getLatestState,
-             py::call_guard<py::gil_scoped_release>())
+        .def("getLatestState", &tbai::G1RobotInterface::getLatestState, py::call_guard<py::gil_scoped_release>())
         .def("getBaseQuaternion", &tbai::G1RobotInterface::getBaseQuaternion);
 
-    py::class_<tbai::g1::G1RLController, tbai::Controller, std::shared_ptr<tbai::g1::G1RLController>>(
-        m, "G1RLController")
+    py::class_<tbai::g1::G1RLController, tbai::Controller, std::shared_ptr<tbai::g1::G1RLController>>(m,
+                                                                                                      "G1RLController")
         .def(py::init<const std::shared_ptr<tbai::RobotInterface> &,
                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &, const std::string &>(),
              py::arg("robot_interface"), py::arg("ref_vel_gen"), py::arg("policy_path"));
@@ -426,8 +422,7 @@ PYBIND11_MODULE(_C, m) {
 
     py::class_<tbai::g1::G1ASAPMimicController, tbai::Controller, std::shared_ptr<tbai::g1::G1ASAPMimicController>>(
         m, "G1ASAPMimicController")
-        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, float,
-                      const std::string &>(),
+        .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, float, const std::string &>(),
              py::arg("robot_interface"), py::arg("policy_path"), py::arg("motion_length"),
              py::arg("controller_name") = "G1ASAPMimic")
         .def("isMotionComplete", &tbai::g1::G1ASAPMimicController::isMotionComplete)
@@ -438,8 +433,7 @@ PYBIND11_MODULE(_C, m) {
         .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, float,
                       float, const std::string &>(),
              py::arg("robot_interface"), py::arg("policy_path"), py::arg("motion_file_path"),
-             py::arg("time_start") = 0.0f, py::arg("time_end") = -1.0f,
-             py::arg("controller_name") = "G1PBHCController")
+             py::arg("time_start") = 0.0f, py::arg("time_end") = -1.0f, py::arg("controller_name") = "G1PBHCController")
         .def("isMotionComplete", &tbai::g1::G1PBHCController::isMotionComplete)
         .def("getMotionTime", &tbai::g1::G1PBHCController::getMotionTime);
 
@@ -457,20 +451,18 @@ PYBIND11_MODULE(_C, m) {
         m, "G1SpinkickController")
         .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, bool,
                       float>(),
-             py::arg("robot_interface"), py::arg("policy_path"),
-             py::arg("controller_name") = "G1SpinkickController", py::arg("use_model_meta_config") = true,
-             py::arg("action_beta") = 1.0f)
+             py::arg("robot_interface"), py::arg("policy_path"), py::arg("controller_name") = "G1SpinkickController",
+             py::arg("use_model_meta_config") = true, py::arg("action_beta") = 1.0f)
         .def("isMotionComplete", &tbai::g1::G1SpinkickController::isMotionComplete)
         .def("getTimestep", &tbai::g1::G1SpinkickController::getTimestep)
         .def("getMaxTimestep", &tbai::g1::G1SpinkickController::getMaxTimestep);
 
-    py::class_<tbai::g1::G1BeyondMimicController, tbai::Controller,
-               std::shared_ptr<tbai::g1::G1BeyondMimicController>>(m, "G1BeyondMimicController")
+    py::class_<tbai::g1::G1BeyondMimicController, tbai::Controller, std::shared_ptr<tbai::g1::G1BeyondMimicController>>(
+        m, "G1BeyondMimicController")
         .def(py::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, bool,
                       float>(),
-             py::arg("robot_interface"), py::arg("policy_path"),
-             py::arg("controller_name") = "G1BeyondMimicController", py::arg("use_model_meta_config") = true,
-             py::arg("action_beta") = 1.0f)
+             py::arg("robot_interface"), py::arg("policy_path"), py::arg("controller_name") = "G1BeyondMimicController",
+             py::arg("use_model_meta_config") = true, py::arg("action_beta") = 1.0f)
         .def("isMotionComplete", &tbai::g1::G1BeyondMimicController::isMotionComplete)
         .def("getTimestep", &tbai::g1::G1BeyondMimicController::getTimestep)
         .def("getMaxTimestep", &tbai::g1::G1BeyondMimicController::getMaxTimestep);

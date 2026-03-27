@@ -60,9 +60,8 @@ constexpr int ASAP_MIMIC_TOTAL_OBS_SIZE =
  */
 class G1ASAPMimicController : public tbai::Controller {
    public:
-    G1ASAPMimicController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
-                          const std::string &policyPath, float motionLength,
-                          const std::string &controllerName = "G1ASAPMimic");
+    G1ASAPMimicController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr, const std::string &policyPath,
+                          float motionLength, const std::string &controllerName = "G1ASAPMimic");
 
     ~G1ASAPMimicController();
 

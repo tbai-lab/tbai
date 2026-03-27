@@ -1,6 +1,7 @@
 #include "tbai_deploy_anymal_d/AnymalDRobotInterface.hpp"
 
 #include <stdint.h>
+
 #include <algorithm>
 #include <chrono>
 #include <cstring>
@@ -68,9 +69,7 @@ AnymalDRobotInterface::AnymalDRobotInterface(AnymalDRobotInterfaceArgs args) {
 
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", ANYMAL_D_TOPIC_LOWSTATE);
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
-        ANYMAL_D_TOPIC_LOWSTATE,
-        [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); },
-        1);
+        ANYMAL_D_TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
 }
 
 AnymalDRobotInterface::~AnymalDRobotInterface() {
@@ -149,12 +148,10 @@ void AnymalDRobotInterface::lowStateCallback(const robot_msgs::LowState &low_sta
     static std::vector<bool> prevContacts(4, true);
     std::vector<bool> contactFlags(4, true);
     if (low_state.foot_force.size() >= 4) {
-        std::vector<double> forces = {
-            static_cast<double>(low_state.foot_force[footIdMap_["LF_FOOT"]]),
-            static_cast<double>(low_state.foot_force[footIdMap_["RF_FOOT"]]),
-            static_cast<double>(low_state.foot_force[footIdMap_["LH_FOOT"]]),
-            static_cast<double>(low_state.foot_force[footIdMap_["RH_FOOT"]])
-        };
+        std::vector<double> forces = {static_cast<double>(low_state.foot_force[footIdMap_["LF_FOOT"]]),
+                                      static_cast<double>(low_state.foot_force[footIdMap_["RF_FOOT"]]),
+                                      static_cast<double>(low_state.foot_force[footIdMap_["LH_FOOT"]]),
+                                      static_cast<double>(low_state.foot_force[footIdMap_["RH_FOOT"]])};
         if constexpr (useHysteresis) {
             const double on_threshold = 10.0;
             const double off_threshold = 3.0;
@@ -169,7 +166,6 @@ void AnymalDRobotInterface::lowStateCallback(const robot_msgs::LowState &low_sta
         }
         prevContacts = contactFlags;
     }
-
 
     static scalar_t lastTime = currentTime;
     scalar_t dt = currentTime - lastTime;
@@ -209,7 +205,9 @@ void AnymalDRobotInterface::lowStateCallback(const robot_msgs::LowState &low_sta
             constexpr double zCorrectionAlpha = 0.01;
             double expectedZ = groundHeightEstimate_ + nominalHeight;
             int numContacts = 0;
-            for (const auto &c : contactFlags) { if (c) numContacts++; }
+            for (const auto &c : contactFlags) {
+                if (c) numContacts++;
+            }
             if (numContacts >= 3) {
                 basePos[2] = basePos[2] * (1.0 - zCorrectionAlpha) + expectedZ * zCorrectionAlpha;
             }
@@ -217,7 +215,9 @@ void AnymalDRobotInterface::lowStateCallback(const robot_msgs::LowState &low_sta
             constexpr double nominalHeight = 0.54;
             constexpr double zCorrectionAlpha = 0.005;
             int numContacts = 0;
-            for (const auto &c : contactFlags) { if (c) numContacts++; }
+            for (const auto &c : contactFlags) {
+                if (c) numContacts++;
+            }
             if (numContacts >= 3) {
                 basePos[2] = basePos[2] * (1.0 - zCorrectionAlpha) + nominalHeight * zCorrectionAlpha;
             }

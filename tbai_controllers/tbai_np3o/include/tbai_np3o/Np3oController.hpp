@@ -28,8 +28,7 @@ using torch::jit::script::Module;
 
 class Np3oController : public tbai::Controller {
    public:
-    Np3oController(const std::string &urdfPathOrString,
-                   const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
+    Np3oController(const std::string &urdfPathOrString, const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
                    const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &refVelGen);
 
     Np3oController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,

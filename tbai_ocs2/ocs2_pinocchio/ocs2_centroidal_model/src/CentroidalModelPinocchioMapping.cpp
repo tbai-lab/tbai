@@ -112,8 +112,9 @@ auto CentroidalModelPinocchioMappingTpl<SCALAR>::getPinocchioJointVelocity(const
 /******************************************************************************************************/
 /******************************************************************************************************/
 template <typename SCALAR>
-auto CentroidalModelPinocchioMappingTpl<SCALAR>::getOcs2Jacobian(
-    const vector_t &state, const matrix_t &Jq, const matrix_t &Jv) const -> std::pair<matrix_t, matrix_t> {
+auto CentroidalModelPinocchioMappingTpl<SCALAR>::getOcs2Jacobian(const vector_t &state, const matrix_t &Jq,
+                                                                 const matrix_t &Jv) const
+    -> std::pair<matrix_t, matrix_t> {
     const auto &model = pinocchioInterfacePtr_->getModel();
     const auto &data = pinocchioInterfacePtr_->getData();
     const auto &info = centroidalModelInfo_;

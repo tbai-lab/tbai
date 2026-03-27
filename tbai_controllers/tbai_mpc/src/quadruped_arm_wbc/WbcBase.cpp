@@ -53,8 +53,12 @@ WbcBase::WbcBase(const std::string &configFile, const std::string &urdfString,
     jointNames_ = getJointNames(frameDeclaration);
 
     // Sanity checks
-    TBAI_THROW_UNLESS(footNames_.size() == tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS, "Number of foot names ({}) does not match expected number of contact points ({})", footNames_.size(), tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS);
-    TBAI_THROW_UNLESS(jointNames_.size() == tbai::mpc::quadruped_arm::JOINT_COORDINATE_SIZE, "Number of joint names ({}) does not match expected joint coordinate size ({})", jointNames_.size(), tbai::mpc::quadruped_arm::JOINT_COORDINATE_SIZE);
+    TBAI_THROW_UNLESS(footNames_.size() == tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS,
+                      "Number of foot names ({}) does not match expected number of contact points ({})",
+                      footNames_.size(), tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS);
+    TBAI_THROW_UNLESS(jointNames_.size() == tbai::mpc::quadruped_arm::JOINT_COORDINATE_SIZE,
+                      "Number of joint names ({}) does not match expected joint coordinate size ({})",
+                      jointNames_.size(), tbai::mpc::quadruped_arm::JOINT_COORDINATE_SIZE);
 
     Jcontact_ = matrix_t(3 * tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS, nGeneralizedCoordinates_);
     dJcontactdt_ = matrix_t(3 * tbai::mpc::quadruped_arm::NUM_CONTACT_POINTS, nGeneralizedCoordinates_);

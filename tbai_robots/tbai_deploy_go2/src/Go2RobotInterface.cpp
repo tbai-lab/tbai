@@ -1,9 +1,9 @@
 #include "tbai_deploy_go2/Go2RobotInterface.hpp"
 
-#include <cstring>
 #include <stdint.h>
 
 #include <chrono>
+#include <cstring>
 #include <string>
 #include <thread>
 
@@ -26,8 +26,7 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     if (args.subscribeLidar()) {
         TBAI_LOG_INFO(logger_, "Initializing lidar subscriber: {}", TOPIC_LIDAR);
         lidar_subscriber = std::make_unique<tbai::Subscriber<robot_msgs::PointCloud2>>(
-            TOPIC_LIDAR,
-            [this](const robot_msgs::PointCloud2 &msg) { lidarCallback(msg); });
+            TOPIC_LIDAR, [this](const robot_msgs::PointCloud2 &msg) { lidarCallback(msg); });
     }
 
     // Initialize motor 2 id map
@@ -60,9 +59,7 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
 
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", TOPIC_LOWSTATE);
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
-        TOPIC_LOWSTATE,
-        [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); },
-        1);
+        TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
 
     if (args.enableVideo()) {
         TBAI_LOG_WARN(logger_, "Video client not supported with tbai_sdk backend");

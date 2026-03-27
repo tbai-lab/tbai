@@ -1,16 +1,15 @@
 #pragma once
 
-#include <tbai_core/Args.hpp>
-#include <tbai_core/Logging.hpp>
-#include <tbai_core/control/RobotInterface.hpp>
-
 #include <math.h>
 #include <stdint.h>
 
+#include <tbai_core/Args.hpp>
+#include <tbai_core/Logging.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_estim/inekf/InEKFEstimator.hpp>
+#include <tbai_sdk/messages/robot_msgs.hpp>
 #include <tbai_sdk/publisher.hpp>
 #include <tbai_sdk/subscriber.hpp>
-#include <tbai_sdk/messages/robot_msgs.hpp>
 
 #define ANYMAL_D_TOPIC_LOWCMD "rt/lowcmd"
 #define ANYMAL_D_TOPIC_LOWSTATE "rt/lowstate"

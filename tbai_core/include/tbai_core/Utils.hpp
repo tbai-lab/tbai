@@ -11,7 +11,7 @@ namespace tbai {
 /**
  * @brief Write the controller initialization timestamp to /tmp/tbai_init_time_123.
  *
- * This timestamp serves as a reference time for all controllers in the system. 
+ * This timestamp serves as a reference time for all controllers in the system.
  * Writing is both thread-safe and process-safe.
  *
  * The no-argument overload captures the current system clock time.
@@ -29,12 +29,12 @@ void writeInitTime();
 scalar_t readInitTime();
 
 /**
-* @brief Download a file from a Hugging Face repo, caching it under $TBAI_CACHE_DIR (default /tmp/tbai_hf_cache).
-* @note This function requires that `huggingface-cli` is installed, otherwise an error is thrown.
-* @param repo_id Hugging Face repository (e.g. "org/model-name")
-* @param filename File path within the repo; trailing '/' downloads a folder
-* @return Local filesystem path to the downloaded file
-*/
+ * @brief Download a file from a Hugging Face repo, caching it under $TBAI_CACHE_DIR (default /tmp/tbai_hf_cache).
+ * @note This function requires that `huggingface-cli` is installed, otherwise an error is thrown.
+ * @param repo_id Hugging Face repository (e.g. "org/model-name")
+ * @param filename File path within the repo; trailing '/' downloads a folder
+ * @return Local filesystem path to the downloaded file
+ */
 std::string downloadFromHuggingFace(const std::string &repo_id, const std::string &filename);
 
 /**
@@ -51,10 +51,10 @@ void writeInitTime(const long seconds, const long nanoseconds);
 void writeInitTime(const scalar_t time);
 
 /**
-* @brief Stack vectors vertically
-* @param vectors The vectors to stack
-* @return The stacked vector
-*/
+ * @brief Stack vectors vertically
+ * @param vectors The vectors to stack
+ * @return The stacked vector
+ */
 tbai::vector_t vvstack(const std::vector<std::reference_wrapper<const tbai::vector_t>> &vectors);
 
 template <typename TIMEPOINT>

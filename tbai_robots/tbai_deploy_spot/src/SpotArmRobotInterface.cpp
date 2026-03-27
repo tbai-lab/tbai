@@ -1,6 +1,7 @@
 #include "tbai_deploy_spot/SpotArmRobotInterface.hpp"
 
 #include <stdint.h>
+
 #include <chrono>
 #include <string>
 #include <thread>
@@ -17,17 +18,30 @@ SpotArmRobotInterface::SpotArmRobotInterface(SpotArmRobotInterfaceArgs args) {
 
     // MuJoCo actuator order: FR(0-2), FL(3-5), RR(6-8), RL(9-11), arm(12-17), gripper(18)
     // Config joint_names order: LF, LH, RF, RH, arm
-    motorIdMap_["LF_HAA"] = 3;   motorIdMap_["LF_HFE"] = 4;   motorIdMap_["LF_KFE"] = 5;
-    motorIdMap_["LH_HAA"] = 9;   motorIdMap_["LH_HFE"] = 10;  motorIdMap_["LH_KFE"] = 11;
-    motorIdMap_["RF_HAA"] = 0;   motorIdMap_["RF_HFE"] = 1;   motorIdMap_["RF_KFE"] = 2;
-    motorIdMap_["RH_HAA"] = 6;   motorIdMap_["RH_HFE"] = 7;   motorIdMap_["RH_KFE"] = 8;
-    motorIdMap_["arm_sh0"] = 12; motorIdMap_["arm_sh1"] = 13;
-    motorIdMap_["arm_el0"] = 14; motorIdMap_["arm_el1"] = 15;
-    motorIdMap_["arm_wr0"] = 16; motorIdMap_["arm_wr1"] = 17;
+    motorIdMap_["LF_HAA"] = 3;
+    motorIdMap_["LF_HFE"] = 4;
+    motorIdMap_["LF_KFE"] = 5;
+    motorIdMap_["LH_HAA"] = 9;
+    motorIdMap_["LH_HFE"] = 10;
+    motorIdMap_["LH_KFE"] = 11;
+    motorIdMap_["RF_HAA"] = 0;
+    motorIdMap_["RF_HFE"] = 1;
+    motorIdMap_["RF_KFE"] = 2;
+    motorIdMap_["RH_HAA"] = 6;
+    motorIdMap_["RH_HFE"] = 7;
+    motorIdMap_["RH_KFE"] = 8;
+    motorIdMap_["arm_sh0"] = 12;
+    motorIdMap_["arm_sh1"] = 13;
+    motorIdMap_["arm_el0"] = 14;
+    motorIdMap_["arm_el1"] = 15;
+    motorIdMap_["arm_wr0"] = 16;
+    motorIdMap_["arm_wr1"] = 17;
 
     // Bridge foot_force order: FR(0), FL(1), RR(2), RL(3)
-    footIdMap_["LF_FOOT"] = 1;  footIdMap_["RF_FOOT"] = 0;
-    footIdMap_["LH_FOOT"] = 3;  footIdMap_["RH_FOOT"] = 2;
+    footIdMap_["LF_FOOT"] = 1;
+    footIdMap_["RF_FOOT"] = 0;
+    footIdMap_["LH_FOOT"] = 3;
+    footIdMap_["RH_FOOT"] = 2;
 
     lowcmd_publisher = std::make_unique<tbai::Publisher<robot_msgs::MotorCommands>>("rt/lowcmd");
 
@@ -38,9 +52,7 @@ SpotArmRobotInterface::SpotArmRobotInterface(SpotArmRobotInterfaceArgs args) {
     removeGyroscopeBias_ = tbai::fromGlobalConfig<bool>("inekf_estimator/remove_gyroscope_bias", true);
 
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
-        "rt/lowstate",
-        [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); },
-        1);
+        "rt/lowstate", [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
 }
 
 SpotArmRobotInterface::~SpotArmRobotInterface() {
@@ -69,21 +81,33 @@ void SpotArmRobotInterface::lowStateCallback(const robot_msgs::LowState &low_sta
     vector_t jointVelocities(SPOT_ARM_NUM_JOINTS);
 
     // LF (FL in MuJoCo: 3-5)
-    jointAngles[0] = low_state.motor_states[3].q;   jointVelocities[0] = low_state.motor_states[3].dq;
-    jointAngles[1] = low_state.motor_states[4].q;   jointVelocities[1] = low_state.motor_states[4].dq;
-    jointAngles[2] = low_state.motor_states[5].q;   jointVelocities[2] = low_state.motor_states[5].dq;
+    jointAngles[0] = low_state.motor_states[3].q;
+    jointVelocities[0] = low_state.motor_states[3].dq;
+    jointAngles[1] = low_state.motor_states[4].q;
+    jointVelocities[1] = low_state.motor_states[4].dq;
+    jointAngles[2] = low_state.motor_states[5].q;
+    jointVelocities[2] = low_state.motor_states[5].dq;
     // LH (RL in MuJoCo: 9-11)
-    jointAngles[3] = low_state.motor_states[9].q;   jointVelocities[3] = low_state.motor_states[9].dq;
-    jointAngles[4] = low_state.motor_states[10].q;  jointVelocities[4] = low_state.motor_states[10].dq;
-    jointAngles[5] = low_state.motor_states[11].q;  jointVelocities[5] = low_state.motor_states[11].dq;
+    jointAngles[3] = low_state.motor_states[9].q;
+    jointVelocities[3] = low_state.motor_states[9].dq;
+    jointAngles[4] = low_state.motor_states[10].q;
+    jointVelocities[4] = low_state.motor_states[10].dq;
+    jointAngles[5] = low_state.motor_states[11].q;
+    jointVelocities[5] = low_state.motor_states[11].dq;
     // RF (FR in MuJoCo: 0-2)
-    jointAngles[6] = low_state.motor_states[0].q;   jointVelocities[6] = low_state.motor_states[0].dq;
-    jointAngles[7] = low_state.motor_states[1].q;   jointVelocities[7] = low_state.motor_states[1].dq;
-    jointAngles[8] = low_state.motor_states[2].q;   jointVelocities[8] = low_state.motor_states[2].dq;
+    jointAngles[6] = low_state.motor_states[0].q;
+    jointVelocities[6] = low_state.motor_states[0].dq;
+    jointAngles[7] = low_state.motor_states[1].q;
+    jointVelocities[7] = low_state.motor_states[1].dq;
+    jointAngles[8] = low_state.motor_states[2].q;
+    jointVelocities[8] = low_state.motor_states[2].dq;
     // RH (RR in MuJoCo: 6-8)
-    jointAngles[9] = low_state.motor_states[6].q;   jointVelocities[9] = low_state.motor_states[6].dq;
-    jointAngles[10] = low_state.motor_states[7].q;  jointVelocities[10] = low_state.motor_states[7].dq;
-    jointAngles[11] = low_state.motor_states[8].q;  jointVelocities[11] = low_state.motor_states[8].dq;
+    jointAngles[9] = low_state.motor_states[6].q;
+    jointVelocities[9] = low_state.motor_states[6].dq;
+    jointAngles[10] = low_state.motor_states[7].q;
+    jointVelocities[10] = low_state.motor_states[7].dq;
+    jointAngles[11] = low_state.motor_states[8].q;
+    jointVelocities[11] = low_state.motor_states[8].dq;
     // Arm (MuJoCo: 12-17)
     for (int i = 0; i < SPOT_ARM_NUM_ARM_JOINTS; ++i) {
         jointAngles[12 + i] = low_state.motor_states[12 + i].q;
@@ -120,8 +144,8 @@ void SpotArmRobotInterface::lowStateCallback(const robot_msgs::LowState &low_sta
     lastTime = currentTime;
 
     // Pass joints in config order — matches Gazebo InekfRosStateSubscriber behavior
-    estimator_->update(currentTime, dt, baseOrientation, jointAngles, jointVelocities,
-                       baseAcc, baseAngVel, contactFlags, rectifyOrientation_, enable_);
+    estimator_->update(currentTime, dt, baseOrientation, jointAngles, jointVelocities, baseAcc, baseAngVel,
+                       contactFlags, rectifyOrientation_, enable_);
 
     State state;
     state.x = vector_t::Zero(SPOT_ARM_STATE_DIM);

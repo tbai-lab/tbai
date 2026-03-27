@@ -54,9 +54,7 @@ SpotRobotInterface::SpotRobotInterface(SpotRobotInterfaceArgs args) {
 
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", SPOT_TOPIC_LOWSTATE);
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
-        SPOT_TOPIC_LOWSTATE,
-        [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); },
-        1);
+        SPOT_TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
 }
 
 SpotRobotInterface::~SpotRobotInterface() {

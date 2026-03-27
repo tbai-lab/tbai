@@ -86,7 +86,7 @@ CppAdInterface::CppAdInterface(ad_parameterized_function_t adFunction, size_t va
 CppAdInterface::CppAdInterface(ad_function_t adFunction, size_t variableDim, std::string modelName,
                                std::string folderName, std::vector<std::string> compileFlags)
     : CppAdInterface([adFunction](const ad_vector_t &x, const ad_vector_t &p, ad_vector_t &y) { adFunction(x, y); },
-                     variableDim, 0, std::move(modelName), std::move(folderName), std::move(compileFlags)){};
+                     variableDim, 0, std::move(modelName), std::move(folderName), std::move(compileFlags)) {};
 
 /******************************************************************************************************/
 /******************************************************************************************************/

@@ -1,16 +1,15 @@
 #pragma once
 
+#include <math.h>
+#include <stdint.h>
+
 #include <tbai_core/Args.hpp>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_deploy_go2w/Go2WConstants.hpp>
-
-#include <math.h>
-#include <stdint.h>
-
+#include <tbai_sdk/messages/robot_msgs.hpp>
 #include <tbai_sdk/publisher.hpp>
 #include <tbai_sdk/subscriber.hpp>
-#include <tbai_sdk/messages/robot_msgs.hpp>
 
 #define GO2W_TOPIC_LOWCMD "rt/lowcmd"
 #define GO2W_TOPIC_LOWSTATE "rt/lowstate"

@@ -5,7 +5,7 @@ namespace tbai::mpc::quadruped {
 DynamicsParametersSynchronizedModule::DynamicsParametersSynchronizedModule()
     : activeDynamicsParameters_(),
       newDynamicsParameters_(std::unique_ptr<ComKinoSystemDynamicsParameters<scalar_t>>(
-          new ComKinoSystemDynamicsParameters<scalar_t>(activeDynamicsParameters_))){};
+          new ComKinoSystemDynamicsParameters<scalar_t>(activeDynamicsParameters_))) {};
 
 void DynamicsParametersSynchronizedModule::preSolverRun(scalar_t initTime, scalar_t finalTime,
                                                         const vector_t &initState,

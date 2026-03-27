@@ -51,14 +51,13 @@ void MpcController::initialize(const std::string &urdfString, const std::string 
 
     // Create quadruped interface
     if (robotName_ == "anymal_d" || robotName_ == "anymal_b" || robotName_ == "anymal_c") {
-        quadrupedInterfacePtr_ = getAnymalInterface(urdfString, loadQuadrupedSettings(taskSettingsFile),
-                                                    frameDeclaration);
+        quadrupedInterfacePtr_ =
+            getAnymalInterface(urdfString, loadQuadrupedSettings(taskSettingsFile), frameDeclaration);
     } else if (robotName_ == "go2") {
-        quadrupedInterfacePtr_ = getGo2Interface(urdfString, loadQuadrupedSettings(taskSettingsFile),
-                                                 frameDeclaration);
+        quadrupedInterfacePtr_ = getGo2Interface(urdfString, loadQuadrupedSettings(taskSettingsFile), frameDeclaration);
     } else if (robotName_ == "spot" || robotName_ == "spot_arm") {
-        quadrupedInterfacePtr_ = getSpotInterface(urdfString, loadQuadrupedSettings(taskSettingsFile),
-                                                  frameDeclaration);
+        quadrupedInterfacePtr_ =
+            getSpotInterface(urdfString, loadQuadrupedSettings(taskSettingsFile), frameDeclaration);
     } else {
         TBAI_THROW("Robot {} not implemented. Available robots: anymal_d, anymal_b, anymal_c, go2, spot, spot_arm",
                    robotName_);

@@ -33,8 +33,7 @@ namespace joe {
 namespace LinearInterpolation = ocs2::LinearInterpolation;
 using namespace tbai::mpc::quadruped;
 
-JoeController::JoeController(const std::string &robotName,
-                             const std::shared_ptr<tbai::RobotInterface> &robotInterface,
+JoeController::JoeController(const std::string &robotName, const std::shared_ptr<tbai::RobotInterface> &robotInterface,
                              std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> velocityGenerator,
                              std::function<scalar_t()> getCurrentTimeFunction)
     : robotInterfacePtr_(robotInterface),

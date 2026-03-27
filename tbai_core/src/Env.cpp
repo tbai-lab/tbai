@@ -1,7 +1,7 @@
+#include <algorithm>
+
 #include <tbai_core/Env.hpp>
 #include <tbai_core/Throws.hpp>
-
-#include <algorithm>
 
 namespace tbai {
 

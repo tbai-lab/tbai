@@ -29,9 +29,9 @@ constexpr int SPINKICK_NUM_BODIES = 14;
 
 class G1SpinkickController : public tbai::Controller {
    public:
-    G1SpinkickController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr,
-                         const std::string &policyPath, const std::string &controllerName = "G1SpinkickController",
-                         bool useModelMetaConfig = true, float actionBeta = 1.0f);
+    G1SpinkickController(const std::shared_ptr<tbai::RobotInterface> &robotInterfacePtr, const std::string &policyPath,
+                         const std::string &controllerName = "G1SpinkickController", bool useModelMetaConfig = true,
+                         float actionBeta = 1.0f);
 
     ~G1SpinkickController();
 

@@ -59,8 +59,7 @@ void addVelocitiesFromFiniteDifference(BaseReferenceTrajectory &baseRef) {
 }
 }  // namespace
 
-DtcController::DtcController(const std::string &robotName,
-                             const std::shared_ptr<tbai::RobotInterface> &robotInterface,
+DtcController::DtcController(const std::string &robotName, const std::shared_ptr<tbai::RobotInterface> &robotInterface,
                              std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> velocityGenerator,
                              std::function<scalar_t()> getCurrentTimeFunction)
     : robotInterfacePtr_(robotInterface),

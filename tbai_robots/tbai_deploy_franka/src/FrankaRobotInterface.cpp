@@ -37,9 +37,7 @@ FrankaRobotInterface::FrankaRobotInterface(FrankaRobotInterfaceArgs args) {
 
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", FRANKA_TOPIC_LOWSTATE);
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
-        FRANKA_TOPIC_LOWSTATE,
-        [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); },
-        1);
+        FRANKA_TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
 }
 
 FrankaRobotInterface::~FrankaRobotInterface() {

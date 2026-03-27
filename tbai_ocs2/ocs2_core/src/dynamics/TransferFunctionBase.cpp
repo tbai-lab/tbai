@@ -83,7 +83,7 @@ TransferFunctionBase::TransferFunctionBase(vector_t numCoefficients, vector_t de
     : numCoefficients_(std::move(numCoefficients)),
       denCoefficients_(std::move(denCoefficients)),
       timeDelay_(timedelay),
-      balance_(balance){};
+      balance_(balance) {};
 
 /******************************************************************************************************/
 /******************************************************************************************************/

@@ -1,6 +1,7 @@
 #include "tbai_deploy_g1/G1RobotInterface.hpp"
 
 #include <stdint.h>
+
 #include <chrono>
 #include <string>
 #include <thread>
@@ -67,9 +68,7 @@ G1RobotInterface::G1RobotInterface(G1RobotInterfaceArgs args) {
 
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", G1_TOPIC_LOWSTATE);
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
-        G1_TOPIC_LOWSTATE,
-        [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); },
-        1);
+        G1_TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
 }
 
 G1RobotInterface::~G1RobotInterface() {

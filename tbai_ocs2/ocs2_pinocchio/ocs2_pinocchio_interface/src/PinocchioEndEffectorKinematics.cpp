@@ -95,8 +95,8 @@ auto PinocchioEndEffectorKinematics::getPosition(const vector_t &state) const ->
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-auto PinocchioEndEffectorKinematics::getVelocity(const vector_t &state,
-                                                 const vector_t &input) const -> std::vector<vector3_t> {
+auto PinocchioEndEffectorKinematics::getVelocity(const vector_t &state, const vector_t &input) const
+    -> std::vector<vector3_t> {
     if (pinocchioInterfacePtr_ == nullptr) {
         throw std::runtime_error(
             "[PinocchioEndEffectorKinematics] pinocchioInterfacePtr_ is not set. Use setPinocchioInterface()");
@@ -181,8 +181,9 @@ std::vector<VectorFunctionLinearApproximation> PinocchioEndEffectorKinematics::g
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
-auto PinocchioEndEffectorKinematics::getOrientationError(
-    const vector_t &state, const std::vector<quaternion_t> &referenceOrientations) const -> std::vector<vector3_t> {
+auto PinocchioEndEffectorKinematics::getOrientationError(const vector_t &state,
+                                                         const std::vector<quaternion_t> &referenceOrientations) const
+    -> std::vector<vector3_t> {
     if (pinocchioInterfacePtr_ == nullptr) {
         throw std::runtime_error(
             "[PinocchioEndEffectorKinematics] pinocchioInterfacePtr_ is not set. Use setPinocchioInterface()");

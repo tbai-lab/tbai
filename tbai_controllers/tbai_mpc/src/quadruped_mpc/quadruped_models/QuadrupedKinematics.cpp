@@ -51,8 +51,8 @@ tbai::mpc::quadruped::vector3_s_t<SCALAR_T> QuadrupedKinematics<SCALAR_T>::posit
 
 template <typename SCALAR_T>
 auto QuadrupedKinematics<SCALAR_T>::baseToFootJacobianBlockInBaseFrame(
-    std::size_t footIndex,
-    const tbai::mpc::quadruped::joint_coordinate_s_t<SCALAR_T> &jointPositions) const -> joint_jacobian_block_t {
+    std::size_t footIndex, const tbai::mpc::quadruped::joint_coordinate_s_t<SCALAR_T> &jointPositions) const
+    -> joint_jacobian_block_t {
     auto &data = pinocchioInterfacePtr_->getData();
     const auto &model = pinocchioInterfacePtr_->getModel();
 

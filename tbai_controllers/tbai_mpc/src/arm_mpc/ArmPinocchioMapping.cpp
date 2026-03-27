@@ -16,8 +16,8 @@ auto ArmPinocchioMappingTpl<SCALAR>::getPinocchioJointPosition(const vector_t &s
 }
 
 template <typename SCALAR>
-auto ArmPinocchioMappingTpl<SCALAR>::getPinocchioJointVelocity(const vector_t &state,
-                                                               const vector_t &input) const -> vector_t {
+auto ArmPinocchioMappingTpl<SCALAR>::getPinocchioJointVelocity(const vector_t &state, const vector_t &input) const
+    -> vector_t {
     return input;
 }
 
