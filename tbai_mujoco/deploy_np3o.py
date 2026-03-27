@@ -9,7 +9,7 @@ import tyro
 import tbai as tbai_python
 
 from tbai import (
-    StateSubscriber,
+    RobotInterface,
     ChangeControllerSubscriber,
     ReferenceVelocity,
     ReferenceVelocityGenerator,
@@ -91,7 +91,7 @@ class Go2ReferenceVelocityGenerator(ReferenceVelocityGenerator):
 
 
 class RerunLoggerNode:
-    def __init__(self, state_subscriber: StateSubscriber, freq=10):
+    def __init__(self, state_subscriber: RobotInterface, freq=10):
         from tbai_logging.rerun.robot_logger import RobotLogger
         from tbai_logging.rerun.utils import rerun_initialize
         rerun_initialize("go2_deploy_np3o", spawn=False)
@@ -154,8 +154,6 @@ def main():
     robot_args.set_channel_init(True)
     robot_args.set_subscribe_lidar(not args.no_lidar)
     robot_args.set_enable_video(args.video)
-    robot_args.set_subscribe_pointcloud(args.pointcloud)
-    robot_args.set_pointcloud_topic(args.pointcloud_topic)
 
     print(f"Connecting to Go2 on {args.net} (channel {args.channel})...")
     robot = tbai_python.Go2RobotInterface(robot_args)
@@ -174,8 +172,6 @@ def main():
         np3o_callback=controller_sub.np3o_callback,
         bob_callback=controller_sub.bob_callback,
         robot=robot if (args.video or args.pointcloud) else None,
-        show_video=args.video,
-        show_pointcloud=args.pointcloud,
     )
     ref_vel_gen = Go2ReferenceVelocityGenerator(ui_controller)
 
