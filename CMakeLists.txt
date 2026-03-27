@@ -51,7 +51,6 @@ endif()
 
 add_subdirectory(tbai_controllers)
 
-## unitree_sdk2 no longer needed - all robots use tbai_sdk/zenoh
 add_subdirectory(tbai_robots)
 
 if(TBAI_BUILD_PYTHON)

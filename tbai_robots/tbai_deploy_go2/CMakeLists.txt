@@ -11,7 +11,6 @@ set(ZENOH_INSTALL "${TBAI_SDK_DIR}/deps/zenoh-install" CACHE PATH "Zenoh install
 
 add_library(tbai_deploy_go2
     src/Go2RobotInterface.cpp
-    src/Go2JoystickInterface.cpp
 )
 set_target_properties(tbai_deploy_go2 PROPERTIES EXPORT_NAME deploy_go2)
 
@@ -35,12 +34,6 @@ target_link_libraries(tbai_deploy_go2
         pthread
 )
 
-
-add_executable(test_stand_sit_tbai src/test_stand_sit_tbai.cpp)
-target_link_libraries(test_stand_sit_tbai
-    PUBLIC
-    tbai_deploy_go2
-)
 
 add_executable(test_lidar src/test_lidar.cpp)
 target_link_libraries(test_lidar
