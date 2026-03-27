@@ -82,65 +82,71 @@ def download(repo, filename):
     return tbai_python.download_from_huggingface(repo, filename)
 
 
+def _download_all(hf_repo, controllers):
+    """Download all model/motion files in parallel, return {filename: path}."""
+    import threading
+
+    files = set()
+    for cfg in controllers.values():
+        files.add(cfg["model"])
+        if "motion_file" in cfg:
+            files.add(cfg["motion_file"])
+
+    paths = {}
+
+    def dl(f):
+        paths[f] = download(hf_repo, f)
+
+    threads = [threading.Thread(target=dl, args=(f,)) for f in files]
+    _ = [t.start() for t in threads]
+    _ = [t.join() for t in threads]
+    return paths
+
+
+def _make_controller(cfg, robot, ref_vel_gen, paths):
+    """Construct a single controller from config. Returns (controller, name) or None."""
+    ctrl_type = cfg["type"]
+    model_path = paths[cfg["model"]]
+    ctrl_name = cfg.get("controller_name")
+    get = cfg.get
+
+    if ctrl_type == "G1RLController":
+        return tbai_python.G1RLController(robot, ref_vel_gen, model_path)
+    elif ctrl_type == "G1ASAPController":
+        return tbai_python.G1ASAPController(robot, ref_vel_gen, model_path, ctrl_name)
+    elif ctrl_type == "G1MimicController":
+        return tbai_python.G1MimicController(
+            robot, model_path, paths[cfg["motion_file"]],
+            motion_fps=get("motion_fps", 60.0), time_start=get("time_start", 0.0),
+            time_end=get("time_end", -1.0), controller_name=ctrl_name)
+    elif ctrl_type == "G1BeyondMimicController":
+        return tbai_python.G1BeyondMimicController(robot, model_path, ctrl_name)
+    elif ctrl_type == "G1SpinkickController":
+        return tbai_python.G1SpinkickController(robot, model_path, ctrl_name)
+    elif ctrl_type == "G1Twist2Controller":
+        return tbai_python.G1Twist2Controller(
+            robot, model_path, paths[cfg["motion_file"]],
+            get("time_start", 0.0), get("time_end", -1.0), ctrl_name)
+    elif ctrl_type == "G1PBHCController":
+        return tbai_python.G1PBHCController(
+            robot, model_path, paths[cfg["motion_file"]],
+            get("time_start", 0.0), get("time_end", -1.0), ctrl_name)
+    elif ctrl_type == "G1ASAPMimicController":
+        return tbai_python.G1ASAPMimicController(robot, model_path, cfg["motion_length"], ctrl_name)
+    else:
+        print(f"  Warning: unknown controller type '{ctrl_type}', skipping")
+        return None
+
+
 def load_controllers(config, robot, ref_vel_gen, central_controller):
-    hf_repo = config["hf_repo"]
-    downloaded = {}
-
-    def get_model(filename):
-        if filename not in downloaded:
-            downloaded[filename] = download(hf_repo, filename)
-        return downloaded[filename]
-
     print("Downloading models...")
+    paths = _download_all(config["hf_repo"], config["controllers"])
 
     for name, cfg in config["controllers"].items():
-        ctrl_type = cfg["type"]
-        model_path = get_model(cfg["model"])
-        ctrl_name = cfg.get("controller_name", name)
-
-        if ctrl_type == "G1RLController":
-            ctrl = tbai_python.G1RLController(robot, ref_vel_gen, model_path)
-
-        elif ctrl_type == "G1ASAPController":
-            ctrl = tbai_python.G1ASAPController(robot, ref_vel_gen, model_path, ctrl_name)
-
-        elif ctrl_type == "G1MimicController":
-            motion_path = get_model(cfg["motion_file"])
-            ctrl = tbai_python.G1MimicController(
-                robot, model_path, motion_path,
-                motion_fps=cfg.get("motion_fps", 60.0),
-                time_start=cfg.get("time_start", 0.0),
-                time_end=cfg.get("time_end", -1.0),
-                controller_name=ctrl_name)
-
-        elif ctrl_type == "G1BeyondMimicController":
-            ctrl = tbai_python.G1BeyondMimicController(robot, model_path, ctrl_name)
-
-        elif ctrl_type == "G1SpinkickController":
-            ctrl = tbai_python.G1SpinkickController(robot, model_path, ctrl_name)
-
-        elif ctrl_type == "G1Twist2Controller":
-            motion_path = get_model(cfg["motion_file"])
-            ctrl = tbai_python.G1Twist2Controller(
-                robot, model_path, motion_path,
-                cfg.get("time_start", 0.0), cfg.get("time_end", -1.0), ctrl_name)
-
-        elif ctrl_type == "G1PBHCController":
-            motion_path = get_model(cfg["motion_file"])
-            ctrl = tbai_python.G1PBHCController(
-                robot, model_path, motion_path,
-                cfg.get("time_start", 0.0), cfg.get("time_end", -1.0), ctrl_name)
-
-        elif ctrl_type == "G1ASAPMimicController":
-            ctrl = tbai_python.G1ASAPMimicController(
-                robot, model_path, cfg["motion_length"], ctrl_name)
-
-        else:
-            print(f"  Warning: unknown controller type '{ctrl_type}' for '{name}', skipping")
-            continue
-
+        ctrl = _make_controller(cfg, robot, ref_vel_gen, paths)
+        assert ctrl is not None, f"Failed to load controller {name}"
         central_controller.add_controller(ctrl)
-        print(f"  Loaded {ctrl_name} ({ctrl_type})")
+        print(f"  Loaded {cfg.get('controller_name', name)} ({cfg['type']})")
 
 
 class ImageViewer:
