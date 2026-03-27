@@ -30,18 +30,6 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
             [this](const robot_msgs::PointCloud2 &msg) { lidarCallback(msg); });
     }
 
-    // Subscribe pointcloud (depth camera)
-    if (args.subscribePointcloud()) {
-        std::string topic = args.pointcloudTopic();
-        TBAI_LOG_INFO(logger_, "Initializing pointcloud subscriber on topic '{}'", topic);
-        pointcloud_subscriber = std::make_unique<tbai::Subscriber<robot_msgs::PointCloud2>>(
-            topic,
-            [this](const robot_msgs::PointCloud2 &msg) { pointcloudCallback(msg); });
-        TBAI_LOG_INFO(logger_, "Pointcloud subscriber initialized");
-    } else {
-        TBAI_LOG_INFO(logger_, "Pointcloud subscriber disabled");
-    }
-
     // Initialize motor 2 id map
     motorIdMap_["RF_HAA"] = 0;
     motorIdMap_["RF_HFE"] = 1;
@@ -320,43 +308,6 @@ void Go2RobotInterface::waitTillInitialized() {
 State Go2RobotInterface::getLatestState() {
     std::lock_guard<std::mutex> lock(latestStateMutex_);
     return state_;
-}
-
-/*********************************************************************************************************************/
-/*********************************************************************************************************************/
-/*********************************************************************************************************************/
-void Go2RobotInterface::pointcloudCallback(const robot_msgs::PointCloud2 &msg) {
-    uint32_t num_points = msg.width * msg.height;
-    const auto &data = msg.data;
-
-    if (num_points == 0 || data.empty() || msg.point_step < 12) return;
-
-    // Find x, y, z field offsets
-    uint32_t x_off = 0, y_off = 4, z_off = 8;
-    for (const auto &field : msg.fields) {
-        if (field.name == "x") x_off = field.offset;
-        else if (field.name == "y") y_off = field.offset;
-        else if (field.name == "z") z_off = field.offset;
-    }
-
-    std::vector<float> points(num_points * 3);
-    for (uint32_t i = 0; i < num_points; ++i) {
-        const uint8_t *ptr = data.data() + i * msg.point_step;
-        std::memcpy(&points[i * 3 + 0], ptr + x_off, sizeof(float));
-        std::memcpy(&points[i * 3 + 1], ptr + y_off, sizeof(float));
-        std::memcpy(&points[i * 3 + 2], ptr + z_off, sizeof(float));
-    }
-
-    std::lock_guard<std::mutex> lock(pointcloudMutex_);
-    latestPointcloud_.swap(points);
-}
-
-/*********************************************************************************************************************/
-/*********************************************************************************************************************/
-/*********************************************************************************************************************/
-std::vector<float> Go2RobotInterface::getLatestPointcloud() {
-    std::lock_guard<std::mutex> lock(pointcloudMutex_);
-    return latestPointcloud_;
 }
 
 }  // namespace tbai

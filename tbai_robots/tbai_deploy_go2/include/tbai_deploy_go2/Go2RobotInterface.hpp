@@ -16,7 +16,6 @@
 #define TOPIC_LOWCMD "rt/lowcmd"
 #define TOPIC_LOWSTATE "rt/lowstate"
 #define TOPIC_LIDAR "rt/utlidar/cloud"
-#define TOPIC_POINTCLOUD "rt/pointcloud"
 
 constexpr double PosStopF = (2.146E+9f);
 constexpr double VelStopF = (16000.0f);
@@ -30,8 +29,6 @@ struct Go2RobotInterfaceArgs {
     TBAI_ARG_DEFAULT(bool, enableStateEstim, true);
     TBAI_ARG_DEFAULT(bool, subscribeLidar, true);
     TBAI_ARG_DEFAULT(bool, enableVideo, false);
-    TBAI_ARG_DEFAULT(bool, subscribePointcloud, false);
-    TBAI_ARG_DEFAULT(std::string, pointcloudTopic, "rt/pointcloud");
     TBAI_ARG_DEFAULT(bool, useGroundTruthState, false);
 };
 
@@ -49,11 +46,8 @@ class Go2RobotInterface : public RobotInterface {
         // Do nothing by default, a user is expected to override this method, but does not have to
     };
 
-    std::vector<float> getLatestPointcloud();
-
    private:
     void lowStateCallback(const robot_msgs::LowState &message);
-    void pointcloudCallback(const robot_msgs::PointCloud2 &message);
 
     /* Publishers */
     std::unique_ptr<tbai::Publisher<robot_msgs::MotorCommands>> lowcmd_publisher;
@@ -61,8 +55,6 @@ class Go2RobotInterface : public RobotInterface {
     /* Subscribers */
     std::unique_ptr<tbai::QueuedSubscriber<robot_msgs::LowState>> lowstate_subscriber;
     std::unique_ptr<tbai::Subscriber<robot_msgs::PointCloud2>> lidar_subscriber;
-    std::unique_ptr<tbai::Subscriber<robot_msgs::PointCloud2>> pointcloud_subscriber;
-
     std::unordered_map<std::string, int> motorIdMap_;
     std::unordered_map<std::string, int> footIdMap_;
     bool initialized_ = false;
@@ -72,9 +64,6 @@ class Go2RobotInterface : public RobotInterface {
     scalar_t lastYaw_ = 0.0;
     std::mutex latestStateMutex_;
     State state_;
-
-    std::mutex pointcloudMutex_;
-    std::vector<float> latestPointcloud_;  // Nx3 flattened (x,y,z,x,y,z,...)
 
     std::shared_ptr<spdlog::logger> logger_;
 
