@@ -26,6 +26,9 @@ class Args:
     net: str = "lo"
     channel: int = 1
     config: str = CONFIG_FILE
+    ground_truth: bool = False
+    view_image_stream: bool = False
+    image_topic: str = "rt/camera/image"
 
 
 class G1ChangeControllerSubscriber(ChangeControllerSubscriber):
@@ -140,6 +143,50 @@ def load_controllers(config, robot, ref_vel_gen, central_controller):
         print(f"  Loaded {ctrl_name} ({ctrl_type})")
 
 
+class ImageViewer:
+    def __init__(self, topic: str):
+        from tbai_sdk.subscriber import PollingSubscriber
+        from tbai_sdk.messages.robot_msgs import ImgFrame
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        self._sub = PollingSubscriber(ImgFrame, topic)
+        self._plt = plt
+        self._np = np
+        self._fig, self._ax = plt.subplots()
+        self._img_handle = None
+        self._ax.set_axis_off()
+        self._fig.tight_layout()
+        print(f"ImageViewer: subscribed to {topic}")
+
+    def update(self):
+        frame = self._sub.take()
+        if frame is None:
+            return
+        np = self._np
+        if frame.encoding in ("rgb8", "bgr8"):
+            arr = np.frombuffer(frame.data, dtype=np.uint8).reshape(frame.height, frame.width, 3)
+            if frame.encoding == "bgr8":
+                arr = arr[:, :, ::-1]
+        elif frame.encoding == "mono8":
+            arr = np.frombuffer(frame.data, dtype=np.uint8).reshape(frame.height, frame.width)
+        else:
+            return
+        if self._img_handle is None:
+            self._img_handle = self._ax.imshow(arr)
+        else:
+            self._img_handle.set_data(arr)
+        self._fig.canvas.draw_idle()
+        self._fig.canvas.flush_events()
+
+    def start_nonblocking(self):
+        self._plt.ion()
+        self._plt.show(block=False)
+
+    def close(self):
+        self._plt.close(self._fig)
+
+
 def main():
     args = tyro.cli(Args)
 
@@ -158,6 +205,8 @@ def main():
     robot_args.set_network_interface(args.net)
     robot_args.set_unitree_channel(args.channel)
     robot_args.set_channel_init(True)
+    if args.ground_truth:
+        robot_args.set_enable_state_estim(False)
 
     print(f"Connecting to G1 on {args.net} (channel {args.channel})...")
     robot = tbai_python.G1RobotInterface(robot_args)
@@ -184,15 +233,28 @@ def main():
     # Load all controllers from config
     load_controllers(config, robot, ref_vel_gen, central_controller)
 
+    # Image viewer
+    image_viewer = None
+    if args.view_image_stream:
+        image_viewer = ImageViewer(args.image_topic)
+        image_viewer.start_nonblocking()
+
     print("All controllers loaded. Starting...")
 
     central_controller.startThread()
 
     try:
+        if image_viewer:
+            def poll_image():
+                image_viewer.update()
+                ui_controller.root.after(33, poll_image)
+            ui_controller.root.after(33, poll_image)
         ui_controller.run()
     except KeyboardInterrupt:
         pass
     finally:
+        if image_viewer:
+            image_viewer.close()
         print("Stopping controller...")
         central_controller.stopThread()
         print("Done.")
