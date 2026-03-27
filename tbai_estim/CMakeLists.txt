@@ -6,9 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(tbai_estim)
 
 add_library(tbai_estim
-    # Muse estimator
-    src/muse/MuseEstimator.cpp
-
     # InEKF
     src/inekf/InEKF.cpp
     src/inekf/LieGroup.cpp
