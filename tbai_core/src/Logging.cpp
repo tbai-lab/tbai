@@ -17,12 +17,12 @@ std::shared_ptr<spdlog::logger> getLogger(const std::string &name) {
     std::lock_guard<std::mutex> lock(getLoggerMutex);
 
     auto logLevel = tbai::getEnvAsChecked<std::string>(
-        "TBAI_LOG_LEVEL", {"trace", "debug", "info", "warn", "error", "fatal"}, true, "info");
-    auto logFolder = tbai::getEnvAs<std::string>("TBAI_LOG_FOLDER", true, "");
-    auto logToConsole = tbai::getEnvAs<bool>("TBAI_LOG_TO_CONSOLE", true, true);
-    auto useAsyncLogging = tbai::getEnvAs<bool>("TBAI_LOG_USE_ASYNC", true, false);
+        "TBAI_LOG_LEVEL", {"trace", "debug", "info", "warn", "error", "fatal"}, std::string("info"));
+    auto logFolder = tbai::getEnvAs<std::string>("TBAI_LOG_FOLDER", std::string(""));
+    auto logToConsole = tbai::getEnvAs<bool>("TBAI_LOG_TO_CONSOLE", true);
+    auto useAsyncLogging = tbai::getEnvAs<bool>("TBAI_LOG_USE_ASYNC", false);
     auto fileLogLevel = tbai::getEnvAsChecked<std::string>(
-        "TBAI_LOG_FILE_LEVEL", {"trace", "debug", "info", "warn", "error", "fatal"}, true, "debug");
+        "TBAI_LOG_FILE_LEVEL", {"trace", "debug", "info", "warn", "error", "fatal"}, std::string("debug"));
 
     std::vector<spdlog::sink_ptr> sinks;
     if (logToConsole) {

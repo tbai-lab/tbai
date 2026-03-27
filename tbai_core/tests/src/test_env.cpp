@@ -15,7 +15,7 @@ TEST(EnvTest, standard_dtypes) {
     tbai::unsetEnv("RANDOM_ENV_VAR");
     EXPECT_THROW(tbai::getEnvAs<std::string>("RANDOM_ENV_VAR"), std::runtime_error);
 
-    EXPECT_EQ(tbai::getEnvAs<std::string>("RANDOM_ENV_VAR", true, "default"), "default");
+    EXPECT_EQ(tbai::getEnvAs<std::string>("RANDOM_ENV_VAR", std::string("default")), "default");
 
     tbai::setEnv("RANDOM_ENV_VAR", "123");
     EXPECT_EQ(tbai::getEnvAs<int>("RANDOM_ENV_VAR"), 123);
@@ -23,7 +23,7 @@ TEST(EnvTest, standard_dtypes) {
     tbai::unsetEnv("RANDOM_ENV_VAR");
     EXPECT_THROW(tbai::getEnvAs<int>("RANDOM_ENV_VAR"), std::runtime_error);
 
-    EXPECT_EQ(tbai::getEnvAs<int>("RANDOM_ENV_VAR", true, 42), 42);
+    EXPECT_EQ(tbai::getEnvAs<int>("RANDOM_ENV_VAR", 42), 42);
 
     tbai::setEnv("RANDOM_ENV_VAR", "123.456");
     EXPECT_EQ(tbai::getEnvAs<double>("RANDOM_ENV_VAR"), 123.456);
@@ -31,7 +31,7 @@ TEST(EnvTest, standard_dtypes) {
     tbai::unsetEnv("RANDOM_ENV_VAR");
     EXPECT_THROW(tbai::getEnvAs<double>("RANDOM_ENV_VAR"), std::runtime_error);
 
-    EXPECT_EQ(tbai::getEnvAs<double>("RANDOM_ENV_VAR", true, 42.0), 42.0);
+    EXPECT_EQ(tbai::getEnvAs<double>("RANDOM_ENV_VAR", 42.0), 42.0);
 }
 
 int main(int argc, char **argv) {

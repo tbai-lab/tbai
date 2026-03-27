@@ -74,7 +74,7 @@ std::string downloadFromHuggingFace(const std::string &repo_id, const std::strin
     TBAI_THROW_IF(filename.empty(), "Filename is empty");
 
     // Get the cache directory
-    std::string cache_dir = getEnvAs<std::string>("TBAI_CACHE_DIR", true, TBAI_HF_CACHE_DIR);
+    std::string cache_dir = getEnvAs<std::string>("TBAI_CACHE_DIR", std::string(TBAI_HF_CACHE_DIR));
 
     // Create the cache directory if it doesn't exist
     if (!std::filesystem::exists(cache_dir)) {
