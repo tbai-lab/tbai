@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <tbai_core/Types.hpp>
-#include <tbai_core/control/Publishers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 
 namespace tbai {
 

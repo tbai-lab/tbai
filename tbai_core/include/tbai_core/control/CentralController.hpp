@@ -6,8 +6,7 @@
 #include <tbai_core/Throws.hpp>
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/Controllers.hpp>
-#include <tbai_core/control/Publishers.hpp>
-#include <tbai_core/control/Subscribers.hpp>
+#include <tbai_core/control/RobotInterface.hpp>
 
 namespace tbai {
 
@@ -15,13 +14,13 @@ template <typename RATE, typename TIME>
 class CentralController {
    public:
     // Constructor
-    CentralController(std::shared_ptr<CommandPublisher> commandPublisherPtr,
+    CentralController(std::shared_ptr<RobotInterface> robotInterfacePtr,
                       std::shared_ptr<ChangeControllerSubscriber> changeControllerSubscriberPtr)
         : loopRate_(1) {
         // Initialize logger
         logger_ = tbai::getLogger("central_controller");
 
-        commandPublisherPtr_ = commandPublisherPtr;
+        robotInterfacePtr_ = robotInterfacePtr;
         changeControllerSubscriberPtr_ = changeControllerSubscriberPtr;
 
         // Set changeControllerSubscriber callback function
@@ -86,7 +85,7 @@ class CentralController {
 
         // Step controller
         auto commands = activeController_->getMotorCommands(currentTime, dt);
-        commandPublisherPtr_->publish(std::move(commands));
+        robotInterfacePtr_->publish(std::move(commands));
 
         // Allow controller to visualize stuff and what not
         activeController_->postStep(currentTime, dt);
@@ -177,8 +176,7 @@ class CentralController {
     std::vector<std::shared_ptr<Controller>> controllers_;
     Controller *activeController_ = nullptr;
 
-    std::shared_ptr<CommandPublisher> commandPublisherPtr_;
-    std::shared_ptr<StateSubscriber> stateSubscriberPtr_;
+    std::shared_ptr<RobotInterface> robotInterfacePtr_;
     std::shared_ptr<ChangeControllerSubscriber> changeControllerSubscriberPtr_;
 
     scalar_t initTime_;
