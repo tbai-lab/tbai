@@ -15,6 +15,8 @@ option(TBAI_BUILD_DEPLOY_GO2W "Build the deploy go2w (wheeled)" ON)
 option(TBAI_BUILD_DEPLOY_G1 "Build the deploy g1" ON)
 option(TBAI_BUILD_DEPLOY_FRANKA "Build the deploy franka" ON)
 option(TBAI_BUILD_DEPLOY_SPOT "Build the deploy spot" ON)
+option(TBAI_BUILD_DEPLOY_ANYMAL_B "Build the deploy anymal_b" ON)
+option(TBAI_BUILD_DEPLOY_ANYMAL_C "Build the deploy anymal_c" ON)
 option(TBAI_BUILD_DEPLOY_ANYMAL_D "Build the deploy anymal_d" ON)
 option(TBAI_BUILD_OCS2 "Build the ocs2" ON)
 option(TBAI_BUILD_MPC "Build the mpc" ON)
@@ -80,6 +82,14 @@ endif()
 
 if(TBAI_BUILD_DEPLOY_SPOT)
   add_subdirectory(tbai_deploy_spot)
+endif()
+
+if(TBAI_BUILD_DEPLOY_ANYMAL_B)
+  add_subdirectory(tbai_deploy_anymal_b)
+endif()
+
+if(TBAI_BUILD_DEPLOY_ANYMAL_C)
+  add_subdirectory(tbai_deploy_anymal_c)
 endif()
 
 if(TBAI_BUILD_DEPLOY_ANYMAL_D)
