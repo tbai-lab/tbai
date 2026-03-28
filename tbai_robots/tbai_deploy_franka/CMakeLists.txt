@@ -5,9 +5,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(tbai_deploy_franka)
 
-# ── tbai_sdk (header-only, zenoh-based) ──────────────────────────────────
-set(TBAI_SDK_DIR "/home/kb/projects/tbai_sdk" CACHE PATH "Path to tbai_sdk")
-set(ZENOH_INSTALL "${TBAI_SDK_DIR}/deps/zenoh-install" CACHE PATH "Zenoh install prefix")
+find_package(tbai_sdk REQUIRED)
+
 
 add_library(tbai_deploy_franka
     src/FrankaRobotInterface.cpp
@@ -18,17 +17,15 @@ target_include_directories(tbai_deploy_franka
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-        ${TBAI_SDK_DIR}/include
-        ${ZENOH_INSTALL}/include
+
+
 )
 
-target_compile_definitions(tbai_deploy_franka PUBLIC ZENOHCXX_ZENOHC)
-target_link_directories(tbai_deploy_franka PUBLIC ${ZENOH_INSTALL}/lib)
 
 target_link_libraries(tbai_deploy_franka
     PUBLIC
         tbai_core
-        zenohc
+        tbai_sdk::tbai_sdk
         pthread
 )
 

@@ -7,10 +7,10 @@ add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 project(tbai_deploy_go2w)
 
+find_package(tbai_sdk REQUIRED)
+
 find_package(Torch REQUIRED)
 
-set(TBAI_SDK_DIR "/home/kb/projects/tbai_sdk" CACHE PATH "Path to tbai_sdk")
-set(ZENOH_INSTALL "${TBAI_SDK_DIR}/deps/zenoh-install" CACHE PATH "Zenoh install prefix")
 
 add_library(tbai_deploy_go2w
     src/Go2WRobotInterface.cpp
@@ -22,18 +22,16 @@ target_include_directories(tbai_deploy_go2w
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-        ${TBAI_SDK_DIR}/include
-        ${ZENOH_INSTALL}/include
+
+
 )
 
-target_compile_definitions(tbai_deploy_go2w PUBLIC ZENOHCXX_ZENOHC)
-target_link_directories(tbai_deploy_go2w PUBLIC ${ZENOH_INSTALL}/lib)
 
 target_link_libraries(tbai_deploy_go2w
     PUBLIC
         tbai_core
         tbai_reference
-        zenohc
+        tbai_sdk::tbai_sdk
         pthread
         ${TORCH_LIBRARIES}
 )

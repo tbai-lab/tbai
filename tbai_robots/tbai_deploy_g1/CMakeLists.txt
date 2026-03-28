@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(tbai_deploy_g1)
 
+find_package(tbai_sdk REQUIRED)
+
 # Fetch ONNX Runtime automatically
 include(FetchContent)
 
@@ -63,17 +65,12 @@ target_include_directories(tbai_deploy_g1
         $<INSTALL_INTERFACE:include>
 )
 
-# ── tbai_sdk (header-only, zenoh-based) ──────────────────────────────────
-set(TBAI_SDK_DIR "/home/kb/projects/tbai_sdk" CACHE PATH "Path to tbai_sdk")
-set(ZENOH_INSTALL "${TBAI_SDK_DIR}/deps/zenoh-install" CACHE PATH "Zenoh install prefix")
 
 target_include_directories(tbai_deploy_g1
     PUBLIC
-        ${TBAI_SDK_DIR}/include
-        ${ZENOH_INSTALL}/include
+
+
 )
-target_compile_definitions(tbai_deploy_g1 PUBLIC ZENOHCXX_ZENOHC)
-target_link_directories(tbai_deploy_g1 PUBLIC ${ZENOH_INSTALL}/lib)
 
 target_link_libraries(tbai_deploy_g1
     PUBLIC
@@ -81,7 +78,7 @@ target_link_libraries(tbai_deploy_g1
         tbai_reference
         tbai_estim
         tbai_torch
-        zenohc
+        tbai_sdk::tbai_sdk
         pthread
         onnxruntime
         ${TORCH_LIBRARIES}

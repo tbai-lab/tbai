@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(tbai_deploy_anymal_d)
 
-set(TBAI_SDK_DIR "/home/kb/projects/tbai_sdk" CACHE PATH "Path to tbai_sdk")
-set(ZENOH_INSTALL "${TBAI_SDK_DIR}/deps/zenoh-install" CACHE PATH "Zenoh install prefix")
+find_package(tbai_sdk REQUIRED)
+
 
 add_library(tbai_deploy_anymal_d src/AnymalDRobotInterface.cpp)
 set_target_properties(tbai_deploy_anymal_d PROPERTIES EXPORT_NAME deploy_anymal_d)
@@ -14,12 +14,8 @@ set_target_properties(tbai_deploy_anymal_d PROPERTIES EXPORT_NAME deploy_anymal_
 target_include_directories(tbai_deploy_anymal_d PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
-    ${TBAI_SDK_DIR}/include
-    ${ZENOH_INSTALL}/include
 )
-target_compile_definitions(tbai_deploy_anymal_d PUBLIC ZENOHCXX_ZENOHC)
-target_link_directories(tbai_deploy_anymal_d PUBLIC ${ZENOH_INSTALL}/lib)
-target_link_libraries(tbai_deploy_anymal_d PUBLIC tbai_core tbai_estim zenohc pthread)
+target_link_libraries(tbai_deploy_anymal_d PUBLIC tbai_core tbai_estim tbai_sdk::tbai_sdk pthread)
 
 include(GNUInstallDirs)
 install(TARGETS tbai_deploy_anymal_d EXPORT tbai_deploy_anymal_d-targets
