@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.16.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(TBAI_DEV "Build in development mode" OFF)
 option(TBAI_BUILD_TESTS "Build the tests" OFF)
 option(TBAI_BUILD_BOB "Build the bob" ON)
 option(TBAI_BUILD_WTW "Build the wtw" ON)
