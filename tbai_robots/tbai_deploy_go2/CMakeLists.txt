@@ -45,12 +45,6 @@ if(TBAI_BUILD_DEPLOY_GO2_UNITREE)
 endif()
 
 
-add_executable(test_lidar src/test_lidar.cpp)
-target_link_libraries(test_lidar
-    PUBLIC
-        tbai_deploy_go2
-)
-
 ## Installation rules
 include(GNUInstallDirs)
 
