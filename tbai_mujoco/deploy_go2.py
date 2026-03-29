@@ -206,6 +206,7 @@ os.environ["TBAI_GLOBAL_CONFIG_PATH"] = str(CONFIG_FILE)
 
 @dataclasses.dataclass
 class Args:
+    unitree: bool = False
     net: str = "lo"
     channel: int = 1
     no_lidar: bool = False
@@ -329,14 +330,26 @@ class RerunLoggerNode:
 def main():
     args = tyro.cli(Args)
 
-    if not tbai_python.HAS_DEPLOY_GO2:
-        print("Error: tbai_python was built without Go2 support (TBAI_BUILD_DEPLOY_GO2=OFF)")
-        sys.exit(1)
+    if args.unitree:
+        if not tbai_python.HAS_DEPLOY_GO2_UNITREE:
+            print("Error: tbai_python was built without Go2 Unitree support (TBAI_BUILD_DEPLOY_GO2_UNITREE=OFF)")
+            sys.exit(1)
 
-    robot_args = tbai_python.Go2RobotInterfaceArgs()
+        robot_args = tbai_python.Go2RobotInterfaceUnitreeArgs()
+        robot_args.network_interface = args.net
+        robot_args.unitree_channel = args.channel
 
-    print(f"Connecting to Go2 on {args.net} (channel {args.channel})...")
-    robot = tbai_python.Go2RobotInterface(robot_args)
+        print(f"Connecting to Go2 (Unitree) on {args.net} (channel {args.channel})...")
+        robot = tbai_python.Go2RobotInterfaceUnitree(robot_args)
+    else:
+        if not tbai_python.HAS_DEPLOY_GO2:
+            print("Error: tbai_python was built without Go2 support (TBAI_BUILD_DEPLOY_GO2=OFF)")
+            sys.exit(1)
+
+        robot_args = tbai_python.Go2RobotInterfaceArgs()
+
+        print(f"Connecting to Go2 on {args.net} (channel {args.channel})...")
+        robot = tbai_python.Go2RobotInterface(robot_args)
 
     print("Waiting for robot to initialize...")
     robot.wait_till_initialized()

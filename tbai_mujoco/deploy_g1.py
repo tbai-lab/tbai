@@ -312,6 +312,7 @@ os.environ["TBAI_GLOBAL_CONFIG_PATH"] = str(CONFIG_FILE)
 
 @dataclasses.dataclass
 class Args:
+    unitree: bool = False
     net: str = "lo"
     channel: int = 1
     config: str = CONFIG_FILE
@@ -490,10 +491,6 @@ class ImageViewer:
 def main():
     args = tyro.cli(Args)
 
-    if not tbai_python.HAS_DEPLOY_G1:
-        print("Error: tbai_python was built without G1 support (TBAI_BUILD_DEPLOY_G1=OFF)")
-        sys.exit(1)
-
     config_path = os.path.abspath(args.config)
     os.environ["TBAI_GLOBAL_CONFIG_PATH"] = config_path
 
@@ -501,10 +498,26 @@ def main():
         config = yaml.safe_load(f)
 
     # Initialize G1 robot
-    robot_args = tbai_python.G1RobotInterfaceArgs()
+    if args.unitree:
+        if not tbai_python.HAS_DEPLOY_G1_UNITREE:
+            print("Error: tbai_python was built without G1 Unitree support (TBAI_BUILD_DEPLOY_G1_UNITREE=OFF)")
+            sys.exit(1)
 
-    print(f"Connecting to G1 on {args.net} (channel {args.channel})...")
-    robot = tbai_python.G1RobotInterface(robot_args)
+        robot_args = tbai_python.G1RobotInterfaceUnitreeArgs()
+        robot_args.network_interface = args.net
+        robot_args.unitree_channel = args.channel
+
+        print(f"Connecting to G1 (Unitree) on {args.net} (channel {args.channel})...")
+        robot = tbai_python.G1RobotInterfaceUnitree(robot_args)
+    else:
+        if not tbai_python.HAS_DEPLOY_G1:
+            print("Error: tbai_python was built without G1 support (TBAI_BUILD_DEPLOY_G1=OFF)")
+            sys.exit(1)
+
+        robot_args = tbai_python.G1RobotInterfaceArgs()
+
+        print(f"Connecting to G1 on {args.net} (channel {args.channel})...")
+        robot = tbai_python.G1RobotInterface(robot_args)
 
     print("Waiting for robot to initialize...")
     robot.wait_till_initialized()
