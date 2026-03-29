@@ -21,9 +21,7 @@ constexpr int SPOT_NUM_JOINTS = 12;
 // State: 3 orientation + 3 position + 3 angular vel + 3 linear vel + 12 joint pos + 12 joint vel = 36
 constexpr int SPOT_STATE_DIM = 3 + 3 + 3 + 3 + SPOT_NUM_JOINTS + SPOT_NUM_JOINTS;
 
-struct SpotRobotInterfaceArgs {
-    std::string networkInterface = "lo";
-};
+struct SpotRobotInterfaceArgs {};
 
 class SpotRobotInterface : public RobotInterface {
    public:

@@ -17,9 +17,6 @@
 namespace tbai {
 
 struct Go2WRobotInterfaceArgs {
-    std::string networkInterface = "eth0";
-    int unitreeChannel = 0;
-    bool channelInit = true;
     bool useGroundTruthState = false;
 };
 

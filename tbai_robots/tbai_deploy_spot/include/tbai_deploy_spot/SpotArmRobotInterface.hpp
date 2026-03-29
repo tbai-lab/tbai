@@ -20,9 +20,7 @@ constexpr int SPOT_ARM_NUM_JOINTS = SPOT_ARM_NUM_LEG_JOINTS + SPOT_ARM_NUM_ARM_J
 constexpr int SPOT_ARM_NUM_MUJOCO_MOTORS = 19;  // 12 legs + 6 arm + 1 gripper
 constexpr int SPOT_ARM_STATE_DIM = 3 + 3 + 3 + 3 + SPOT_ARM_NUM_JOINTS + SPOT_ARM_NUM_JOINTS;
 
-struct SpotArmRobotInterfaceArgs {
-    std::string networkInterface = "lo";
-};
+struct SpotArmRobotInterfaceArgs {};
 
 class SpotArmRobotInterface : public RobotInterface {
    public:

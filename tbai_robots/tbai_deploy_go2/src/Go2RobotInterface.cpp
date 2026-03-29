@@ -20,7 +20,6 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     logger_ = tbai::getLogger("tbai_deploy_go2");
     TBAI_LOG_INFO(logger_, "Go2RobotInterface constructor");
     TBAI_LOG_INFO(logger_, "Initializing Go2RobotInterface (tbai_sdk/zenoh backend)");
-    TBAI_LOG_INFO(logger_, "Subscribe lidar: {}", args.subscribeLidar);
 
     // Initialize motor 2 id map
     motorIdMap_["RF_HAA"] = 0;
@@ -53,10 +52,6 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", TOPIC_LOWSTATE);
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
         TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
-
-    if (args.enableVideo) {
-        TBAI_LOG_WARN(logger_, "Video client not supported with tbai_sdk backend");
-    }
 
     // Initialize estimator parameters
     rectifyOrientation_ = tbai::fromGlobalConfig<bool>("inekf_estimator/rectify_orientation", true);

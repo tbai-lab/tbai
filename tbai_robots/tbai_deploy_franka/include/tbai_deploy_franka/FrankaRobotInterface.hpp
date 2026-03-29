@@ -23,11 +23,7 @@ constexpr int FRANKA_NUM_MUJOCO_MOTORS = 8;  // 7 arm + 1 finger in MuJoCo
 // (no base orientation/position/velocity for fixed-base manipulator)
 constexpr int FRANKA_STATE_DIM = FRANKA_NUM_ARM_JOINTS + FRANKA_NUM_ARM_JOINTS;
 
-struct FrankaRobotInterfaceArgs {
-    std::string networkInterface = "lo";
-    bool enableCamera = false;
-    std::string cameraTopic = "rt/camera/image";
-};
+struct FrankaRobotInterfaceArgs {};
 
 class FrankaRobotInterface : public RobotInterface {
    public:

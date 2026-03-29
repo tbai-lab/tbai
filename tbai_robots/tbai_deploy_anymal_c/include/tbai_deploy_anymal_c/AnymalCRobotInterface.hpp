@@ -20,7 +20,6 @@ constexpr int ANYMAL_C_NUM_JOINTS = 12;
 constexpr int ANYMAL_C_STATE_DIM = 3 + 3 + 3 + 3 + ANYMAL_C_NUM_JOINTS + ANYMAL_C_NUM_JOINTS;
 
 struct AnymalCRobotInterfaceArgs {
-    std::string networkInterface = "lo";
     bool enableGroundPlaneCorrection = false;
     std::string depthTopic = "rt/pointcloud/front_lower";
     bool useGroundTruthState = false;

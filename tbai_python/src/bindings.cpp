@@ -298,12 +298,6 @@ NB_MODULE(_C, m) {
 #ifdef TBAI_HAS_DEPLOY_GO2
     nb::class_<tbai::Go2RobotInterfaceArgs>(m, "Go2RobotInterfaceArgs")
         .def(nb::init<>())
-        .def_rw("network_interface", &tbai::Go2RobotInterfaceArgs::networkInterface)
-        .def_rw("unitree_channel", &tbai::Go2RobotInterfaceArgs::unitreeChannel)
-        .def_rw("channel_init", &tbai::Go2RobotInterfaceArgs::channelInit)
-        .def_rw("enable_state_estim", &tbai::Go2RobotInterfaceArgs::enableStateEstim)
-        .def_rw("subscribe_lidar", &tbai::Go2RobotInterfaceArgs::subscribeLidar)
-        .def_rw("enable_video", &tbai::Go2RobotInterfaceArgs::enableVideo)
         .def_rw("use_ground_truth_state", &tbai::Go2RobotInterfaceArgs::useGroundTruthState);
 
     nb::class_<tbai::Go2RobotInterface, tbai::RobotInterface>(m, "Go2RobotInterface")
@@ -324,10 +318,6 @@ NB_MODULE(_C, m) {
 #ifdef TBAI_HAS_DEPLOY_G1
     nb::class_<tbai::G1RobotInterfaceArgs>(m, "G1RobotInterfaceArgs")
         .def(nb::init<>())
-        .def_rw("network_interface", &tbai::G1RobotInterfaceArgs::networkInterface)
-        .def_rw("unitree_channel", &tbai::G1RobotInterfaceArgs::unitreeChannel)
-        .def_rw("channel_init", &tbai::G1RobotInterfaceArgs::channelInit)
-        .def_rw("enable_state_estim", &tbai::G1RobotInterfaceArgs::enableStateEstim)
         .def_rw("use_ground_truth_state", &tbai::G1RobotInterfaceArgs::useGroundTruthState);
 
     nb::class_<tbai::G1RobotInterface, tbai::RobotInterface>(m, "G1RobotInterface")

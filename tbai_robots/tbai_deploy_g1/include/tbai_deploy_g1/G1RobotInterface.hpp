@@ -23,10 +23,6 @@ constexpr int G1_NUM_JOINTS = 29;
 constexpr int G1_STATE_DIM = 3 + 3 + 3 + 3 + G1_NUM_JOINTS + G1_NUM_JOINTS;
 
 struct G1RobotInterfaceArgs {
-    std::string networkInterface = "eth0";
-    int unitreeChannel = 0;
-    bool channelInit = true;
-    bool enableStateEstim = true;
     bool useGroundTruthState = false;
 };
 
