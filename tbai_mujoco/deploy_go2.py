@@ -19,6 +19,13 @@ from tbai import rotations
 
 from joystick import UIController
 
+import os
+import tbai_descriptions
+
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), "go2_config.yaml")
+
+os.environ["TBAI_ROBOT_DESCRIPTION_PATH"] = str(tbai_descriptions.get_urdf_path("go2"))
+os.environ["TBAI_GLOBAL_CONFIG_PATH"] = str(CONFIG_FILE)
 
 @dataclasses.dataclass
 class Args:

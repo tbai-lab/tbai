@@ -1,0 +1,4 @@
+tyro
+tbai_descriptions @ git+ssh://git@github.com/tbai-lab/tbai_descriptions.git
+tbai_mujoco_descriptions @ git+ssh://git@github.com/tbai-lab/tbai_mujoco_descriptions.git
+tbai_sdk @ git+ssh://git@github.com/tbai-lab/tbai_sdk.git
