@@ -19,9 +19,9 @@ void bind_go2(nb::module_ &m) {
     nb::class_<tbai::Go2RobotInterface, tbai::RobotInterface>(m, "Go2RobotInterface")
         .def(nb::init<tbai::Go2RobotInterfaceArgs>())
         .def("publish", &tbai::Go2RobotInterface::publish, nb::call_guard<nb::gil_scoped_release>())
-        .def("waitTillInitialized", &tbai::Go2RobotInterface::waitTillInitialized,
+        .def("wait_till_initialized", &tbai::Go2RobotInterface::waitTillInitialized,
              nb::call_guard<nb::gil_scoped_release>())
-        .def("getLatestState", &tbai::Go2RobotInterface::getLatestState, nb::call_guard<nb::gil_scoped_release>());
+        .def("get_latest_state", &tbai::Go2RobotInterface::getLatestState, nb::call_guard<nb::gil_scoped_release>());
 #endif
 
     m.attr("HAS_DEPLOY_GO2") =

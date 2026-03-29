@@ -26,11 +26,11 @@ void bind_central_controller(nb::module_ &m) {
                                                                                changeControllerSubscriberPtr);
                     })
         .def("start", &tbai::CentralControllerPython::start, nb::call_guard<nb::gil_scoped_release>())
-        .def("startThread", &tbai::CentralControllerPython::startThread, nb::call_guard<nb::gil_scoped_release>())
-        .def("stopThread", &tbai::CentralControllerPython::stopThread, nb::call_guard<nb::gil_scoped_release>())
+        .def("start_thread", &tbai::CentralControllerPython::startThread, nb::call_guard<nb::gil_scoped_release>())
+        .def("stop_thread", &tbai::CentralControllerPython::stopThread, nb::call_guard<nb::gil_scoped_release>())
         .def("add_controller", &tbai::CentralControllerPython::addController, nb::arg("controller"),
              nb::arg("make_active") = false)
         .def("initialize", &tbai::CentralControllerPython::initialize, nb::call_guard<nb::gil_scoped_release>())
         .def("step", &tbai::CentralControllerPython::step, nb::call_guard<nb::gil_scoped_release>())
-        .def("getRate", &tbai::CentralControllerPython::getRate);
+        .def("get_rate", &tbai::CentralControllerPython::getRate);
 }

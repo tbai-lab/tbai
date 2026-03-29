@@ -326,10 +326,10 @@ class G1ChangeControllerSubscriber(ChangeControllerSubscriber):
         self._callback = None
         self.new_controller = None
 
-    def setCallbackFunction(self, callback):
+    def set_callback_function(self, callback):
         self._callback = callback
 
-    def triggerCallbacks(self):
+    def trigger_callbacks(self):
         if self._callback is not None and self.new_controller is not None:
             self._callback(str(self.new_controller))
             self.new_controller = None
@@ -347,7 +347,7 @@ class G1ReferenceVelocityGenerator(ReferenceVelocityGenerator):
         self.current_y = 0.0
         self.current_yaw = 0.0
 
-    def getReferenceVelocity(self, time, dt):
+    def get_reference_velocity(self, time, dt):
         desired_x = self.ui_controller.linear_x
         desired_y = self.ui_controller.linear_y
         desired_yaw = self.ui_controller.angular_z
@@ -507,7 +507,7 @@ def main():
     robot = tbai_python.G1RobotInterface(robot_args)
 
     print("Waiting for robot to initialize...")
-    robot.waitTillInitialized()
+    robot.wait_till_initialized()
     print("Robot initialized.")
 
     controller_sub = G1ChangeControllerSubscriber()
@@ -536,7 +536,7 @@ def main():
 
     print("All controllers loaded. Starting...")
 
-    central_controller.startThread()
+    central_controller.start_thread()
 
     try:
         if image_viewer:
@@ -553,7 +553,7 @@ def main():
         if image_viewer:
             image_viewer.close()
         print("Stopping controller...")
-        central_controller.stopThread()
+        central_controller.stop_thread()
         print("Done.")
 
 

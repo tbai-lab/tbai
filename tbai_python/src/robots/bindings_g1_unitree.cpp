@@ -21,10 +21,10 @@ void bind_g1_unitree(nb::module_ &m) {
     nb::class_<tbai::G1RobotInterfaceUnitree, tbai::RobotInterface>(m, "G1RobotInterfaceUnitree")
         .def(nb::init<tbai::G1RobotInterfaceUnitreeArgs>())
         .def("publish", &tbai::G1RobotInterfaceUnitree::publish, nb::call_guard<nb::gil_scoped_release>())
-        .def("waitTillInitialized", &tbai::G1RobotInterfaceUnitree::waitTillInitialized,
+        .def("wait_till_initialized", &tbai::G1RobotInterfaceUnitree::waitTillInitialized,
              nb::call_guard<nb::gil_scoped_release>())
-        .def("getLatestState", &tbai::G1RobotInterfaceUnitree::getLatestState, nb::call_guard<nb::gil_scoped_release>())
-        .def("getBaseQuaternion", &tbai::G1RobotInterfaceUnitree::getBaseQuaternion, nb::call_guard<nb::gil_scoped_release>());
+        .def("get_latest_state", &tbai::G1RobotInterfaceUnitree::getLatestState, nb::call_guard<nb::gil_scoped_release>())
+        .def("get_base_quaternion", &tbai::G1RobotInterfaceUnitree::getBaseQuaternion, nb::call_guard<nb::gil_scoped_release>());
 #endif
 
     m.attr("HAS_DEPLOY_G1_UNITREE") =

@@ -21,9 +21,9 @@ void bind_go2_unitree(nb::module_ &m) {
     nb::class_<tbai::Go2RobotInterfaceUnitree, tbai::RobotInterface>(m, "Go2RobotInterfaceUnitree")
         .def(nb::init<tbai::Go2RobotInterfaceUnitreeArgs>())
         .def("publish", &tbai::Go2RobotInterfaceUnitree::publish, nb::call_guard<nb::gil_scoped_release>())
-        .def("waitTillInitialized", &tbai::Go2RobotInterfaceUnitree::waitTillInitialized,
+        .def("wait_till_initialized", &tbai::Go2RobotInterfaceUnitree::waitTillInitialized,
              nb::call_guard<nb::gil_scoped_release>())
-        .def("getLatestState", &tbai::Go2RobotInterfaceUnitree::getLatestState, nb::call_guard<nb::gil_scoped_release>());
+        .def("get_latest_state", &tbai::Go2RobotInterfaceUnitree::getLatestState, nb::call_guard<nb::gil_scoped_release>());
 #endif
 
     m.attr("HAS_DEPLOY_GO2_UNITREE") =

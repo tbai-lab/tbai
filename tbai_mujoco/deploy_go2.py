@@ -221,10 +221,10 @@ class Go2ChangeControllerSubscriber(ChangeControllerSubscriber):
         self._callback = None
         self.new_controller = None
 
-    def setCallbackFunction(self, callback):
+    def set_callback_function(self, callback):
         self._callback = callback
 
-    def triggerCallbacks(self):
+    def trigger_callbacks(self):
         if self._callback is not None and self.new_controller is not None:
             self._callback(str(self.new_controller))
             self.new_controller = None
@@ -251,7 +251,7 @@ class Go2ReferenceVelocityGenerator(ReferenceVelocityGenerator):
         self.current_y = 0.0
         self.current_yaw = 0.0
 
-    def getReferenceVelocity(self, time, dt):
+    def get_reference_velocity(self, time, dt):
         desired_x = self.ui_controller.linear_x
         desired_y = self.ui_controller.linear_y
         desired_yaw = self.ui_controller.angular_z
@@ -296,7 +296,7 @@ class RerunLoggerNode:
             return
         self.last_time = current_time
 
-        current_state = self.state_subscriber.getLatestState()
+        current_state = self.state_subscriber.get_latest_state()
         position = current_state.x[3:6]
         orientation = current_state.x[0:3]
         joint_positions = current_state.x[12:24]
@@ -339,7 +339,7 @@ def main():
     robot = tbai_python.Go2RobotInterface(robot_args)
 
     print("Waiting for robot to initialize...")
-    robot.waitTillInitialized()
+    robot.wait_till_initialized()
     print("Robot initialized.")
 
     controller_sub = Go2ChangeControllerSubscriber()
@@ -367,7 +367,7 @@ def main():
     central_controller.add_controller(np3o_ctrl)
     central_controller.add_controller(bob_ctrl)
 
-    central_controller.startThread()
+    central_controller.start_thread()
 
     try:
         ui_controller.run()
@@ -375,7 +375,7 @@ def main():
         pass
     finally:
         print("Stopping controller...")
-        central_controller.stopThread()
+        central_controller.stop_thread()
         if args.log:
             from tbai_logging.rerun.utils import rerun_store
 

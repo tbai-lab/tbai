@@ -29,10 +29,10 @@ void bind_g1(nb::module_ &m) {
     nb::class_<tbai::G1RobotInterface, tbai::RobotInterface>(m, "G1RobotInterface")
         .def(nb::init<tbai::G1RobotInterfaceArgs>())
         .def("publish", &tbai::G1RobotInterface::publish, nb::call_guard<nb::gil_scoped_release>())
-        .def("waitTillInitialized", &tbai::G1RobotInterface::waitTillInitialized,
+        .def("wait_till_initialized", &tbai::G1RobotInterface::waitTillInitialized,
              nb::call_guard<nb::gil_scoped_release>())
-        .def("getLatestState", &tbai::G1RobotInterface::getLatestState, nb::call_guard<nb::gil_scoped_release>())
-        .def("getBaseQuaternion", &tbai::G1RobotInterface::getBaseQuaternion, nb::call_guard<nb::gil_scoped_release>());
+        .def("get_latest_state", &tbai::G1RobotInterface::getLatestState, nb::call_guard<nb::gil_scoped_release>())
+        .def("get_base_quaternion", &tbai::G1RobotInterface::getBaseQuaternion, nb::call_guard<nb::gil_scoped_release>());
 
     nb::class_<tbai::g1::G1RLController, tbai::Controller>(m, "G1RLController")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &,
@@ -45,8 +45,8 @@ void bind_g1(nb::module_ &m) {
              nb::arg("robot_interface"), nb::arg("policy_path"), nb::arg("motion_file_path"),
              nb::arg("motion_fps") = 60.0f, nb::arg("time_start") = 0.0f, nb::arg("time_end") = -1.0f,
              nb::arg("controller_name") = "G1MimicController")
-        .def("isMotionComplete", &tbai::g1::G1MimicController::isMotionComplete)
-        .def("getMotionTime", &tbai::g1::G1MimicController::getMotionTime);
+        .def("is_motion_complete", &tbai::g1::G1MimicController::isMotionComplete)
+        .def("get_motion_time", &tbai::g1::G1MimicController::getMotionTime);
 
     nb::class_<tbai::g1::G1ASAPController, tbai::Controller>(m, "G1ASAPController")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &,
@@ -59,16 +59,16 @@ void bind_g1(nb::module_ &m) {
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, float, const std::string &>(),
              nb::arg("robot_interface"), nb::arg("policy_path"), nb::arg("motion_length"),
              nb::arg("controller_name") = "G1ASAPMimic")
-        .def("isMotionComplete", &tbai::g1::G1ASAPMimicController::isMotionComplete)
-        .def("getMotionPhase", &tbai::g1::G1ASAPMimicController::getMotionPhase);
+        .def("is_motion_complete", &tbai::g1::G1ASAPMimicController::isMotionComplete)
+        .def("get_motion_phase", &tbai::g1::G1ASAPMimicController::getMotionPhase);
 
     nb::class_<tbai::g1::G1PBHCController, tbai::Controller>(m, "G1PBHCController")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, float,
                       float, const std::string &>(),
              nb::arg("robot_interface"), nb::arg("policy_path"), nb::arg("motion_file_path"),
              nb::arg("time_start") = 0.0f, nb::arg("time_end") = -1.0f, nb::arg("controller_name") = "G1PBHCController")
-        .def("isMotionComplete", &tbai::g1::G1PBHCController::isMotionComplete)
-        .def("getMotionTime", &tbai::g1::G1PBHCController::getMotionTime);
+        .def("is_motion_complete", &tbai::g1::G1PBHCController::isMotionComplete)
+        .def("get_motion_time", &tbai::g1::G1PBHCController::getMotionTime);
 
     nb::class_<tbai::g1::G1Twist2Controller, tbai::Controller>(m, "G1Twist2Controller")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, float,
@@ -76,26 +76,26 @@ void bind_g1(nb::module_ &m) {
              nb::arg("robot_interface"), nb::arg("policy_path"), nb::arg("motion_file_path"),
              nb::arg("time_start") = 0.0f, nb::arg("time_end") = -1.0f,
              nb::arg("controller_name") = "G1Twist2Controller")
-        .def("isMotionComplete", &tbai::g1::G1Twist2Controller::isMotionComplete)
-        .def("getMotionTime", &tbai::g1::G1Twist2Controller::getMotionTime);
+        .def("is_motion_complete", &tbai::g1::G1Twist2Controller::isMotionComplete)
+        .def("get_motion_time", &tbai::g1::G1Twist2Controller::getMotionTime);
 
     nb::class_<tbai::g1::G1SpinkickController, tbai::Controller>(m, "G1SpinkickController")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, bool,
                       float>(),
              nb::arg("robot_interface"), nb::arg("policy_path"), nb::arg("controller_name") = "G1SpinkickController",
              nb::arg("use_model_meta_config") = true, nb::arg("action_beta") = 1.0f)
-        .def("isMotionComplete", &tbai::g1::G1SpinkickController::isMotionComplete)
-        .def("getTimestep", &tbai::g1::G1SpinkickController::getTimestep)
-        .def("getMaxTimestep", &tbai::g1::G1SpinkickController::getMaxTimestep);
+        .def("is_motion_complete", &tbai::g1::G1SpinkickController::isMotionComplete)
+        .def("get_timestep", &tbai::g1::G1SpinkickController::getTimestep)
+        .def("get_max_timestep", &tbai::g1::G1SpinkickController::getMaxTimestep);
 
     nb::class_<tbai::g1::G1BeyondMimicController, tbai::Controller>(m, "G1BeyondMimicController")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &, const std::string &, const std::string &, bool,
                       float>(),
              nb::arg("robot_interface"), nb::arg("policy_path"), nb::arg("controller_name") = "G1BeyondMimicController",
              nb::arg("use_model_meta_config") = true, nb::arg("action_beta") = 1.0f)
-        .def("isMotionComplete", &tbai::g1::G1BeyondMimicController::isMotionComplete)
-        .def("getTimestep", &tbai::g1::G1BeyondMimicController::getTimestep)
-        .def("getMaxTimestep", &tbai::g1::G1BeyondMimicController::getMaxTimestep);
+        .def("is_motion_complete", &tbai::g1::G1BeyondMimicController::isMotionComplete)
+        .def("get_timestep", &tbai::g1::G1BeyondMimicController::getTimestep)
+        .def("get_max_timestep", &tbai::g1::G1BeyondMimicController::getMaxTimestep);
 #endif
 
     m.attr("HAS_DEPLOY_G1") =

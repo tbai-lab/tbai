@@ -22,8 +22,8 @@ namespace tbai {
 class PyRobotInterface : public tbai::RobotInterface {
    public:
     NB_TRAMPOLINE(tbai::RobotInterface, 3);
-    void waitTillInitialized() override { NB_OVERRIDE_PURE(waitTillInitialized); }
-    State getLatestState() override { NB_OVERRIDE_PURE(getLatestState); }
+    void waitTillInitialized() override { NB_OVERRIDE_PURE_NAME("wait_till_initialized", waitTillInitialized); }
+    State getLatestState() override { NB_OVERRIDE_PURE_NAME("get_latest_state", getLatestState); }
     void publish(std::vector<MotorCommand> commands) override { NB_OVERRIDE_PURE(publish, commands); }
 };
 
@@ -32,9 +32,9 @@ class PyChangeControllerSubscriber : public tbai::ChangeControllerSubscriber {
     NB_TRAMPOLINE(tbai::ChangeControllerSubscriber, 2);
 
     void setCallbackFunction(std::function<void(const std::string &controllerType)> callbackFunction) override {
-        NB_OVERRIDE(setCallbackFunction, callbackFunction);
+        NB_OVERRIDE_NAME("set_callback_function", setCallbackFunction, callbackFunction);
     }
-    void triggerCallbacks() override { NB_OVERRIDE_PURE(triggerCallbacks); }
+    void triggerCallbacks() override { NB_OVERRIDE_PURE_NAME("trigger_callbacks", triggerCallbacks); }
 };
 
 class PyReferenceVelocityGenerator : public tbai::reference::ReferenceVelocityGenerator {
@@ -42,7 +42,7 @@ class PyReferenceVelocityGenerator : public tbai::reference::ReferenceVelocityGe
     NB_TRAMPOLINE(tbai::reference::ReferenceVelocityGenerator, 1);
 
     tbai::reference::ReferenceVelocity getReferenceVelocity(scalar_t time, scalar_t dt) override {
-        NB_OVERRIDE_PURE(getReferenceVelocity, time, dt);
+        NB_OVERRIDE_PURE_NAME("get_reference_velocity", getReferenceVelocity, time, dt);
     }
 };
 
@@ -89,14 +89,14 @@ NB_MODULE(_C, m) {
 
     nb::class_<tbai::RobotInterface, tbai::PyRobotInterface>(m, "RobotInterface")
         .def(nb::init<>())
-        .def("waitTillInitialized", &tbai::RobotInterface::waitTillInitialized)
-        .def("getLatestState", &tbai::RobotInterface::getLatestState)
+        .def("wait_till_initialized", &tbai::RobotInterface::waitTillInitialized)
+        .def("get_latest_state", &tbai::RobotInterface::getLatestState)
         .def("publish", &tbai::RobotInterface::publish);
 
     nb::class_<tbai::ChangeControllerSubscriber, tbai::PyChangeControllerSubscriber>(m, "ChangeControllerSubscriber")
         .def(nb::init<>())
-        .def("setCallbackFunction", &tbai::ChangeControllerSubscriber::setCallbackFunction)
-        .def("triggerCallbacks", &tbai::ChangeControllerSubscriber::triggerCallbacks);
+        .def("set_callback_function", &tbai::ChangeControllerSubscriber::setCallbackFunction)
+        .def("trigger_callbacks", &tbai::ChangeControllerSubscriber::triggerCallbacks);
 
     nb::class_<tbai::reference::ReferenceVelocity>(m, "ReferenceVelocity")
         .def(nb::init<>())
@@ -106,7 +106,7 @@ NB_MODULE(_C, m) {
 
     nb::class_<tbai::reference::ReferenceVelocityGenerator, tbai::PyReferenceVelocityGenerator>(m, "ReferenceVelocityGenerator")
         .def(nb::init<>())
-        .def("getReferenceVelocity", &tbai::reference::ReferenceVelocityGenerator::getReferenceVelocity);
+        .def("get_reference_velocity", &tbai::reference::ReferenceVelocityGenerator::getReferenceVelocity);
 
     // Bind rotation helper functions
     nb::module_ rotations_module = m.def_submodule("rotations");
