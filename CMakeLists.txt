@@ -3,12 +3,7 @@ cmake_minimum_required(VERSION 3.16.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(TBAI_BUILD_TESTS "Build the tests" OFF)
-option(TBAI_BUILD_BOB "Build the bob" ON)
-option(TBAI_BUILD_WTW "Build the wtw" ON)
-option(TBAI_BUILD_NP3O "Build the np3o" ON)
-option(TBAI_BUILD_MUSE "Build the muse" ON)
-option(TBAI_BUILD_PYTHON "Build the Python bindings" OFF)
+# Robots
 option(TBAI_BUILD_DEPLOY_GO2 "Build the deploy go2" ON)
 option(TBAI_BUILD_DEPLOY_GO2_UNITREE "Build the deploy go2 unitree_sdk2 backend" OFF)
 option(TBAI_BUILD_DEPLOY_GO2W "Build the deploy go2w (wheeled)" ON)
@@ -18,10 +13,20 @@ option(TBAI_BUILD_DEPLOY_SPOT "Build the deploy spot" ON)
 option(TBAI_BUILD_DEPLOY_ANYMAL_B "Build the deploy anymal_b" ON)
 option(TBAI_BUILD_DEPLOY_ANYMAL_C "Build the deploy anymal_c" ON)
 option(TBAI_BUILD_DEPLOY_ANYMAL_D "Build the deploy anymal_d" ON)
+
+# Controllers
+option(TBAI_BUILD_BOB "Build the bob" ON)
+option(TBAI_BUILD_WTW "Build the wtw" ON)
+option(TBAI_BUILD_NP3O "Build the np3o" ON)
+option(TBAI_BUILD_MUSE "Build the muse" ON)
 option(TBAI_BUILD_OCS2 "Build the ocs2" ON)
 option(TBAI_BUILD_MPC "Build the mpc" ON)
 option(TBAI_BUILD_DTC "Build the dtc" ON)
 option(TBAI_BUILD_JOE "Build the joe" ON)
+
+# Other
+option(TBAI_BUILD_TESTS "Build the tests" OFF)
+option(TBAI_BUILD_PYTHON "Build the Python bindings" OFF)
 option(TBAI_BUILD_DOCS "Build the documentation" OFF)
 option(TBAI_FETCH_TORCH "Fetch libtorch" OFF)
 
