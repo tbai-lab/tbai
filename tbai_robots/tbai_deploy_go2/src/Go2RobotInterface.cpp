@@ -22,13 +22,6 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     TBAI_LOG_INFO(logger_, "Initializing Go2RobotInterface (tbai_sdk/zenoh backend)");
     TBAI_LOG_INFO(logger_, "Subscribe lidar: {}", args.subscribeLidar());
 
-    // Subscribe lidar
-    if (args.subscribeLidar()) {
-        TBAI_LOG_INFO(logger_, "Initializing lidar subscriber: {}", TOPIC_LIDAR);
-        lidar_subscriber = std::make_unique<tbai::Subscriber<robot_msgs::PointCloud2>>(
-            TOPIC_LIDAR, [this](const robot_msgs::PointCloud2 &msg) { lidarCallback(msg); });
-    }
-
     // Initialize motor 2 id map
     motorIdMap_["RF_HAA"] = 0;
     motorIdMap_["RF_HFE"] = 1;
@@ -83,7 +76,6 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
 Go2RobotInterface::~Go2RobotInterface() {
     TBAI_LOG_INFO(logger_, "Destroying Go2RobotInterface");
     if (lowstate_subscriber) lowstate_subscriber->stop();
-    if (lidar_subscriber) lidar_subscriber->stop();
 }
 
 /*********************************************************************************************************************/

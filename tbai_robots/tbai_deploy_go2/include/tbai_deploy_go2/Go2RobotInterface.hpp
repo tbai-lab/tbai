@@ -15,7 +15,6 @@
 
 #define TOPIC_LOWCMD "rt/lowcmd"
 #define TOPIC_LOWSTATE "rt/lowstate"
-#define TOPIC_LIDAR "rt/utlidar/cloud"
 
 constexpr double PosStopF = (2.146E+9f);
 constexpr double VelStopF = (16000.0f);
@@ -42,10 +41,6 @@ class Go2RobotInterface : public RobotInterface {
     void waitTillInitialized() override;
     State getLatestState() override;
 
-    virtual void lidarCallback(const robot_msgs::PointCloud2 &message) {
-        // Do nothing by default, a user is expected to override this method, but does not have to
-    };
-
    private:
     void lowStateCallback(const robot_msgs::LowState &message);
 
@@ -54,7 +49,6 @@ class Go2RobotInterface : public RobotInterface {
 
     /* Subscribers */
     std::unique_ptr<tbai::QueuedSubscriber<robot_msgs::LowState>> lowstate_subscriber;
-    std::unique_ptr<tbai::Subscriber<robot_msgs::PointCloud2>> lidar_subscriber;
     std::unordered_map<std::string, int> motorIdMap_;
     std::unordered_map<std::string, int> footIdMap_;
     bool initialized_ = false;

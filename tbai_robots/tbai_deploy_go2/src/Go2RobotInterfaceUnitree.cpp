@@ -59,13 +59,6 @@ Go2RobotInterfaceUnitree::Go2RobotInterfaceUnitree(Go2RobotInterfaceUnitreeArgs 
         throw std::runtime_error("Channel init is disabled");
     }
 
-    // Subscribe lidar
-    if (args.subscribeLidar()) {
-        TBAI_LOG_INFO(logger_, "Initializing lidar subscriber: {}", TOPIC_LIDAR);
-        lidar_subscriber.reset(new ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>(TOPIC_LIDAR));
-        lidar_subscriber->InitChannel(std::bind(&Go2RobotInterfaceUnitree::lidarCallback, this, std::placeholders::_1), 1);
-    }
-
     // Initialize motor 2 id map
     motorIdMap_["RF_HAA"] = 0;
     motorIdMap_["RF_HFE"] = 1;

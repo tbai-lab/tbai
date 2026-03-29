@@ -26,7 +26,6 @@ using namespace unitree::robot;
 
 #define TOPIC_LOWCMD "rt/lowcmd"
 #define TOPIC_LOWSTATE "rt/lowstate"
-#define TOPIC_LIDAR "rt/utlidar/cloud"
 
 constexpr double PosStopF = (2.146E+9f);
 constexpr double VelStopF = (16000.0f);
@@ -52,10 +51,6 @@ class Go2RobotInterfaceUnitree : public RobotInterface {
     void waitTillInitialized() override;
     State getLatestState() override;
 
-    virtual void lidarCallback(const void *message) {
-        // Do nothing by default, a user is expected to override this method, but does not have to
-    };
-
    private:
     void lowStateCallback(const void *message);
 
@@ -66,7 +61,6 @@ class Go2RobotInterfaceUnitree : public RobotInterface {
 
     /* Subscribers */
     ChannelSubscriberPtr<unitree_go::msg::dds_::LowState_> lowstate_subscriber;
-    ChannelSubscriberPtr<sensor_msgs::msg::dds_::PointCloud2_> lidar_subscriber;
 
     std::unordered_map<std::string, int> motorIdMap_;
     std::unordered_map<std::string, int> footIdMap_;
