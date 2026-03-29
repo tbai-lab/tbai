@@ -1,0 +1,338 @@
+#include "tbai_deploy_go2/Go2RobotInterfaceUnitree.hpp"
+
+#include <stdint.h>
+
+#include <chrono>
+#include <cstring>
+#include <string>
+#include <thread>
+
+#include <tbai_core/Rotations.hpp>
+#include <tbai_core/config/Config.hpp>
+#include <tbai_core/control/Rate.hpp>
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+static uint32_t crc32_core(uint32_t *ptr, uint32_t len) {
+    unsigned int xbit = 0;
+    unsigned int data = 0;
+    unsigned int CRC32 = 0xFFFFFFFF;
+    const unsigned int dwPolynomial = 0x04c11db7;
+
+    for (unsigned int i = 0; i < len; i++) {
+        xbit = 1 << 31;
+        data = ptr[i];
+        for (unsigned int bits = 0; bits < 32; bits++) {
+            if (CRC32 & 0x80000000) {
+                CRC32 <<= 1;
+                CRC32 ^= dwPolynomial;
+            } else {
+                CRC32 <<= 1;
+            }
+
+            if (data & xbit) CRC32 ^= dwPolynomial;
+            xbit >>= 1;
+        }
+    }
+
+    return CRC32;
+}
+
+namespace tbai {
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+Go2RobotInterfaceUnitree::Go2RobotInterfaceUnitree(Go2RobotInterfaceUnitreeArgs args) {
+    logger_ = tbai::getLogger("tbai_deploy_go2");
+    TBAI_LOG_INFO(logger_, "Go2RobotInterfaceUnitree constructor");
+    TBAI_LOG_INFO(logger_, "Network interface: {}", args.networkInterface());
+    TBAI_LOG_INFO(logger_, "Initializing Go2RobotInterfaceUnitree (unitree_sdk2 backend)");
+    TBAI_LOG_INFO(logger_, "Unitree channel: {}", args.unitreeChannel());
+    TBAI_LOG_INFO(logger_, "Channel init: {}", args.channelInit());
+    TBAI_LOG_INFO(logger_, "Subscribe lidar: {}", args.subscribeLidar());
+    if (args.channelInit()) {
+        TBAI_LOG_INFO(logger_, "Initializing channel factory: {}", args.networkInterface());
+        unitree::robot::ChannelFactory::Instance()->Init(args.unitreeChannel(), args.networkInterface());
+    } else {
+        throw std::runtime_error("Channel init is disabled");
+    }
+
+    // Subscribe lidar
+    if (args.subscribeLidar()) {
+        TBAI_LOG_INFO(logger_, "Initializing lidar subscriber: {}", TOPIC_LIDAR);
+        lidar_subscriber.reset(new ChannelSubscriber<sensor_msgs::msg::dds_::PointCloud2_>(TOPIC_LIDAR));
+        lidar_subscriber->InitChannel(std::bind(&Go2RobotInterfaceUnitree::lidarCallback, this, std::placeholders::_1), 1);
+    }
+
+    // Initialize motor 2 id map
+    motorIdMap_["RF_HAA"] = 0;
+    motorIdMap_["RF_HFE"] = 1;
+    motorIdMap_["RF_KFE"] = 2;
+    motorIdMap_["LF_HAA"] = 3;
+    motorIdMap_["LF_HFE"] = 4;
+    motorIdMap_["LF_KFE"] = 5;
+    motorIdMap_["RH_HAA"] = 6;
+    motorIdMap_["RH_HFE"] = 7;
+    motorIdMap_["RH_KFE"] = 8;
+    motorIdMap_["LH_HAA"] = 9;
+    motorIdMap_["LH_HFE"] = 10;
+    motorIdMap_["LH_KFE"] = 11;
+
+    footIdMap_["RF_FOOT"] = 0;
+    footIdMap_["LF_FOOT"] = 1;
+    footIdMap_["RH_FOOT"] = 2;
+    footIdMap_["LH_FOOT"] = 3;
+
+    TBAI_LOG_INFO(logger_, "Initializing publisher: Topic: {}", TOPIC_LOWCMD);
+    lowcmd_publisher.reset(new ChannelPublisher<unitree_go::msg::dds_::LowCmd_>(TOPIC_LOWCMD));
+    lowcmd_publisher->InitChannel();
+
+    // Initialize estimator
+    std::vector<std::string> footNames = {"LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"};
+    TBAI_LOG_INFO(logger_, "Initializing estimator: Foot names: {}", footNames);
+    estimator_ = std::make_unique<tbai::inekf::InEKFEstimator>(footNames, "");
+    TBAI_LOG_INFO(logger_, "Estimator initialized");
+
+    TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", TOPIC_LOWSTATE);
+    lowstate_subscriber.reset(new ChannelSubscriber<unitree_go::msg::dds_::LowState_>(TOPIC_LOWSTATE));
+    lowstate_subscriber->InitChannel(std::bind(&Go2RobotInterfaceUnitree::lowStateCallback, this, std::placeholders::_1), 1);
+
+    // Initialize estimator parameters
+    rectifyOrientation_ = tbai::fromGlobalConfig<bool>("inekf_estimator/rectify_orientation", true);
+    removeGyroscopeBias_ = tbai::fromGlobalConfig<bool>("inekf_estimator/remove_gyroscope_bias", true);
+    TBAI_LOG_INFO(logger_, "Rectify orientation: {}", rectifyOrientation_);
+    TBAI_LOG_INFO(logger_, "Remove gyroscope bias: {}", removeGyroscopeBias_);
+
+    useGroundTruthState_ = args.useGroundTruthState();
+    if (useGroundTruthState_) {
+        TBAI_LOG_INFO(logger_, "Using ground-truth position/velocity from LowState (when available)");
+    }
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+Go2RobotInterfaceUnitree::~Go2RobotInterfaceUnitree() {
+    TBAI_LOG_INFO(logger_, "Destroying Go2RobotInterfaceUnitree");
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+void Go2RobotInterfaceUnitree::lowStateCallback(const void *message) {
+    auto t11 = std::chrono::high_resolution_clock::now();
+    scalar_t currentTime = tbai::SystemTime<std::chrono::high_resolution_clock>::rightNow();
+
+    // Create a copy of the low level state
+    unitree_go::msg::dds_::LowState_ &low_state = *(unitree_go::msg::dds_::LowState_ *)message;
+
+    // Calculate callback rate
+    static auto last_time2 = currentTime;
+    static int count = 0;
+    count++;
+
+    constexpr int N = 1000;  // Print every 1000th callback to avoid spam
+    if (count % N == 0) {
+        scalar_t time_diff = currentTime - last_time2;
+        double rate = N / time_diff;
+        TBAI_LOG_INFO_THROTTLE(logger_, 8.0, "Low state callback rate: {} Hz (count: {})", rate, count);
+        last_time2 = currentTime;
+    }
+
+    // Extract joint positions and velocities from low_state
+    vector_t jointAngles(12);
+    vector_t jointVelocities(12);
+
+    // Map joints in order: LF_HAA, LF_HFE, LF_KFE, LH_HAA, LH_HFE, LH_KFE, RF_HAA, RF_HFE, RF_KFE, RH_HAA, RH_HFE,
+    // RH_KFE
+    jointAngles[0] = low_state.motor_state()[motorIdMap_["LF_HAA"]].q();  // LF_HAA
+    jointAngles[1] = low_state.motor_state()[motorIdMap_["LF_HFE"]].q();  // LF_HFE
+    jointAngles[2] = low_state.motor_state()[motorIdMap_["LF_KFE"]].q();  // LF_KFE
+
+    // Left Hind leg
+    jointAngles[3] = low_state.motor_state()[motorIdMap_["LH_HAA"]].q();  // LH_HAA
+    jointAngles[4] = low_state.motor_state()[motorIdMap_["LH_HFE"]].q();  // LH_HFE
+    jointAngles[5] = low_state.motor_state()[motorIdMap_["LH_KFE"]].q();  // LH_KFE
+
+    // Right Front leg
+    jointAngles[6] = low_state.motor_state()[motorIdMap_["RF_HAA"]].q();  // RF_HAA
+    jointAngles[7] = low_state.motor_state()[motorIdMap_["RF_HFE"]].q();  // RF_HFE
+    jointAngles[8] = low_state.motor_state()[motorIdMap_["RF_KFE"]].q();  // RF_KFE
+
+    // Right Hind leg
+    jointAngles[9] = low_state.motor_state()[motorIdMap_["RH_HAA"]].q();   // RH_HAA
+    jointAngles[10] = low_state.motor_state()[motorIdMap_["RH_HFE"]].q();  // RH_HFE
+    jointAngles[11] = low_state.motor_state()[motorIdMap_["RH_KFE"]].q();  // RH_KFE
+
+    // Extract joint velocities in the same order
+    jointVelocities[0] = low_state.motor_state()[motorIdMap_["LF_HAA"]].dq();  // LF_HAA
+    jointVelocities[1] = low_state.motor_state()[motorIdMap_["LF_HFE"]].dq();  // LF_HFE
+    jointVelocities[2] = low_state.motor_state()[motorIdMap_["LF_KFE"]].dq();  // LF_KFE
+
+    jointVelocities[3] = low_state.motor_state()[motorIdMap_["LH_HAA"]].dq();  // LH_HAA
+    jointVelocities[4] = low_state.motor_state()[motorIdMap_["LH_HFE"]].dq();  // LH_HFE
+    jointVelocities[5] = low_state.motor_state()[motorIdMap_["LH_KFE"]].dq();  // LH_KFE
+
+    jointVelocities[6] = low_state.motor_state()[motorIdMap_["RF_HAA"]].dq();  // RF_HAA
+    jointVelocities[7] = low_state.motor_state()[motorIdMap_["RF_HFE"]].dq();  // RF_HFE
+    jointVelocities[8] = low_state.motor_state()[motorIdMap_["RF_KFE"]].dq();  // RF_KFE
+
+    jointVelocities[9] = low_state.motor_state()[motorIdMap_["RH_HAA"]].dq();   // RH_HAA
+    jointVelocities[10] = low_state.motor_state()[motorIdMap_["RH_HFE"]].dq();  // RH_HFE
+    jointVelocities[11] = low_state.motor_state()[motorIdMap_["RH_KFE"]].dq();  // RH_KFE
+
+    // Extract IMU data
+    vector4_t baseOrientation;
+    baseOrientation[0] = low_state.imu_state().quaternion()[1];  // x
+    baseOrientation[1] = low_state.imu_state().quaternion()[2];  // y
+    baseOrientation[2] = low_state.imu_state().quaternion()[3];  // z
+    baseOrientation[3] = low_state.imu_state().quaternion()[0];  // w
+
+    vector3_t baseAcc;
+    baseAcc[0] = low_state.imu_state().accelerometer()[0];
+    baseAcc[1] = low_state.imu_state().accelerometer()[1];
+    baseAcc[2] = low_state.imu_state().accelerometer()[2];
+
+    vector3_t baseAngVel;
+    baseAngVel[0] = low_state.imu_state().gyroscope()[0];
+    baseAngVel[1] = low_state.imu_state().gyroscope()[1];
+    baseAngVel[2] = low_state.imu_state().gyroscope()[2];
+
+    // Contact states
+    // Determine contact states based on ground reaction forces
+    std::vector<bool> contactFlags(4, false);
+    const double contact_threshold = 19.0;  // N, threshold for contact detection
+
+    // Extract ground reaction forces from foot sensors
+    std::vector<double> grf = {
+        static_cast<double>(low_state.foot_force()[footIdMap_["LF_FOOT"]]),  // LF
+        static_cast<double>(low_state.foot_force()[footIdMap_["RF_FOOT"]]),  // RF
+        static_cast<double>(low_state.foot_force()[footIdMap_["LH_FOOT"]]),  // LH
+        static_cast<double>(low_state.foot_force()[footIdMap_["RH_FOOT"]])   // RH
+    };
+
+    // Set contact to true if ground reaction force exceeds threshold
+    for (size_t i = 0; i < 4; ++i) {
+        contactFlags[i] = static_cast<bool>(grf[i] >= contact_threshold);
+    }
+
+    // Calculate dt (assuming this is called at regular intervals)
+    static scalar_t last_time3 = currentTime;
+    scalar_t dt = currentTime - last_time3;
+    last_time3 = currentTime;
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    estimator_->update(currentTime, dt, baseOrientation, jointAngles, jointVelocities, baseAcc, baseAngVel,
+                       contactFlags, rectifyOrientation_, enable_);
+
+    auto t2 = std::chrono::high_resolution_clock::now();
+    TBAI_LOG_INFO_THROTTLE(logger_, 8.0, "State estimator update: {} us",
+                           std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
+
+    // Get the latest state from the estimator
+    State state;
+    state.x = vector_t::Zero(36);
+
+    // Base orientation - Euler zyx as {roll, pitch, yaw}
+    const quaternion_t baseQuaternion =
+        rectifyOrientation_ ? quaternion_t(baseOrientation) : quaternion_t(estimator_->getBaseOrientation());
+    const tbai::matrix3_t R_world_base = baseQuaternion.toRotationMatrix();
+    const tbai::matrix3_t R_base_world = R_world_base.transpose();
+    const tbai::vector_t rpy = tbai::mat2oc2rpy(R_world_base, lastYaw_);
+    lastYaw_ = rpy[2];
+
+    // Base orientation - Euler zyx as {roll, pitch, yaw}
+    state.x.segment<3>(0) = rpy;
+
+    // Base position and linear velocity
+    state.x.segment<3>(3) = estimator_->getBasePosition();
+    state.x.segment<3>(9) = R_base_world * estimator_->getBaseVelocity();
+
+    // Base angular velocity
+    if (removeGyroscopeBias_) {
+        state.x.segment<3>(6) = baseAngVel - estimator_->getGyroscopeBias();
+    } else {
+        state.x.segment<3>(6) = baseAngVel;
+    }
+
+    // Joint positions
+    state.x.segment<12>(12) = jointAngles;
+
+    // Joint velocities
+    state.x.segment<12>(12 + 12) = jointVelocities;
+
+    state.timestamp = currentTime;
+    state.contactFlags = contactFlags;
+
+    auto t12 = std::chrono::high_resolution_clock::now();
+    TBAI_LOG_INFO_THROTTLE(logger_, 8.0, "State update time: {} us",
+                           std::chrono::duration_cast<std::chrono::microseconds>(t12 - t11).count());
+
+    // Update the latest state
+    std::lock_guard<std::mutex> lock(latestStateMutex_);
+    state_ = std::move(state);
+    auto t13 = std::chrono::high_resolution_clock::now();
+
+    TBAI_LOG_INFO_THROTTLE(logger_, 8.0, "Total callback time: {} us",
+                           std::chrono::duration_cast<std::chrono::microseconds>(t13 - t11).count());
+
+    initialized_ = true;
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+void Go2RobotInterfaceUnitree::publish(std::vector<MotorCommand> commands) {
+    static auto last_publish_time = std::chrono::high_resolution_clock::now();
+    static int publish_count = 0;
+    publish_count++;
+
+    constexpr int PUBLISH_N = 1000;  // Print every 1000 publishes (roughly 1s at 1kHz)
+    if (publish_count % PUBLISH_N == 0) {
+        auto current_time = std::chrono::high_resolution_clock::now();
+        auto time_diff =
+            std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_publish_time).count();
+        double rate = (PUBLISH_N * 1000.0) / time_diff;
+        TBAI_LOG_INFO(logger_, "Publish frequency: {} Hz (count: {})", rate, publish_count);
+        last_publish_time = current_time;
+    }
+
+    for (const auto &command : commands) {
+        const int motor_id = motorIdMap_[command.joint_name];
+        low_cmd.motor_cmd()[motor_id].mode() = (0x01);  // motor switch to servo (PMSM) mode
+        low_cmd.motor_cmd()[motor_id].q() = (command.desired_position);
+        low_cmd.motor_cmd()[motor_id].kp() = command.kp;
+        low_cmd.motor_cmd()[motor_id].dq() = (command.desired_velocity);
+        low_cmd.motor_cmd()[motor_id].kd() = command.kd;
+        low_cmd.motor_cmd()[motor_id].tau() = command.torque_ff;
+    }
+
+    low_cmd.crc() = crc32_core((uint32_t *)&low_cmd, (sizeof(unitree_go::msg::dds_::LowCmd_) >> 2) - 1);
+
+    // Publish the low level command
+    lowcmd_publisher->Write(low_cmd);
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+void Go2RobotInterfaceUnitree::waitTillInitialized() {
+    TBAI_LOG_INFO(logger_, "Waiting for the robot to initialize...");
+    while (!initialized_) {
+        TBAI_LOG_INFO_THROTTLE(logger_, 1.0, "Waiting for the robot to initialize...");
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    TBAI_LOG_INFO(logger_, "Robot initialized");
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+State Go2RobotInterfaceUnitree::getLatestState() {
+    std::lock_guard<std::mutex> lock(latestStateMutex_);
+    return state_;
+}
+
+}  // namespace tbai

@@ -11,6 +11,7 @@ option(TBAI_BUILD_NP3O "Build the np3o" ON)
 option(TBAI_BUILD_MUSE "Build the muse" ON)
 option(TBAI_BUILD_PYTHON "Build the Python bindings" OFF)
 option(TBAI_BUILD_DEPLOY_GO2 "Build the deploy go2" ON)
+option(TBAI_BUILD_DEPLOY_GO2_UNITREE "Build the deploy go2 unitree_sdk2 backend" OFF)
 option(TBAI_BUILD_DEPLOY_GO2W "Build the deploy go2w (wheeled)" ON)
 option(TBAI_BUILD_DEPLOY_G1 "Build the deploy g1" ON)
 option(TBAI_BUILD_DEPLOY_FRANKA "Build the deploy franka" ON)
@@ -31,6 +32,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(TBAI_FETCH_TORCH)
   include(cmake/torch.cmake)
+endif()
+
+if(TBAI_BUILD_DEPLOY_GO2_UNITREE)
+  include(cmake/unitree_sdk2.cmake)
 endif()
 
 if(TBAI_BUILD_TESTS)
