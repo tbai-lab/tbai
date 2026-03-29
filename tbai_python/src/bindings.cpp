@@ -1,6 +1,6 @@
 #include <cstring>
-#include <iostream>
 
+// nanobind
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
@@ -8,6 +8,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/trampoline.h>
+
+// tbai
 #include <tbai_bob/BobController.hpp>
 #include <tbai_core/Rotations.hpp>
 #include <tbai_core/Types.hpp>
@@ -392,7 +394,7 @@ NB_MODULE(_C, m) {
         .def("waitTillInitialized", &tbai::G1RobotInterface::waitTillInitialized,
              nb::call_guard<nb::gil_scoped_release>())
         .def("getLatestState", &tbai::G1RobotInterface::getLatestState, nb::call_guard<nb::gil_scoped_release>())
-        .def("getBaseQuaternion", &tbai::G1RobotInterface::getBaseQuaternion);
+        .def("getBaseQuaternion", &tbai::G1RobotInterface::getBaseQuaternion, nb::call_guard<nb::gil_scoped_release>());
 
     nb::class_<tbai::g1::G1RLController, tbai::Controller>(m, "G1RLController")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &,
