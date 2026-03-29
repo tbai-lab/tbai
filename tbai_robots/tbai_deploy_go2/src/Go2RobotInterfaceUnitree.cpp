@@ -47,14 +47,14 @@ namespace tbai {
 Go2RobotInterfaceUnitree::Go2RobotInterfaceUnitree(Go2RobotInterfaceUnitreeArgs args) {
     logger_ = tbai::getLogger("tbai_deploy_go2");
     TBAI_LOG_INFO(logger_, "Go2RobotInterfaceUnitree constructor");
-    TBAI_LOG_INFO(logger_, "Network interface: {}", args.networkInterface());
+    TBAI_LOG_INFO(logger_, "Network interface: {}", args.networkInterface);
     TBAI_LOG_INFO(logger_, "Initializing Go2RobotInterfaceUnitree (unitree_sdk2 backend)");
-    TBAI_LOG_INFO(logger_, "Unitree channel: {}", args.unitreeChannel());
-    TBAI_LOG_INFO(logger_, "Channel init: {}", args.channelInit());
-    TBAI_LOG_INFO(logger_, "Subscribe lidar: {}", args.subscribeLidar());
-    if (args.channelInit()) {
-        TBAI_LOG_INFO(logger_, "Initializing channel factory: {}", args.networkInterface());
-        unitree::robot::ChannelFactory::Instance()->Init(args.unitreeChannel(), args.networkInterface());
+    TBAI_LOG_INFO(logger_, "Unitree channel: {}", args.unitreeChannel);
+    TBAI_LOG_INFO(logger_, "Channel init: {}", args.channelInit);
+    TBAI_LOG_INFO(logger_, "Subscribe lidar: {}", args.subscribeLidar);
+    if (args.channelInit) {
+        TBAI_LOG_INFO(logger_, "Initializing channel factory: {}", args.networkInterface);
+        unitree::robot::ChannelFactory::Instance()->Init(args.unitreeChannel, args.networkInterface);
     } else {
         throw std::runtime_error("Channel init is disabled");
     }
@@ -98,7 +98,7 @@ Go2RobotInterfaceUnitree::Go2RobotInterfaceUnitree(Go2RobotInterfaceUnitreeArgs 
     TBAI_LOG_INFO(logger_, "Rectify orientation: {}", rectifyOrientation_);
     TBAI_LOG_INFO(logger_, "Remove gyroscope bias: {}", removeGyroscopeBias_);
 
-    useGroundTruthState_ = args.useGroundTruthState();
+    useGroundTruthState_ = args.useGroundTruthState;
     if (useGroundTruthState_) {
         TBAI_LOG_INFO(logger_, "Using ground-truth position/velocity from LowState (when available)");
     }

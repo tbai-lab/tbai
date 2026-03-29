@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <tbai_core/Args.hpp>
+#include <string>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_estim/inekf/InEKFEstimator.hpp>
@@ -20,10 +20,10 @@ constexpr int ANYMAL_C_NUM_JOINTS = 12;
 constexpr int ANYMAL_C_STATE_DIM = 3 + 3 + 3 + 3 + ANYMAL_C_NUM_JOINTS + ANYMAL_C_NUM_JOINTS;
 
 struct AnymalCRobotInterfaceArgs {
-    TBAI_ARG_DEFAULT(std::string, networkInterface, "lo");
-    TBAI_ARG_DEFAULT(bool, enableGroundPlaneCorrection, false);
-    TBAI_ARG_DEFAULT(std::string, depthTopic, "rt/pointcloud/front_lower");
-    TBAI_ARG_DEFAULT(bool, useGroundTruthState, false);
+    std::string networkInterface = "lo";
+    bool enableGroundPlaneCorrection = false;
+    std::string depthTopic = "rt/pointcloud/front_lower";
+    bool useGroundTruthState = false;
 };
 
 class AnymalCRobotInterface : public RobotInterface {

@@ -334,11 +334,11 @@ def main():
         sys.exit(1)
 
     robot_args = tbai_python.Go2RobotInterfaceArgs()
-    robot_args.set_network_interface(args.net)
-    robot_args.set_unitree_channel(args.channel)
-    robot_args.set_channel_init(True)
-    robot_args.set_subscribe_lidar(not args.no_lidar)
-    robot_args.set_enable_video(args.video)
+    robot_args.network_interface = args.net
+    robot_args.unitree_channel = args.channel
+    robot_args.channel_init = True
+    robot_args.subscribe_lidar = not args.no_lidar
+    robot_args.enable_video = args.video
 
     print(f"Connecting to Go2 on {args.net} (channel {args.channel})...")
     robot = tbai_python.Go2RobotInterface(robot_args)

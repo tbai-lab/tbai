@@ -38,7 +38,7 @@ Go2WRobotInterface::Go2WRobotInterface(Go2WRobotInterfaceArgs args) {
     TBAI_LOG_INFO(logger_, "Initializing publisher: Topic: {}", GO2W_TOPIC_LOWCMD);
     lowcmd_publisher = std::make_unique<tbai::Publisher<robot_msgs::MotorCommands>>(GO2W_TOPIC_LOWCMD);
 
-    useGroundTruthState_ = args.useGroundTruthState();
+    useGroundTruthState_ = args.useGroundTruthState;
     if (useGroundTruthState_) {
         TBAI_LOG_INFO(logger_, "Using ground-truth position/velocity from LowState (when available)");
     }

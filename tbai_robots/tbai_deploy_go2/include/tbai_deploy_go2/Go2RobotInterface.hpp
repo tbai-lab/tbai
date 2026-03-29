@@ -5,7 +5,7 @@
 
 #include <atomic>
 
-#include <tbai_core/Args.hpp>
+#include <string>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_estim/inekf/InEKFEstimator.hpp>
@@ -22,13 +22,13 @@ constexpr double VelStopF = (16000.0f);
 namespace tbai {
 
 struct Go2RobotInterfaceArgs {
-    TBAI_ARG_DEFAULT(std::string, networkInterface, "eth0");
-    TBAI_ARG_DEFAULT(int, unitreeChannel, 0);
-    TBAI_ARG_DEFAULT(bool, channelInit, true);
-    TBAI_ARG_DEFAULT(bool, enableStateEstim, true);
-    TBAI_ARG_DEFAULT(bool, subscribeLidar, true);
-    TBAI_ARG_DEFAULT(bool, enableVideo, false);
-    TBAI_ARG_DEFAULT(bool, useGroundTruthState, false);
+    std::string networkInterface = "eth0";
+    int unitreeChannel = 0;
+    bool channelInit = true;
+    bool enableStateEstim = true;
+    bool subscribeLidar = true;
+    bool enableVideo = false;
+    bool useGroundTruthState = false;
 };
 
 class Go2RobotInterface : public RobotInterface {

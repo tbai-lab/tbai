@@ -55,14 +55,14 @@ AnymalCRobotInterface::AnymalCRobotInterface(AnymalCRobotInterfaceArgs args) {
     rectifyOrientation_ = tbai::fromGlobalConfig<bool>("inekf_estimator/rectify_orientation", true);
     removeGyroscopeBias_ = tbai::fromGlobalConfig<bool>("inekf_estimator/remove_gyroscope_bias", false);
 
-    enableGroundPlaneCorrection_ = args.enableGroundPlaneCorrection();
+    enableGroundPlaneCorrection_ = args.enableGroundPlaneCorrection;
     if (enableGroundPlaneCorrection_) {
-        std::string depthTopic = args.depthTopic();
+        std::string depthTopic = args.depthTopic;
         TBAI_LOG_INFO(logger_, "Initializing depth subscriber for ground plane correction: {}", depthTopic);
         depthSubscriber_ = std::make_unique<tbai::PollingSubscriber<robot_msgs::PointCloud2>>(depthTopic);
     }
 
-    useGroundTruthState_ = args.useGroundTruthState();
+    useGroundTruthState_ = args.useGroundTruthState;
     if (useGroundTruthState_) {
         TBAI_LOG_INFO(logger_, "Using ground-truth position/velocity from LowState (when available)");
     }

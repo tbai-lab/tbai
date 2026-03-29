@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <tbai_core/Args.hpp>
+#include <string>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_estim/inekf/InEKFEstimator.hpp>
@@ -21,7 +21,7 @@ constexpr int SPOT_ARM_NUM_MUJOCO_MOTORS = 19;  // 12 legs + 6 arm + 1 gripper
 constexpr int SPOT_ARM_STATE_DIM = 3 + 3 + 3 + 3 + SPOT_ARM_NUM_JOINTS + SPOT_ARM_NUM_JOINTS;
 
 struct SpotArmRobotInterfaceArgs {
-    TBAI_ARG_DEFAULT(std::string, networkInterface, "lo");
+    std::string networkInterface = "lo";
 };
 
 class SpotArmRobotInterface : public RobotInterface {

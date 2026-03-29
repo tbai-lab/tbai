@@ -61,7 +61,7 @@ G1RobotInterface::G1RobotInterface(G1RobotInterfaceArgs args) {
     rectifyOrientation_ = tbai::fromGlobalConfig<bool>("inekf_estimator/rectify_orientation", true);
     removeGyroscopeBias_ = tbai::fromGlobalConfig<bool>("inekf_estimator/remove_gyroscope_bias", true);
 
-    useGroundTruthState_ = args.useGroundTruthState();
+    useGroundTruthState_ = args.useGroundTruthState;
     if (useGroundTruthState_) {
         TBAI_LOG_INFO(logger_, "Using ground-truth position/velocity from LowState (when available)");
     }

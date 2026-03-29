@@ -20,7 +20,7 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     logger_ = tbai::getLogger("tbai_deploy_go2");
     TBAI_LOG_INFO(logger_, "Go2RobotInterface constructor");
     TBAI_LOG_INFO(logger_, "Initializing Go2RobotInterface (tbai_sdk/zenoh backend)");
-    TBAI_LOG_INFO(logger_, "Subscribe lidar: {}", args.subscribeLidar());
+    TBAI_LOG_INFO(logger_, "Subscribe lidar: {}", args.subscribeLidar);
 
     // Initialize motor 2 id map
     motorIdMap_["RF_HAA"] = 0;
@@ -54,7 +54,7 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
         TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
 
-    if (args.enableVideo()) {
+    if (args.enableVideo) {
         TBAI_LOG_WARN(logger_, "Video client not supported with tbai_sdk backend");
     }
 
@@ -64,7 +64,7 @@ Go2RobotInterface::Go2RobotInterface(Go2RobotInterfaceArgs args) {
     TBAI_LOG_INFO(logger_, "Rectify orientation: {}", rectifyOrientation_);
     TBAI_LOG_INFO(logger_, "Remove gyroscope bias: {}", removeGyroscopeBias_);
 
-    useGroundTruthState_ = args.useGroundTruthState();
+    useGroundTruthState_ = args.useGroundTruthState;
     if (useGroundTruthState_) {
         TBAI_LOG_INFO(logger_, "Using ground-truth position/velocity from LowState (when available)");
     }

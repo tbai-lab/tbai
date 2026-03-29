@@ -298,48 +298,13 @@ NB_MODULE(_C, m) {
 #ifdef TBAI_HAS_DEPLOY_GO2
     nb::class_<tbai::Go2RobotInterfaceArgs>(m, "Go2RobotInterfaceArgs")
         .def(nb::init<>())
-        .def(
-            "set_network_interface",
-            [](tbai::Go2RobotInterfaceArgs &self, const std::string &val) -> tbai::Go2RobotInterfaceArgs & {
-                self.networkInterface(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal)
-        .def(
-            "set_unitree_channel",
-            [](tbai::Go2RobotInterfaceArgs &self, int val) -> tbai::Go2RobotInterfaceArgs & {
-                self.unitreeChannel(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal)
-        .def(
-            "set_channel_init",
-            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
-                self.channelInit(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal)
-        .def(
-            "set_enable_state_estim",
-            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
-                self.enableStateEstim(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal)
-        .def(
-            "set_subscribe_lidar",
-            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
-                self.subscribeLidar(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal)
-        .def(
-            "set_enable_video",
-            [](tbai::Go2RobotInterfaceArgs &self, bool val) -> tbai::Go2RobotInterfaceArgs & {
-                self.enableVideo(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal);
+        .def_rw("network_interface", &tbai::Go2RobotInterfaceArgs::networkInterface)
+        .def_rw("unitree_channel", &tbai::Go2RobotInterfaceArgs::unitreeChannel)
+        .def_rw("channel_init", &tbai::Go2RobotInterfaceArgs::channelInit)
+        .def_rw("enable_state_estim", &tbai::Go2RobotInterfaceArgs::enableStateEstim)
+        .def_rw("subscribe_lidar", &tbai::Go2RobotInterfaceArgs::subscribeLidar)
+        .def_rw("enable_video", &tbai::Go2RobotInterfaceArgs::enableVideo)
+        .def_rw("use_ground_truth_state", &tbai::Go2RobotInterfaceArgs::useGroundTruthState);
 
     nb::class_<tbai::Go2RobotInterface, tbai::RobotInterface>(m, "Go2RobotInterface")
         .def(nb::init<tbai::Go2RobotInterfaceArgs>())
@@ -359,34 +324,11 @@ NB_MODULE(_C, m) {
 #ifdef TBAI_HAS_DEPLOY_G1
     nb::class_<tbai::G1RobotInterfaceArgs>(m, "G1RobotInterfaceArgs")
         .def(nb::init<>())
-        .def(
-            "set_network_interface",
-            [](tbai::G1RobotInterfaceArgs &self, const std::string &val) -> tbai::G1RobotInterfaceArgs & {
-                self.networkInterface(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal)
-        .def(
-            "set_unitree_channel",
-            [](tbai::G1RobotInterfaceArgs &self, int val) -> tbai::G1RobotInterfaceArgs & {
-                self.unitreeChannel(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal)
-        .def(
-            "set_channel_init",
-            [](tbai::G1RobotInterfaceArgs &self, bool val) -> tbai::G1RobotInterfaceArgs & {
-                self.channelInit(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal)
-        .def(
-            "set_enable_state_estim",
-            [](tbai::G1RobotInterfaceArgs &self, bool val) -> tbai::G1RobotInterfaceArgs & {
-                self.enableStateEstim(val);
-                return self;
-            },
-            nb::rv_policy::reference_internal);
+        .def_rw("network_interface", &tbai::G1RobotInterfaceArgs::networkInterface)
+        .def_rw("unitree_channel", &tbai::G1RobotInterfaceArgs::unitreeChannel)
+        .def_rw("channel_init", &tbai::G1RobotInterfaceArgs::channelInit)
+        .def_rw("enable_state_estim", &tbai::G1RobotInterfaceArgs::enableStateEstim)
+        .def_rw("use_ground_truth_state", &tbai::G1RobotInterfaceArgs::useGroundTruthState);
 
     nb::class_<tbai::G1RobotInterface, tbai::RobotInterface>(m, "G1RobotInterface")
         .def(nb::init<tbai::G1RobotInterfaceArgs>())

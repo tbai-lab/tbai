@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <tbai_core/Args.hpp>
+#include <string>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_estim/inekf/InEKFEstimator.hpp>
@@ -23,11 +23,11 @@ constexpr int G1_NUM_JOINTS = 29;
 constexpr int G1_STATE_DIM = 3 + 3 + 3 + 3 + G1_NUM_JOINTS + G1_NUM_JOINTS;
 
 struct G1RobotInterfaceArgs {
-    TBAI_ARG_DEFAULT(std::string, networkInterface, "eth0");
-    TBAI_ARG_DEFAULT(int, unitreeChannel, 0);
-    TBAI_ARG_DEFAULT(bool, channelInit, true);
-    TBAI_ARG_DEFAULT(bool, enableStateEstim, true);
-    TBAI_ARG_DEFAULT(bool, useGroundTruthState, false);
+    std::string networkInterface = "eth0";
+    int unitreeChannel = 0;
+    bool channelInit = true;
+    bool enableStateEstim = true;
+    bool useGroundTruthState = false;
 };
 
 class G1RobotInterface : public RobotInterface {

@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <tbai_core/Args.hpp>
+#include <string>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_sdk/messages/robot_msgs.hpp>
@@ -24,9 +24,9 @@ constexpr int FRANKA_NUM_MUJOCO_MOTORS = 8;  // 7 arm + 1 finger in MuJoCo
 constexpr int FRANKA_STATE_DIM = FRANKA_NUM_ARM_JOINTS + FRANKA_NUM_ARM_JOINTS;
 
 struct FrankaRobotInterfaceArgs {
-    TBAI_ARG_DEFAULT(std::string, networkInterface, "lo");
-    TBAI_ARG_DEFAULT(bool, enableCamera, false);
-    TBAI_ARG_DEFAULT(std::string, cameraTopic, "rt/camera/image");
+    std::string networkInterface = "lo";
+    bool enableCamera = false;
+    std::string cameraTopic = "rt/camera/image";
 };
 
 class FrankaRobotInterface : public RobotInterface {

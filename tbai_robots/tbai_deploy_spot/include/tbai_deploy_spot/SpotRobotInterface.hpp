@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <tbai_core/Args.hpp>
+#include <string>
 #include <tbai_core/Logging.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_estim/inekf/InEKFEstimator.hpp>
@@ -22,7 +22,7 @@ constexpr int SPOT_NUM_JOINTS = 12;
 constexpr int SPOT_STATE_DIM = 3 + 3 + 3 + 3 + SPOT_NUM_JOINTS + SPOT_NUM_JOINTS;
 
 struct SpotRobotInterfaceArgs {
-    TBAI_ARG_DEFAULT(std::string, networkInterface, "lo");
+    std::string networkInterface = "lo";
 };
 
 class SpotRobotInterface : public RobotInterface {

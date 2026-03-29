@@ -502,11 +502,11 @@ def main():
 
     # Initialize G1 robot
     robot_args = tbai_python.G1RobotInterfaceArgs()
-    robot_args.set_network_interface(args.net)
-    robot_args.set_unitree_channel(args.channel)
-    robot_args.set_channel_init(True)
+    robot_args.network_interface = args.net
+    robot_args.unitree_channel = args.channel
+    robot_args.channel_init = True
     if args.ground_truth:
-        robot_args.set_enable_state_estim(False)
+        robot_args.enable_state_estim = False
 
     print(f"Connecting to G1 on {args.net} (channel {args.channel})...")
     robot = tbai_python.G1RobotInterface(robot_args)
