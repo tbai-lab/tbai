@@ -84,6 +84,25 @@ target_link_libraries(tbai_deploy_g1
         ${TORCH_LIBRARIES}
 )
 
+if(TBAI_BUILD_DEPLOY_G1_UNITREE)
+    add_library(tbai_deploy_g1_unitree
+        src/G1RobotInterfaceUnitree.cpp
+    )
+    set_target_properties(tbai_deploy_g1_unitree PROPERTIES EXPORT_NAME deploy_g1_unitree)
+
+    target_include_directories(tbai_deploy_g1_unitree
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>
+    )
+    target_link_libraries(tbai_deploy_g1_unitree
+        PUBLIC
+            tbai_core
+            tbai_estim
+            unitree_sdk2
+    )
+endif()
+
 ## Installation rules
 include(GNUInstallDirs)
 
@@ -104,6 +123,22 @@ install(EXPORT tbai_deploy_g1-targets
     FILE tbai-deploy_g1-targets.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tbai
 )
+
+if(TBAI_BUILD_DEPLOY_G1_UNITREE)
+    install(TARGETS tbai_deploy_g1_unitree
+        EXPORT tbai_deploy_g1_unitree-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    install(EXPORT tbai_deploy_g1_unitree-targets
+        NAMESPACE tbai::
+        FILE tbai-deploy_g1_unitree-targets.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tbai
+    )
+endif()
 
 # Install ONNX Runtime headers
 install(DIRECTORY "${ONNXRUNTIME_INCLUDE_DIR}/"
