@@ -269,16 +269,17 @@ NB_MODULE(_C, m) {
             tbai::quaternion_t q = tbai::rpy2quat(rpy);
             return tbai::vector4_t(q.x(), q.y(), q.z(), q.w());
         },
-        "Convert roll-pitch-yaw euler angles to quaternion (returns xyzw vector)");
+        nb::arg("rpy"), "Convert roll-pitch-yaw euler angles to quaternion (returns xyzw vector)");
     rotations_module.def(
         "quat2mat",
         [](const tbai::vector4_t &q) {
-            tbai::matrix3_t mat = tbai::quat2mat(tbai::quaternion_t(q[3], q[0], q[1], q[2]));
+            tbai::matrix3_t mat = tbai::quat2mat(tbai::quaternion_t(q[3], q[0], q[1], q[2])); // Eigen quaternion expects wxyz order
             return tbai::matrix3_t(mat);
         },
-        "Convert quaternion to rotation matrix, expects xyzw vector");
-    rotations_module.def("mat2rpy", &tbai::mat2rpy, "Convert rotation matrix to roll-pitch-yaw euler angles");
-    rotations_module.def("mat2ocs2rpy", &tbai::mat2oc2rpy,
+        nb::arg("quat_xyzw"), "Convert quaternion to rotation matrix, expects xyzw vector");
+    rotations_module.def("mat2rpy", &tbai::mat2rpy, nb::arg("mat"),
+                         "Convert rotation matrix to roll-pitch-yaw euler angles");
+    rotations_module.def("mat2ocs2rpy", &tbai::mat2oc2rpy, nb::arg("mat"), nb::arg("last_yaw"),
                          "Convert rotation matrix to ocs2-style roll-pitch-yaw euler angles");
     rotations_module.def(
         "ocs2rpy2quat",
@@ -286,9 +287,11 @@ NB_MODULE(_C, m) {
             tbai::quaternion_t q = tbai::ocs2rpy2quat(rpy);
             return tbai::vector4_t(q.x(), q.y(), q.z(), q.w());
         },
-        "Convert ocs2-style roll-pitch-yaw angles to quaternion (returns xyzw vector)");
-    rotations_module.def("rpy2mat", &tbai::rpy2mat, "Convert roll-pitch-yaw euler angles to rotation matrix");
-    rotations_module.def("mat2aa", &tbai::mat2aa, "Convert rotation matrix to axis-angle representation");
+        nb::arg("rpy"), "Convert ocs2-style roll-pitch-yaw angles to quaternion (returns xyzw vector)");
+    rotations_module.def("rpy2mat", &tbai::rpy2mat, nb::arg("rpy"),
+                         "Convert roll-pitch-yaw euler angles to rotation matrix");
+    rotations_module.def("mat2aa", &tbai::mat2aa, nb::arg("mat"),
+                         "Convert rotation matrix to axis-angle representation");
 
 #ifdef TBAI_HAS_DEPLOY_GO2
     nb::class_<tbai::Go2RobotInterfaceArgs>(m, "Go2RobotInterfaceArgs")
