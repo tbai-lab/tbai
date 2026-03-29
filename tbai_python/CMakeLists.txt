@@ -5,10 +5,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(tbai_python)
 
-find_package(pybind11 CONFIG REQUIRED)
+find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
+execute_process(
+    COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
+find_package(nanobind CONFIG REQUIRED)
 find_package(pinocchio CONFIG REQUIRED)
 
-pybind11_add_module(_C
+nanobind_add_module(_C
     src/bindings.cpp
 )
 target_link_libraries(_C

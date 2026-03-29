@@ -59,9 +59,8 @@ class CMakeBuild(build_ext):
         env = os.environ.copy()
         env["PYTHONPATH"] = str(build_lib)
 
-        stub_out = str(build_lib)
         result = subprocess.run(
-            [sys.executable, "-m", "pybind11_stubgen", "tbai._C", "-o", stub_out],
+            [sys.executable, "-m", "nanobind.stubgen", "-m", "tbai._C", "-r", "-q"],
             env=env,
             cwd=str(build_lib),
         )
@@ -79,6 +78,6 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     python_requires=">=3.10",
     install_requires=["numpy", "opencv-python"],
-    setup_requires=["pybind11-stubgen"],
+    setup_requires=["nanobind"],
     zip_safe=False,
 )

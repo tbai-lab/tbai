@@ -10,7 +10,7 @@ dependencies:
 - cpp-argparse *
 - eigen 3.3.7.*
 - gtest *
-- pybind11 2.13.6.*
+- nanobind 2.4.*
 - yaml-cpp *
 - pinocchio 3.7.*
 - cmake 3.30.*
