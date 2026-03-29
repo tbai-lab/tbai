@@ -20,11 +20,16 @@ class CMakeBuild(build_ext):
 
         cfg = "Release"
 
+        build_go2_unitree = str(os.environ.get('TBAI_BUILD_DEPLOY_GO2_UNITREE', 'OFF')).upper()
+        build_g1_unitree = str(os.environ.get('TBAI_BUILD_DEPLOY_G1_UNITREE', 'OFF')).upper()
+
         cmake_args = [
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}",
             f"-DCMAKE_BUILD_TYPE={cfg}",
             "-DBUILD_SHARED_LIBS=ON",
             "-DTBAI_BUILD_PYTHON=ON",
+            f"-DTBAI_BUILD_DEPLOY_GO2_UNITREE={build_go2_unitree}",
+            f"-DTBAI_BUILD_DEPLOY_G1_UNITREE={build_g1_unitree}",
         ]
 
         build_args = []

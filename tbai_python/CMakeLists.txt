@@ -15,7 +15,9 @@ find_package(pinocchio CONFIG REQUIRED)
 nanobind_add_module(_C
     src/bindings.cpp
     src/robots/bindings_go2.cpp
+    src/robots/bindings_go2_unitree.cpp
     src/robots/bindings_g1.cpp
+    src/robots/bindings_g1_unitree.cpp
     src/controllers/bindings_static.cpp
     src/controllers/bindings_bob.cpp
     src/controllers/bindings_np3o.cpp
@@ -39,9 +41,19 @@ if(TBAI_BUILD_DEPLOY_GO2)
     target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_GO2)
 endif()
 
+if(TBAI_BUILD_DEPLOY_GO2_UNITREE)
+    target_link_libraries(_C PUBLIC tbai_deploy_go2_unitree)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_GO2_UNITREE)
+endif()
+
 if(TBAI_BUILD_DEPLOY_G1)
     target_link_libraries(_C PUBLIC tbai_deploy_g1)
     target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_G1)
+endif()
+
+if(TBAI_BUILD_DEPLOY_G1_UNITREE)
+    target_link_libraries(_C PUBLIC tbai_deploy_g1_unitree)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_G1_UNITREE)
 endif()
 target_include_directories(_C
     PUBLIC

@@ -52,7 +52,9 @@ namespace nb = nanobind;
 
 // Forward declarations — robots
 void bind_go2(nb::module_ &m);
+void bind_go2_unitree(nb::module_ &m);
 void bind_g1(nb::module_ &m);
+void bind_g1_unitree(nb::module_ &m);
 
 // Forward declarations — controllers
 void bind_static_controller(nb::module_ &m);
@@ -144,7 +146,9 @@ NB_MODULE(_C, m) {
 
     // bind robots
     bind_go2(m);
+    bind_go2_unitree(m);
     bind_g1(m);
+    bind_g1_unitree(m);
 
     // bind controllers
     bind_central_controller(m);
