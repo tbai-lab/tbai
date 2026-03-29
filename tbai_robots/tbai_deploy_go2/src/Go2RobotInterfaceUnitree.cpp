@@ -96,11 +96,6 @@ Go2RobotInterfaceUnitree::Go2RobotInterfaceUnitree(Go2RobotInterfaceUnitreeArgs 
     removeGyroscopeBias_ = tbai::fromGlobalConfig<bool>("inekf_estimator/remove_gyroscope_bias", true);
     TBAI_LOG_INFO(logger_, "Rectify orientation: {}", rectifyOrientation_);
     TBAI_LOG_INFO(logger_, "Remove gyroscope bias: {}", removeGyroscopeBias_);
-
-    useGroundTruthState_ = args.useGroundTruthState;
-    if (useGroundTruthState_) {
-        TBAI_LOG_INFO(logger_, "Using ground-truth position/velocity from LowState (when available)");
-    }
 }
 
 /*********************************************************************************************************************/

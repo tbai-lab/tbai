@@ -74,8 +74,6 @@ class Go2RobotInterfaceUnitree : public RobotInterface {
     bool rectifyOrientation_ = true;
     bool removeGyroscopeBias_ = true;
 
-    bool useGroundTruthState_ = false;
-
     bool enable_ = false;  // Enable state estimation
     void enableEstimator() override { enable_ = true; }
     void disableEstimator() override { enable_ = false; }
