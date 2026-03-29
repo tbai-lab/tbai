@@ -14,6 +14,13 @@ find_package(pinocchio CONFIG REQUIRED)
 
 nanobind_add_module(_C
     src/bindings.cpp
+    src/robots/bindings_go2.cpp
+    src/robots/bindings_g1.cpp
+    src/controllers/bindings_static.cpp
+    src/controllers/bindings_bob.cpp
+    src/controllers/bindings_np3o.cpp
+    src/controllers/bindings_wtw.cpp
+    src/controllers/bindings_central.cpp
 )
 target_link_libraries(_C
     PUBLIC
