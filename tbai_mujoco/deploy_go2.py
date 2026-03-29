@@ -357,7 +357,7 @@ def main():
 
     tbai_python.write_init_time()
 
-    central_controller = tbai_python.CentralController.create(robot, controller_sub)
+    central_controller = tbai_python.CentralController(robot, controller_sub)
 
     static_ctrl = tbai_python.StaticController(robot, rerun_logger)
     np3o_ctrl = tbai_python.Np3oController(robot, ref_vel_gen, rerun_logger)

@@ -519,7 +519,7 @@ def main():
 
     tbai_python.write_init_time()
 
-    central_controller = tbai_python.CentralController.create(robot, controller_sub)
+    central_controller = tbai_python.CentralController(robot, controller_sub)
 
     # Static controller (stand/sit)
     static_ctrl = tbai_python.StaticController(robot, None)

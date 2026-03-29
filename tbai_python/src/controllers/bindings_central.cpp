@@ -19,12 +19,8 @@ namespace nb = nanobind;
 
 void bind_central_controller(nb::module_ &m) {
     nb::class_<tbai::CentralControllerPython>(m, "CentralController")
-        .def_static("create",
-                    [](std::shared_ptr<tbai::RobotInterface> robotInterfacePtr,
-                       std::shared_ptr<tbai::ChangeControllerSubscriber> changeControllerSubscriberPtr) {
-                        return std::make_shared<tbai::CentralControllerPython>(robotInterfacePtr,
-                                                                               changeControllerSubscriberPtr);
-                    })
+        .def(nb::init<std::shared_ptr<tbai::RobotInterface>,
+                      std::shared_ptr<tbai::ChangeControllerSubscriber>>())
         .def("start", &tbai::CentralControllerPython::start, nb::call_guard<nb::gil_scoped_release>())
         .def("start_thread", &tbai::CentralControllerPython::startThread, nb::call_guard<nb::gil_scoped_release>())
         .def("stop_thread", &tbai::CentralControllerPython::stopThread, nb::call_guard<nb::gil_scoped_release>())
