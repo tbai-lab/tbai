@@ -155,20 +155,18 @@ class G1UIController:
         row1_frame.pack()
 
         for name, label in [("STAND", "STAND"), ("SIT", "SIT"), ("G1RLController", "WALK")]:
-            ttk.Button(
-                row1_frame, text=label, width=10,
-                command=lambda n=name: self._on_controller(n)
-            ).pack(side=tk.LEFT, padx=5)
+            ttk.Button(row1_frame, text=label, width=10, command=lambda n=name: self._on_controller(n)).pack(
+                side=tk.LEFT, padx=5
+            )
 
         # Row 2: Mimic dance controllers
         row2_frame = ttk.Frame(button_grid)
         row2_frame.pack(pady=(10, 0))
 
         for name, label in [("G1MimicDance102", "DANCE"), ("G1MimicGangnam", "GANGNAM")]:
-            ttk.Button(
-                row2_frame, text=label, width=10,
-                command=lambda n=name: self._on_controller(n)
-            ).pack(side=tk.LEFT, padx=5)
+            ttk.Button(row2_frame, text=label, width=10, command=lambda n=name: self._on_controller(n)).pack(
+                side=tk.LEFT, padx=5
+            )
 
         # Row 3: BeyondMimic controllers
         row3_frame = ttk.Frame(button_grid)
@@ -176,74 +174,88 @@ class G1UIController:
         ttk.Label(row3_frame, text="beyond mimic:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
 
         for name, label in [("G1BeyondDance", "B-DANCE"), ("G1Spinkick", "SPINKICK")]:
-            ttk.Button(
-                row3_frame, text=label, width=8,
-                command=lambda n=name: self._on_controller(n)
-            ).pack(side=tk.LEFT, padx=3)
+            ttk.Button(row3_frame, text=label, width=8, command=lambda n=name: self._on_controller(n)).pack(
+                side=tk.LEFT, padx=3
+            )
 
         # TWIST2 controllers
         twist_frame = ttk.Frame(button_grid)
         twist_frame.pack(pady=(10, 0))
         ttk.Label(twist_frame, text="twist2:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
 
-        for name, label in [("G1TwistWalk1", "WALK1"), ("G1TwistWalk2", "WALK2"),
-                            ("G1TwistWalk3", "WALK3"), ("G1TwistWalk5", "WALK5"),
-                            ("G1TwistWalk7", "WALK7"), ("G1TwistSwing", "SWING")]:
-            ttk.Button(
-                twist_frame, text=label, width=7,
-                command=lambda n=name: self._on_controller(n)
-            ).pack(side=tk.LEFT, padx=3)
+        for name, label in [
+            ("G1TwistWalk1", "WALK1"),
+            ("G1TwistWalk2", "WALK2"),
+            ("G1TwistWalk3", "WALK3"),
+            ("G1TwistWalk5", "WALK5"),
+            ("G1TwistWalk7", "WALK7"),
+            ("G1TwistSwing", "SWING"),
+        ]:
+            ttk.Button(twist_frame, text=label, width=7, command=lambda n=name: self._on_controller(n)).pack(
+                side=tk.LEFT, padx=3
+            )
 
         # PBHC controllers
         pbhc_frame = ttk.Frame(button_grid)
         pbhc_frame.pack(pady=(10, 0))
         ttk.Label(pbhc_frame, text="pbhc:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
 
-        for name, label in [("G1PBHCHorseStancePunch", "PUNCH"),
-                            ("G1PBHCHorseStancePose", "POSE"),
-                            ("G1PBHCHorseStancePose2", "POSE2")]:
-            ttk.Button(
-                pbhc_frame, text=label, width=7,
-                command=lambda n=name: self._on_controller(n)
-            ).pack(side=tk.LEFT, padx=3)
+        for name, label in [
+            ("G1PBHCHorseStancePunch", "PUNCH"),
+            ("G1PBHCHorseStancePose", "POSE"),
+            ("G1PBHCHorseStancePose2", "POSE2"),
+        ]:
+            ttk.Button(pbhc_frame, text=label, width=7, command=lambda n=name: self._on_controller(n)).pack(
+                side=tk.LEFT, padx=3
+            )
 
         # ASAP controllers - row 1
         asap_frame1 = ttk.Frame(button_grid)
         asap_frame1.pack(pady=(10, 0))
         ttk.Label(asap_frame1, text="asap:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
 
-        for name, label in [("G1ASAPLocomotion", "LOCO"), ("G1ASAPCR7", "CR7"),
-                            ("G1ASAPAPT", "APT"), ("G1ASAPKobe", "KOBE")]:
-            ttk.Button(
-                asap_frame1, text=label, width=7,
-                command=lambda n=name: self._on_controller(n)
-            ).pack(side=tk.LEFT, padx=3)
+        for name, label in [
+            ("G1ASAPLocomotion", "LOCO"),
+            ("G1ASAPCR7", "CR7"),
+            ("G1ASAPAPT", "APT"),
+            ("G1ASAPKobe", "KOBE"),
+        ]:
+            ttk.Button(asap_frame1, text=label, width=7, command=lambda n=name: self._on_controller(n)).pack(
+                side=tk.LEFT, padx=3
+            )
 
         # ASAP controllers - row 2
         asap_frame2 = ttk.Frame(button_grid)
         asap_frame2.pack(pady=(5, 0))
         ttk.Label(asap_frame2, text="", width=6).pack(side=tk.LEFT, padx=5)
 
-        for name, label in [("G1ASAPJumpForward1", "JUMP1"), ("G1ASAPJumpForward2", "JUMP2"),
-                            ("G1ASAPJumpForward3", "JUMP3"), ("G1ASAPSideJump1", "SIDE1"),
-                            ("G1ASAPSideJump2", "SIDE2"), ("G1ASAPSideJump3", "SIDE3")]:
-            ttk.Button(
-                asap_frame2, text=label, width=7,
-                command=lambda n=name: self._on_controller(n)
-            ).pack(side=tk.LEFT, padx=3)
+        for name, label in [
+            ("G1ASAPJumpForward1", "JUMP1"),
+            ("G1ASAPJumpForward2", "JUMP2"),
+            ("G1ASAPJumpForward3", "JUMP3"),
+            ("G1ASAPSideJump1", "SIDE1"),
+            ("G1ASAPSideJump2", "SIDE2"),
+            ("G1ASAPSideJump3", "SIDE3"),
+        ]:
+            ttk.Button(asap_frame2, text=label, width=7, command=lambda n=name: self._on_controller(n)).pack(
+                side=tk.LEFT, padx=3
+            )
 
         # ASAP controllers - row 3
         asap_frame3 = ttk.Frame(button_grid)
         asap_frame3.pack(pady=(5, 0))
         ttk.Label(asap_frame3, text="", width=6).pack(side=tk.LEFT, padx=5)
 
-        for name, label in [("G1ASAPKick1", "KICK1"), ("G1ASAPKick2", "KICK2"),
-                            ("G1ASAPKick3", "KICK3"), ("G1ASAPLeBron1", "LEBRON1"),
-                            ("G1ASAPLeBron2", "LEBRON2")]:
-            ttk.Button(
-                asap_frame3, text=label, width=7,
-                command=lambda n=name: self._on_controller(n)
-            ).pack(side=tk.LEFT, padx=3)
+        for name, label in [
+            ("G1ASAPKick1", "KICK1"),
+            ("G1ASAPKick2", "KICK2"),
+            ("G1ASAPKick3", "KICK3"),
+            ("G1ASAPLeBron1", "LEBRON1"),
+            ("G1ASAPLeBron2", "LEBRON2"),
+        ]:
+            ttk.Button(asap_frame3, text=label, width=7, command=lambda n=name: self._on_controller(n)).pack(
+                side=tk.LEFT, padx=3
+            )
 
         # Status indicator
         status_frame = ttk.Frame(main_frame)
@@ -291,11 +303,11 @@ class G1UIController:
     def run(self):
         self.root.mainloop()
 
+
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "g1_config.yaml")
 
 os.environ["TBAI_ROBOT_DESCRIPTION_PATH"] = str(tbai_descriptions.get_urdf_path("g1"))
 os.environ["TBAI_GLOBAL_CONFIG_PATH"] = str(CONFIG_FILE)
-
 
 
 @dataclasses.dataclass
@@ -393,21 +405,26 @@ def _make_controller(cfg, robot, ref_vel_gen, paths):
         return tbai_python.G1ASAPController(robot, ref_vel_gen, model_path, ctrl_name)
     elif ctrl_type == "G1MimicController":
         return tbai_python.G1MimicController(
-            robot, model_path, paths[cfg["motion_file"]],
-            motion_fps=get("motion_fps", 60.0), time_start=get("time_start", 0.0),
-            time_end=get("time_end", -1.0), controller_name=ctrl_name)
+            robot,
+            model_path,
+            paths[cfg["motion_file"]],
+            motion_fps=get("motion_fps", 60.0),
+            time_start=get("time_start", 0.0),
+            time_end=get("time_end", -1.0),
+            controller_name=ctrl_name,
+        )
     elif ctrl_type == "G1BeyondMimicController":
         return tbai_python.G1BeyondMimicController(robot, model_path, ctrl_name)
     elif ctrl_type == "G1SpinkickController":
         return tbai_python.G1SpinkickController(robot, model_path, ctrl_name)
     elif ctrl_type == "G1Twist2Controller":
         return tbai_python.G1Twist2Controller(
-            robot, model_path, paths[cfg["motion_file"]],
-            get("time_start", 0.0), get("time_end", -1.0), ctrl_name)
+            robot, model_path, paths[cfg["motion_file"]], get("time_start", 0.0), get("time_end", -1.0), ctrl_name
+        )
     elif ctrl_type == "G1PBHCController":
         return tbai_python.G1PBHCController(
-            robot, model_path, paths[cfg["motion_file"]],
-            get("time_start", 0.0), get("time_end", -1.0), ctrl_name)
+            robot, model_path, paths[cfg["motion_file"]], get("time_start", 0.0), get("time_end", -1.0), ctrl_name
+        )
     elif ctrl_type == "G1ASAPMimicController":
         return tbai_python.G1ASAPMimicController(robot, model_path, cfg["motion_length"], ctrl_name)
     else:
@@ -528,9 +545,11 @@ def main():
 
     try:
         if image_viewer:
+
             def poll_image():
                 image_viewer.update()
                 ui_controller.root.after(33, poll_image)
+
             ui_controller.root.after(33, poll_image)
         ui_controller.run()
     except KeyboardInterrupt:

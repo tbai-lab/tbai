@@ -103,7 +103,14 @@ class VirtualJoystick(tk.Frame):
 
 
 class UIController:
-    def __init__(self, stand_callback = lambda: None, sit_callback = lambda: None, np3o_callback = lambda: None, bob_callback = lambda: None, robot=None):
+    def __init__(
+        self,
+        stand_callback=lambda: None,
+        sit_callback=lambda: None,
+        np3o_callback=lambda: None,
+        bob_callback=lambda: None,
+        robot=None,
+    ):
         self.stand_callback = stand_callback
         self.sit_callback = sit_callback
         self.bob_callback = bob_callback
@@ -190,10 +197,12 @@ class UIController:
     def run(self):
         self.root.mainloop()
 
+
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "go2_config.yaml")
 
 os.environ["TBAI_ROBOT_DESCRIPTION_PATH"] = str(tbai_descriptions.get_urdf_path("go2"))
 os.environ["TBAI_GLOBAL_CONFIG_PATH"] = str(CONFIG_FILE)
+
 
 @dataclasses.dataclass
 class Args:
@@ -269,6 +278,7 @@ class RerunLoggerNode:
     def __init__(self, state_subscriber: RobotInterface, freq=10):
         from tbai_logging.rerun.robot_logger import RobotLogger
         from tbai_logging.rerun.utils import rerun_initialize
+
         rerun_initialize("go2_deploy_np3o", spawn=False)
         self.robot_logger = RobotLogger.from_zoo("go2_description")
         self.state_subscriber = state_subscriber
@@ -373,6 +383,7 @@ def main():
         central_controller.stopThread()
         if args.log:
             from tbai_logging.rerun.utils import rerun_store
+
             rerun_store("go2_deploy_np3o.rrd")
         print("Done.")
 
