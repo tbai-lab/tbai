@@ -1,5 +1,3 @@
-#include <filesystem>
-#include <fstream>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -23,6 +21,26 @@ TEST(UtilsTest, TimeProgression) {
 
     auto currentTime = tbai::convertToScalar(std::chrono::system_clock::now());
     ASSERT_NEAR(currentTime, tbai::readInitTime() + 1.0, 1e-2);
+}
+
+TEST(ConvertToScalarTest, KnownTimePoint) {
+    // Construct a time_point with exactly 123 seconds and 456000000 nanoseconds (0.456s)
+    auto tp = std::chrono::system_clock::time_point(std::chrono::seconds(123) + std::chrono::nanoseconds(456000000));
+    scalar_t result = tbai::convertToScalar(tp);
+    EXPECT_NEAR(result, 123.456, 1e-9);
+}
+
+TEST(ConvertToScalarTest, Zero) {
+    auto tp = std::chrono::system_clock::time_point(std::chrono::seconds(0));
+    scalar_t result = tbai::convertToScalar(tp);
+    EXPECT_NEAR(result, 0.0, 1e-9);
+}
+
+TEST(ConvertToScalarTest, SubSecondOnly) {
+    constexpr auto TIME_NS = 500000000;
+    auto tp = std::chrono::system_clock::time_point(std::chrono::nanoseconds(TIME_NS));
+    scalar_t result = tbai::convertToScalar(tp);
+    EXPECT_NEAR(result, static_cast<scalar_t>(TIME_NS) * 1e-9, 1e-9);
 }
 
 TEST(VvstackTest, EmptyVectorInput) {

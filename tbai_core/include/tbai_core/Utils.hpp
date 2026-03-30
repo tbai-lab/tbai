@@ -59,9 +59,9 @@ tbai::vector_t vvstack(const std::vector<std::reference_wrapper<const tbai::vect
 
 template <typename TIMEPOINT>
 inline scalar_t convertToScalar(const TIMEPOINT &time) {
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time.time_since_epoch()).count();
-    auto nanoseconds =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(time.time_since_epoch() % std::chrono::seconds(1)).count();
+    auto duration = time.time_since_epoch();
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(duration % std::chrono::seconds(1)).count();
     return static_cast<scalar_t>(seconds) + static_cast<scalar_t>(nanoseconds) * 1e-9;
 }
 
