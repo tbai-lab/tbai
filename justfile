@@ -31,4 +31,30 @@ install:
 
 # Run tests (moved from pixi.toml)
 test:
-    cmake -Bbuild -S. -DTBAI_BUILD_TESTS=ON -DTBAI_BUILD_PYTHON=OFF -DTBAI_BUILD_DEPLOY_GO2=OFF -DTBAI_BUILD_DTC=OFF -DTBAI_BUILD_MPC=OFF -DTBAI_BUILD_JOE=OFF -DTBAI_BUILD_OCS2=OFF && cd build && make -j8 && ctest --output-on-failure
+    cmake -Bbuild -S. \
+        -DTBAI_BUILD_TESTS=ON \
+        -DTBAI_BUILD_NP3O=ON \
+        -DTBAI_BUILD_WTW=ON \
+        -DTBAI_BUILD_BOB=OFF \
+        -DTBAI_BUILD_MUSE=OFF \
+        -DTBAI_BUILD_MPC=OFF \
+        -DTBAI_BUILD_DTC=OFF \
+        -DTBAI_BUILD_JOE=OFF \
+        -DTBAI_BUILD_OCS2=OFF \
+        -DOCS2_BUILD_TESTS=OFF \
+        -DTBAI_BUILD_PYTHON=OFF \
+        -DTBAI_BUILD_DOCS=OFF \
+        -DTBAI_DOCS_BUILD_DOXYGEN=OFF \
+        -DTBAI_DOCS_BUILD_SPHINX=OFF \
+        -DTBAI_FETCH_TORCH=OFF \
+        -DTBAI_BUILD_DEPLOY_GO2=OFF \
+        -DTBAI_BUILD_DEPLOY_GO2_UNITREE=OFF \
+        -DTBAI_BUILD_DEPLOY_GO2W=OFF \
+        -DTBAI_BUILD_DEPLOY_G1=OFF \
+        -DTBAI_BUILD_DEPLOY_G1_UNITREE=OFF \
+        -DTBAI_BUILD_DEPLOY_FRANKA=OFF \
+        -DTBAI_BUILD_DEPLOY_SPOT=OFF \
+        -DTBAI_BUILD_DEPLOY_ANYMAL_B=OFF \
+        -DTBAI_BUILD_DEPLOY_ANYMAL_C=OFF \
+        -DTBAI_BUILD_DEPLOY_ANYMAL_D=OFF \
+    && cd build && make -j8 && ctest --output-on-failure
