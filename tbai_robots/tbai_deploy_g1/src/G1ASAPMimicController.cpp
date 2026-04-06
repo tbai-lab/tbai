@@ -367,7 +367,7 @@ void G1ASAPMimicController::runInference() {
 
         // Store raw action for next step's observation
         for (int i = 0; i < ASAP_MIMIC_NUM_JOINTS; ++i) {
-            lastAction_[i] = static_cast<scalar_t>(outputData[i]);
+            lastAction_[i] = std::clamp(static_cast<scalar_t>(outputData[i]), -actionClip_, actionClip_);
         }
 
         // Apply clipping and scaling
@@ -383,8 +383,8 @@ void G1ASAPMimicController::runInference() {
 
 std::vector<tbai::MotorCommand> G1ASAPMimicController::getMotorCommands(scalar_t currentTime, scalar_t dt) {
     buildObservation(currentTime, dt);
-    runInference();
     updateHistory();
+    runInference();
 
     std::vector<tbai::MotorCommand> commands;
     commands.reserve(G1_NUM_JOINTS);

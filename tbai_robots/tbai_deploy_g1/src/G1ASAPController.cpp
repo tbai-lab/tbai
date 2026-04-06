@@ -467,7 +467,7 @@ void G1ASAPController::runInference() {
 
         // Store raw action for next step's observation (BEFORE clipping/scaling)
         for (int i = 0; i < ASAP_LOWER_BODY_JOINTS; ++i) {
-            lastPolicyAction_[i] = static_cast<scalar_t>(outputData[i]);
+            lastPolicyAction_[i] = std::clamp(static_cast<scalar_t>(outputData[i]), -actionClip_, actionClip_);
         }
 
         // Apply clipping and scaling for motor commands
@@ -489,8 +489,8 @@ void G1ASAPController::runInference() {
 
 std::vector<tbai::MotorCommand> G1ASAPController::getMotorCommands(scalar_t currentTime, scalar_t dt) {
     buildObservation(currentTime, dt);
-    runInference();
     updateHistory();
+    runInference();
 
     std::vector<tbai::MotorCommand> commands;
     commands.reserve(G1_NUM_JOINTS);
