@@ -3,14 +3,12 @@
 import math
 import os
 import sys
-import time
 import tkinter as tk
 from tkinter import ttk
 
 import tbai as tbai_python
 
 from tbai import (
-    RobotInterface,
     ChangeControllerSubscriber,
     ReferenceVelocity,
     ReferenceVelocityGenerator,

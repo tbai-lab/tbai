@@ -4,14 +4,12 @@
 
 #include <fstream>
 
-#include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
 #include <tbai_core/Types.hpp>
-#include <tbai_core/control/Rate.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 
