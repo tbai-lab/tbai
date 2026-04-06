@@ -221,7 +221,7 @@ void G1RobotInterfaceUnitree::publish(std::vector<MotorCommand> commands) {
         auto time_diff =
             std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_publish_time).count();
         double rate = (PUBLISH_N * 1000.0) / time_diff;
-        TBAI_LOG_INFO(logger_, "Publish frequency: {} Hz (count: {})", rate, publish_count);
+        TBAI_LOG_INFO_THROTTLE(logger_, 30.0, "Publish frequency: {} Hz (count: {})", rate, publish_count);
         last_publish_time = current_time;
     }
 
