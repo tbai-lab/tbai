@@ -23,12 +23,11 @@ cmake --build build --parallel 10
 ### Tbai as a framework
 
 <div align="center">
-  
-<img src="https://github.com/user-attachments/assets/41d7fb3b-afdb-46a5-bd05-25ceaaef0682" width="60%" alt="tbai"/>
-
+<table><tr>
+<td><img src="https://github.com/user-attachments/assets/41d7fb3b-afdb-46a5-bd05-25ceaaef0682" height="400" alt="tbai"/></td>
+<td><img src="https://github.com/user-attachments/assets/de338d85-e504-4043-8888-746680e14b1f" height="400" alt="excalidraw"/></td>
+</tr></table>
 </div>
-
-<img width="2858" height="4415" alt="Untitled-2025-05-30-1025 excalidraw(2)" src="https://github.com/user-attachments/assets/de338d85-e504-4043-8888-746680e14b1f" />
 
 #### Environment Variables used throughout `tbai`
 
