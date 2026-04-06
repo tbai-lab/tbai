@@ -1,0 +1,23 @@
+robot_name: 'go2'
+
+joint_names: ["LF_HAA", "LF_HFE", "LF_KFE", "LH_HAA", "LH_HFE", "LH_KFE", "RF_HAA", "RF_HFE", "RF_KFE", "RH_HAA", "RH_HFE", "RH_KFE"]
+base_name: "base"
+
+state_publisher:
+  update_rate: 400 # Hz
+
+static_controller:
+  stand_controller:
+    joint_angles: [0.0, 0.806, -1.802, 0.0, 0.996, -1.802, 0.0, 0.806, -1.802, 0.0, 0.996, -1.802] # LF, LH, RF, RH
+  sit_controller:
+    joint_angles: [0.0, 1.36, -2.55, 0.0, 1.36, -2.55, 0.0, 1.36, -2.55, 0.0, 1.36, -2.55] # LF, LH, RF, RH
+  kp: 90
+  kd: 0.5
+  interpolation_time: 1.0 # s
+  rate: 50 # Hz
+
+mpc_controller:
+  wbc_type: "sqp"
+  reference_trajectory:
+    traj_dt: 0.1
+    traj_knots: 10
