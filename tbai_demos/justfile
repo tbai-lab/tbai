@@ -1,0 +1,27 @@
+# tbai demos
+
+sim_startup_time := "1.5"
+
+# Show available commands
+help:
+    @just --list
+
+# Install Python dependencies
+install_requirements:
+    pip3 install -r ./requirements.txt
+
+# Run G1 MuJoCo demo (simulator + controller)
+g1_mujoco_demo:
+    #!/usr/bin/env bash
+    trap 'kill 0' EXIT
+    XDG_SESSION_TYPE=x11 tbai_mujoco $(python3 -m tbai_mujoco_descriptions.print_config_path g1) &
+    sleep {{sim_startup_time}}
+    python3 ./tbai_g1_mujoco/deploy_g1.py
+
+# Run Go2 MuJoCo demo (simulator + controller)
+go2_mujoco_demo:
+    #!/usr/bin/env bash
+    trap 'kill 0' EXIT
+    XDG_SESSION_TYPE=x11 tbai_mujoco $(python3 -m tbai_mujoco_descriptions.print_config_path go2) &
+    sleep {{sim_startup_time}}
+    python3 ./tbai_go2_mujoco/deploy_go2.py
