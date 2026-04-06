@@ -1,6 +1,6 @@
 # Towards Better Athletic Intelligence
 
-[![Tests](https://github.com/tbai-lab/tbai/actions/workflows/tests.yml/badge.svg)](https://github.com/tbai-lab/tbai/actions/workflows/tests.yml)
+[![Tests](https://github.com/tbai-lab/tbai/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/tbai-lab/tbai/actions/workflows/unit-tests.yml)
 
 This repository contains implementations of core algorithms used in the `tbai` ecosystems. For deployment and use with specific robotics frameworks, including ROS and ROS2, thin wrapper repositories are available: [tbai_ros](https://github.com/lnotspotl/tbai_ros) and [tbai_ros2](https://github.com/tbai-lab/tbai_ros2)
 
