@@ -16,8 +16,8 @@ This repository contains implementations of core algorithms used in the `tbai` e
 #### Install `tbai`
 ```bash
 pixi install && pixi shell
-mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j10
+cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 10
 ```
 
 ### Tbai as a framework
