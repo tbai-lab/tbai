@@ -234,6 +234,9 @@ add_library(tbai_arm_mpc
     src/arm_mpc/dynamics/ArmDynamics.cpp
     src/arm_mpc/constraint/EndEffectorConstraint.cpp
 
+    # arm mpc controller
+    src/arm_mpc/ArmMpcController.cpp
+
     # arm wbc
     src/arm_wbc/Factory.cpp
     src/arm_wbc/HqpWbc.cpp

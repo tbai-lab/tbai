@@ -18,11 +18,13 @@ nanobind_add_module(_C
     src/robots/bindings_go2_unitree.cpp
     src/robots/bindings_g1.cpp
     src/robots/bindings_g1_unitree.cpp
+    src/robots/bindings_franka.cpp
     src/controllers/bindings_static.cpp
     src/controllers/bindings_bob.cpp
     src/controllers/bindings_np3o.cpp
     src/controllers/bindings_wtw.cpp
     src/controllers/bindings_central.cpp
+    src/controllers/bindings_arm_mpc.cpp
 )
 target_link_libraries(_C
     PUBLIC
@@ -54,6 +56,16 @@ endif()
 if(TBAI_BUILD_DEPLOY_G1_UNITREE)
     target_link_libraries(_C PUBLIC tbai_deploy_g1_unitree)
     target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_G1_UNITREE)
+endif()
+
+if(TBAI_BUILD_DEPLOY_FRANKA)
+    target_link_libraries(_C PUBLIC tbai_deploy_franka)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_FRANKA)
+endif()
+
+if(TBAI_BUILD_MPC)
+    target_link_libraries(_C PUBLIC tbai_arm_mpc)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_ARM_MPC)
 endif()
 target_include_directories(_C
     PUBLIC

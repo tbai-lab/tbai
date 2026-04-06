@@ -25,3 +25,11 @@ go2_mujoco_demo:
     XDG_SESSION_TYPE=x11 tbai_mujoco $(python3 -m tbai_mujoco_descriptions.print_config_path go2) &
     sleep {{sim_startup_time}}
     python3 ./tbai_go2_mujoco/deploy_go2.py
+
+# Run Franka MuJoCo demo (simulator + controller)
+franka_mujoco_demo:
+    #!/usr/bin/env bash
+    trap 'kill 0' EXIT
+    XDG_SESSION_TYPE=x11 tbai_mujoco $(python3 -m tbai_mujoco_descriptions.print_config_path franka_panda) &
+    sleep {{sim_startup_time}}
+    python3 ./tbai_franka_mujoco/deploy_franka.py --camera

@@ -123,7 +123,7 @@ class CentralController {
             auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
             auto sleepTimePercentage = 100.0 * duration2 / (duration1 + duration2);
 
-            TBAI_LOG_INFO_THROTTLE(logger_, 10.0,
+            TBAI_LOG_INFO_THROTTLE(logger_, 30.0,
                                    "Loop duration: {} us, Sleep duration: {} us, Sleep time percentage: {} % Current "
                                    "controller running: {}",
                                    duration1, duration2, sleepTimePercentage, activeController_->getName());

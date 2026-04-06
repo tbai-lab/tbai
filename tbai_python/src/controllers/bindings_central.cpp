@@ -28,5 +28,6 @@ void bind_central_controller(nb::module_ &m) {
              nb::arg("make_active") = false)
         .def("initialize", &tbai::CentralControllerPython::initialize, nb::call_guard<nb::gil_scoped_release>())
         .def("step", &tbai::CentralControllerPython::step, nb::call_guard<nb::gil_scoped_release>())
-        .def("get_rate", &tbai::CentralControllerPython::getRate);
+        .def("get_rate", &tbai::CentralControllerPython::getRate)
+        .def("get_current_time", &tbai::CentralControllerPython::getCurrentTime);
 }

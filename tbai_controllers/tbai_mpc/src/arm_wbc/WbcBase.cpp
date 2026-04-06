@@ -114,12 +114,12 @@ Task WbcBase::createEndEffectorOrientationTask(const vector_t &desiredEEOrientat
     const auto &eeFrame = data.oMf[eeFrameId_];
     const matrix3_t R_actual = eeFrame.rotation();
 
-    // Desired orientation from quaternion (w, x, y, z format)
+    // Desired orientation from quaternion (x, y, z, w format)
     Eigen::Quaterniond quatDesired;
-    quatDesired.w() = desiredEEOrientation(0);
-    quatDesired.x() = desiredEEOrientation(1);
-    quatDesired.y() = desiredEEOrientation(2);
-    quatDesired.z() = desiredEEOrientation(3);
+    quatDesired.x() = desiredEEOrientation(0);
+    quatDesired.y() = desiredEEOrientation(1);
+    quatDesired.z() = desiredEEOrientation(2);
+    quatDesired.w() = desiredEEOrientation(3);
     quatDesired.normalize();
     const matrix3_t R_desired = quatDesired.toRotationMatrix();
 

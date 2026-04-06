@@ -20,7 +20,9 @@ class StaticController : public tbai::Controller {
     // Default implementation - extracts joint angles based on number of joints configured
     virtual vector_t jointAnglesFromState(const State &state) {
         const size_t numJoints = jointNames_.size();
-        const size_t offset = fixedBase_ ? 0 : (3 + 3 + 3 + 3);
+        // base position (3), orientation (3), angular velocity (3), linear velocity (3)
+        constexpr int NUM_BASE_JOINTS = 3 + 3 + 3 + 3;
+        const size_t offset = fixedBase_ ? 0 : NUM_BASE_JOINTS;
         return state.x.segment(offset, numJoints);
     }
 
