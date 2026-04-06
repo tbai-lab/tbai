@@ -13,7 +13,9 @@
 #include <tbai_core/Utils.hpp>
 #include <tbai_mpc/quadruped_mpc/QuadrupedMpc.h>
 #include <tbai_mpc/quadruped_mpc/core/MotionPhaseDefinition.h>
+#include <tbai_mpc/quadruped_mpc/logic/ModeSequenceTemplate.h>
 #include <tbai_mpc/quadruped_mpc/quadruped_interfaces/Interfaces.h>
+#include <tbai_mpc/quadruped_mpc/terrain/PlanarTerrainModel.h>
 #include <tbai_mpc/quadruped_wbc/Factory.hpp>
 
 namespace tbai::mpc::quadruped {
@@ -45,7 +47,13 @@ MpcController::~MpcController() {
 /*********************************************************************************************************************/
 void MpcController::initialize(const std::string &urdfString, const std::string &taskSettingsFile,
                                const std::string &frameDeclarationFile, const std::string &controllerConfigFile,
-                               const std::string &targetCommandFile, scalar_t trajdt, size_t trajKnots) {
+                               const std::string &targetCommandFile, scalar_t trajdt, size_t trajKnots,
+                               const std::string &sqpSettingsFile, const std::string &gaitFile) {
+    // Store config paths for createMpcInterface() and setGait()
+    taskSettingsFile_ = taskSettingsFile;
+    sqpSettingsFile_ = sqpSettingsFile;
+    gaitFile_ = gaitFile;
+
     // Create quadruped interface
     if (robotName_ == "anymal_d" || robotName_ == "anymal_b" || robotName_ == "anymal_c") {
         quadrupedInterfacePtr_ = tbai::mpc::quadruped::getAnymalInterface(
@@ -79,6 +87,11 @@ void MpcController::initialize(const std::string &urdfString, const std::string 
     mpcPtr_ = createMpcInterface();
     mrtPtr_ = createMrtInterface();
 
+    // Load MPC rate from config
+    const auto mpcSettings = ocs2::mpc::loadSettings(taskSettingsFile_);
+    mpcRate_ = mpcSettings.mpcDesiredFrequency_;
+    TBAI_LOG_INFO(logger_, "MPC observation update rate: {} Hz", mpcRate_);
+
     tNow_ = 0.0;
 }
 
@@ -86,10 +99,26 @@ void MpcController::initialize(const std::string &urdfString, const std::string 
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 std::unique_ptr<ocs2::MPC_BASE> MpcController::createMpcInterface() {
-    throw std::runtime_error("createMpcInterface not implemented");
-    // auto sqpSettings = ocs2::sqp::Settings();
-    // auto mpcSettings = ocs2::mpc::Settings();
-    // return getSqpMpc(*quadrupedInterfacePtr_, mpcSettings, sqpSettings);
+    const auto mpcSettings = ocs2::mpc::loadSettings(taskSettingsFile_);
+
+    // Load SQP settings from a separate file if provided, otherwise from the task file
+    const auto sqpFile = sqpSettingsFile_.empty() ? taskSettingsFile_ : sqpSettingsFile_;
+    const auto sqpSettings = ocs2::sqp::loadSettings(sqpFile);
+
+    TBAI_LOG_INFO(logger_, "Creating SQP MPC (task: {}, sqp: {})", taskSettingsFile_, sqpFile);
+    return getSqpMpc(*quadrupedInterfacePtr_, mpcSettings, sqpSettings);
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+void MpcController::setGait(const std::string &gaitName) {
+    const auto &file = gaitFile_.empty() ? taskSettingsFile_ : gaitFile_;
+    TBAI_LOG_INFO(logger_, "Setting gait '{}' from {}", gaitName, file);
+    const auto modeSequenceTemplate = loadModeSequenceTemplate(file, gaitName, false);
+    const auto gait = toGait(modeSequenceTemplate);
+    auto lockedGaitSchedule = quadrupedInterfacePtr_->getSwitchedModelModeScheduleManagerPtr()->getGaitSchedule().lock();
+    lockedGaitSchedule->setNextGait(gait);
 }
 
 /*********************************************************************************************************************/
@@ -98,6 +127,28 @@ std::unique_ptr<ocs2::MPC_BASE> MpcController::createMpcInterface() {
 std::unique_ptr<ocs2::MRT_BASE> MpcController::createMrtInterface() {
     // Default implementation: create MPC_MRT_Interface with threaded execution
     return std::make_unique<ocs2::MPC_MRT_Interface>(*mpcPtr_, true);  // threaded = true
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+// TODO: Terrain estimation and reference trajectory generation share state via
+// ReferenceTrajectoryGenerator (latestObservation_, terrainEstimator_). Currently protected
+// by terrainMutex_, but this means the 400 Hz control thread and 5 Hz reference thread
+// contend on the same lock. A cleaner design would decouple the terrain estimator from
+// the reference trajectory generator so they can be updated independently without locking.
+void MpcController::preStep(scalar_t currentTime, scalar_t dt) {
+    state_ = robotInterfacePtr_->getLatestState();
+
+    // Update terrain estimate from foot contacts at control rate (~400 Hz)
+    {
+        std::lock_guard<std::mutex> lock(terrainMutex_);
+        auto observation = generateSystemObservation();
+        referenceTrajectoryGeneratorPtr_->updateObservation(observation);
+    }
+    const auto &terrainPlane = referenceTrajectoryGeneratorPtr_->getTerrainPlane();
+    auto &terrainModel = quadrupedInterfacePtr_->getSwitchedModelModeScheduleManagerPtr()->getTerrainModel();
+    terrainModel.reset(std::make_unique<PlanarTerrainModel>(terrainPlane));
 }
 
 /*********************************************************************************************************************/
@@ -140,32 +191,28 @@ std::vector<MotorCommand> MpcController::getMotorCommands(scalar_t currentTime, 
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 void MpcController::referenceThreadLoop() {
-    std::cerr << "Reference trajectory generator reset" << std::endl;
-    TBAI_LOG_WARN(logger_, "Reference trajectory generator reset");
+    TBAI_LOG_INFO(logger_, "Reference trajectory generator reset");
     referenceTrajectoryGeneratorPtr_->reset();
-    std::cerr << "Reference trajectory generator reset2" << std::endl;
-    TBAI_LOG_WARN(logger_, "Reference trajectory generator reset2");
 
     // Wait for initial observation
     robotInterfacePtr_->waitTillInitialized();
     ocs2::SystemObservation observation = generateSystemObservation();
     referenceTrajectoryGeneratorPtr_->updateObservation(observation);
-    TBAI_LOG_WARN(logger_, "Reference trajectory generator initialized");
+    TBAI_LOG_INFO(logger_, "Reference trajectory generator initialized");
 
     // Reference loop
     auto sleepDuration = std::chrono::milliseconds(static_cast<int>(1000.0 / referenceThreadRate_));
     while (!stopReferenceThread_) {
-        std::cerr << "Reference thread loop" << std::endl;
-        TBAI_LOG_WARN_THROTTLE(logger_, 0.005, "Reference thread loop");
-        // Generate and publish reference trajectory
-        auto observation = generateSystemObservation();
-        auto targetTrajectories = referenceTrajectoryGeneratorPtr_->generateReferenceTrajectory(tNow_, observation);
+        ocs2::TargetTrajectories targetTrajectories;
+        {
+            std::lock_guard<std::mutex> lock(terrainMutex_);
+            auto observation = generateSystemObservation();
+            targetTrajectories = referenceTrajectoryGeneratorPtr_->generateReferenceTrajectory(tNow_, observation);
+        }
         mrtPtr_->setTargetTrajectories(targetTrajectories);
 
-        TBAI_LOG_INFO_THROTTLE(logger_, 5.0, "Publishing reference");
+        TBAI_LOG_INFO_THROTTLE(logger_, 10.0, "Reference thread running at {} Hz", referenceThreadRate_);
         std::this_thread::sleep_for(sleepDuration);
-        observation = generateSystemObservation();
-        referenceTrajectoryGeneratorPtr_->updateObservation(observation);
     }
 }
 

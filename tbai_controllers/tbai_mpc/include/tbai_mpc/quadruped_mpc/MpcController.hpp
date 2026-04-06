@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -52,9 +53,11 @@ class MpcController : public tbai::Controller {
 
     bool checkStability() const override;
 
+    bool ok() const override { return true; }
+
     void waitTillInitialized() override { robotInterfacePtr_->waitTillInitialized(); }
 
-    void preStep(scalar_t currentTime, scalar_t dt) override { state_ = robotInterfacePtr_->getLatestState(); }
+    void preStep(scalar_t currentTime, scalar_t dt) override;
 
     void postStep(scalar_t currentTime, scalar_t dt) override {}
 
@@ -72,6 +75,9 @@ class MpcController : public tbai::Controller {
      */
     virtual std::unique_ptr<ocs2::MPC_BASE> createMpcInterface();
 
+    /** Set gait by name (e.g. "trot", "stance"). Loads from gait.info. */
+    void setGait(const std::string &gaitName);
+
    protected:
     /**
      * Initializes the controller components.
@@ -86,7 +92,8 @@ class MpcController : public tbai::Controller {
      */
     void initialize(const std::string &urdfString, const std::string &taskSettingsFile,
                     const std::string &frameDeclarationFile, const std::string &controllerConfigFile,
-                    const std::string &targetCommandFile, scalar_t trajdt = 0.1, size_t trajKnots = 20);
+                    const std::string &targetCommandFile, scalar_t trajdt = 0.1, size_t trajKnots = 20,
+                    const std::string &sqpSettingsFile = "", const std::string &gaitFile = "");
 
     void resetMpc();
     void setObservation();
@@ -123,6 +130,14 @@ class MpcController : public tbai::Controller {
     std::function<scalar_t()> getCurrentTimeFunction_;
 
     std::shared_ptr<spdlog::logger> logger_;
+
+    // Config file paths (stored during initialize for createMpcInterface)
+    std::string taskSettingsFile_;
+    std::string sqpSettingsFile_;
+    std::string gaitFile_;
+
+    // Protects referenceTrajectoryGeneratorPtr_ access from control and reference threads
+    std::mutex terrainMutex_;
 
     // Reference thread
     std::atomic<bool> stopReferenceThread_{false};
