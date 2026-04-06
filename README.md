@@ -28,6 +28,7 @@ cmake --build build --parallel 10
 
 </div>
 
+<img width="2858" height="4415" alt="Untitled-2025-05-30-1025 excalidraw(2)" src="https://github.com/user-attachments/assets/de338d85-e504-4043-8888-746680e14b1f" />
 
 #### Environment Variables used throughout `tbai`
 
