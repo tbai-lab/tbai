@@ -56,6 +56,10 @@ void bind_go2_unitree(nb::module_ &m);
 void bind_g1(nb::module_ &m);
 void bind_g1_unitree(nb::module_ &m);
 void bind_franka(nb::module_ &m);
+void bind_anymal_b(nb::module_ &m);
+void bind_anymal_c(nb::module_ &m);
+void bind_anymal_d(nb::module_ &m);
+void bind_spot(nb::module_ &m);
 
 // Forward declarations — controllers
 void bind_static_controller(nb::module_ &m);
@@ -64,6 +68,7 @@ void bind_np3o_controller(nb::module_ &m);
 void bind_wtw_controller(nb::module_ &m);
 void bind_central_controller(nb::module_ &m);
 void bind_arm_mpc_controller(nb::module_ &m);
+void bind_quadruped_mpc_controller(nb::module_ &m);
 
 NB_MODULE(_C, m) {
     nb::set_leak_warnings(false);
@@ -152,6 +157,10 @@ NB_MODULE(_C, m) {
     bind_g1(m);
     bind_g1_unitree(m);
     bind_franka(m);
+    bind_anymal_b(m);
+    bind_anymal_c(m);
+    bind_anymal_d(m);
+    bind_spot(m);
 
     // bind controllers
     bind_central_controller(m);
@@ -160,4 +169,5 @@ NB_MODULE(_C, m) {
     bind_np3o_controller(m);
     bind_wtw_controller(m);
     bind_arm_mpc_controller(m);
+    bind_quadruped_mpc_controller(m);
 }

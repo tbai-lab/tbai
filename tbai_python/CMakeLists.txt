@@ -19,12 +19,17 @@ nanobind_add_module(_C
     src/robots/bindings_g1.cpp
     src/robots/bindings_g1_unitree.cpp
     src/robots/bindings_franka.cpp
+    src/robots/bindings_anymal_b.cpp
+    src/robots/bindings_anymal_c.cpp
+    src/robots/bindings_anymal_d.cpp
+    src/robots/bindings_spot.cpp
     src/controllers/bindings_static.cpp
     src/controllers/bindings_bob.cpp
     src/controllers/bindings_np3o.cpp
     src/controllers/bindings_wtw.cpp
     src/controllers/bindings_central.cpp
     src/controllers/bindings_arm_mpc.cpp
+    src/controllers/bindings_quadruped_mpc.cpp
 )
 target_link_libraries(_C
     PUBLIC
@@ -63,9 +68,29 @@ if(TBAI_BUILD_DEPLOY_FRANKA)
     target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_FRANKA)
 endif()
 
+if(TBAI_BUILD_DEPLOY_ANYMAL_B)
+    target_link_libraries(_C PUBLIC tbai_deploy_anymal_b)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_ANYMAL_B)
+endif()
+
+if(TBAI_BUILD_DEPLOY_ANYMAL_C)
+    target_link_libraries(_C PUBLIC tbai_deploy_anymal_c)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_ANYMAL_C)
+endif()
+
+if(TBAI_BUILD_DEPLOY_ANYMAL_D)
+    target_link_libraries(_C PUBLIC tbai_deploy_anymal_d)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_ANYMAL_D)
+endif()
+
+if(TBAI_BUILD_DEPLOY_SPOT)
+    target_link_libraries(_C PUBLIC tbai_deploy_spot)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_SPOT)
+endif()
+
 if(TBAI_BUILD_MPC)
-    target_link_libraries(_C PUBLIC tbai_arm_mpc)
-    target_compile_definitions(_C PRIVATE TBAI_HAS_ARM_MPC)
+    target_link_libraries(_C PUBLIC tbai_arm_mpc tbai_quadruped_mpc)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_ARM_MPC TBAI_HAS_QUADRUPED_MPC)
 endif()
 target_include_directories(_C
     PUBLIC
