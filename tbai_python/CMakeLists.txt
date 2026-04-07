@@ -43,6 +43,12 @@ target_link_libraries(_C
         pinocchio::pinocchio
 )
 
+# Force libtorch_cpu and libtorch to appear first in the dynamic library load order.
+# Without this, MPC/OCS2 transitive dependencies (hpipm, blasfeo) are loaded before
+# libtorch at runtime, causing symbol conflicts that segfault torch::jit forward passes.
+# See also: tbai_ros_anymal_d_mujoco ("Find Torch before catkin to avoid CGAL/MKL cmake conflict")
+target_link_options(_C PUBLIC "LINKER:--no-as-needed" -ltorch_cpu -ltorch "LINKER:--as-needed")
+
 if(TBAI_BUILD_DEPLOY_GO2)
     target_link_libraries(_C PUBLIC tbai_deploy_go2)
     target_compile_definitions(_C PRIVATE TBAI_HAS_DEPLOY_GO2)
