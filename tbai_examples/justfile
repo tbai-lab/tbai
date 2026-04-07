@@ -23,7 +23,7 @@ g1_mujoco_demo:
 
 # Run Go2 MuJoCo demo
 [group('examples')]
-go2_mujoco_demo:
+go2_rl_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
     XDG_SESSION_TYPE=x11 tbai_mujoco $(python3 -m tbai_mujoco_descriptions.print_config_path go2) &
