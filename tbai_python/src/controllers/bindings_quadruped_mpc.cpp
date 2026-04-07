@@ -10,6 +10,7 @@
 #include <nanobind/stl/string.h>
 
 #include <tbai_core/Types.hpp>
+#include <tbai_core/control/Rate.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 
