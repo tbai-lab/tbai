@@ -1,10 +1,12 @@
 # TBAI justfile
 
 # Show available commands
+[group('utils')]
 help:
     @just --list
 
 # Format C++ files in all directories (excluding dependencies and build)
+[group('utils')]
 format:
     #!/usr/bin/env bash
     OCS2_THIRD_PARTY_DIR="tbai_ocs2/ocs2_thirdparty"
@@ -17,6 +19,7 @@ format:
     done
 
 # Generate conda environments for all pixi environments
+[group('utils')]
 pixi-generate-conda-envs:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -26,10 +29,12 @@ pixi-generate-conda-envs:
     done
 
 # Install the project (moved from pixi.toml)
+[group('utils')]
 install:
     cmake -B/tmp/cpmbuild -S. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX && cmake --build /tmp/cpmbuild --parallel 8 && cmake --build /tmp/cpmbuild --target install
 
 # Run tests (moved from pixi.toml)
+[group('utils')]
 test:
     cmake -Bbuild -S. \
         -DTBAI_BUILD_TESTS=ON \
