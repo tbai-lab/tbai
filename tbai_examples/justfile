@@ -3,14 +3,17 @@
 sim_startup_time := "1.5"
 
 # Show available commands
+[group('utils')]
 help:
     @just --list
 
 # Install Python dependencies
+[group('utils')]
 install_requirements:
     pip3 install -r ./requirements.txt
 
-# Run G1 MuJoCo demo (simulator + controller)
+# Run G1 MuJoCo demo
+[group('examples')]
 g1_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
@@ -18,7 +21,8 @@ g1_mujoco_demo:
     sleep {{sim_startup_time}}
     python3 ./tbai_g1_mujoco/deploy_g1.py
 
-# Run Go2 MuJoCo demo (simulator + controller)
+# Run Go2 MuJoCo demo
+[group('examples')]
 go2_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
@@ -26,7 +30,8 @@ go2_mujoco_demo:
     sleep {{sim_startup_time}}
     python3 ./tbai_go2_mujoco/deploy_go2.py
 
-# Run Go2 MPC MuJoCo demo (simulator + MPC controller)
+# Run Go2 MPC MuJoCo demo
+[group('examples')]
 go2_mpc_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
@@ -34,7 +39,8 @@ go2_mpc_mujoco_demo:
     sleep {{sim_startup_time}}
     python3 ./tbai_go2_mpc_mujoco/deploy_go2_mpc.py
 
-# Run ANYmal B MPC MuJoCo demo (simulator + MPC controller)
+# Run ANYmal B MPC MuJoCo demo
+[group('examples')]
 anymal_b_mpc_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
@@ -42,7 +48,8 @@ anymal_b_mpc_mujoco_demo:
     sleep {{sim_startup_time}}
     python3 ./tbai_anymal_b_mpc_mujoco/deploy_anymal_mpc.py
 
-# Run ANYmal C MPC MuJoCo demo (simulator + MPC controller)
+# Run ANYmal C MPC MuJoCo demo
+[group('examples')]
 anymal_c_mpc_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
@@ -50,7 +57,8 @@ anymal_c_mpc_mujoco_demo:
     sleep {{sim_startup_time}}
     python3 ./tbai_anymal_c_mpc_mujoco/deploy_anymal_mpc.py
 
-# Run ANYmal D MPC MuJoCo demo (simulator + MPC controller)
+# Run ANYmal D MPC MuJoCo demo
+[group('examples')]
 anymal_d_mpc_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
@@ -58,7 +66,8 @@ anymal_d_mpc_mujoco_demo:
     sleep {{sim_startup_time}}
     python3 ./tbai_anymal_d_mpc_mujoco/deploy_anymal_mpc.py
 
-# Run Spot MPC MuJoCo demo (simulator + MPC controller)
+# Run Spot MPC MuJoCo demo
+[group('examples')]
 spot_mpc_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
@@ -66,7 +75,8 @@ spot_mpc_mujoco_demo:
     sleep {{sim_startup_time}}
     python3 ./tbai_spot_mpc_mujoco/deploy_spot_mpc.py
 
-# Run Franka MuJoCo demo (simulator + controller)
+# Run Franka MuJoCo demo
+[group('examples')]
 franka_mujoco_demo:
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
