@@ -28,7 +28,7 @@ cmake --build build --parallel 10
 <td><img src="https://github.com/user-attachments/assets/de338d85-e504-4043-8888-746680e14b1f" height="400" alt="excalidraw"/></td>
 </tr></table>
 
-<img src="https://github.com/user-attachments/assets/863b63f0-3d0c-4988-807b-332e947af1d8" width="100%" alt="framework"/>
+<img src="https://github.com/user-attachments/assets/7c9f9f69-0d5f-438f-bbd1-4b84e695e584" width="100%" alt="framework"/>
 
 </div>
 
