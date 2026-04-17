@@ -27,6 +27,9 @@ cmake --build build --parallel 10
 <td><img src="https://github.com/user-attachments/assets/41d7fb3b-afdb-46a5-bd05-25ceaaef0682" height="400" alt="tbai"/></td>
 <td><img src="https://github.com/user-attachments/assets/de338d85-e504-4043-8888-746680e14b1f" height="400" alt="excalidraw"/></td>
 </tr></table>
+
+<img src="https://github.com/user-attachments/assets/863b63f0-3d0c-4988-807b-332e947af1d8" width="100%" alt="framework"/>
+
 </div>
 
 #### Environment Variables used throughout `tbai`
