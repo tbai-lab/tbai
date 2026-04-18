@@ -2,7 +2,6 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-import importlib
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
@@ -32,22 +31,6 @@ class CMakeBuild(build_ext):
             f"-DTBAI_BUILD_DEPLOY_GO2_UNITREE={build_go2_unitree}",
             f"-DTBAI_BUILD_DEPLOY_G1_UNITREE={build_g1_unitree}",
         ]
-
-        # 1. Re-use torch's libraries if available
-        # 2. torch._C._GLIBCXX_USE_CXX11_ABI evaluates to False for older versions
-        # 3. we need to use the same ABI as torch to avoid symbol conflicts
-        # 4. the block bellow will only succeed if --build-no-isolation is used (otherwise torch is not available)
-        try:
-            torch = importlib.import_module("torch")
-            torch_abi = int(torch.compiled_with_cxx11_abi())
-            if torch_abi != 1:
-                raise ValueError(f"[tbai] torch ABI {torch_abi} is not supported, current version is {torch.__version__}. Upgrade to torch>=2.7.0")
-            torch_cmake_dir = Path(torch.utils.cmake_prefix_path) / "Torch"
-            cmake_args.append(f"-DTorch_DIR={torch_cmake_dir}")
-            print(f"[tbai] torch found at {torch_cmake_dir} with -D_GLIBCXX_USE_CXX11_ABI {torch_abi}")
-
-        except ImportError:
-            print("[tbai] torch not importable; relying on CMAKE_PREFIX_PATH")
 
         build_args = []
 
