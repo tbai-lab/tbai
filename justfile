@@ -1,7 +1,7 @@
 # TBAI justfile
 
-zenoh_c_build_dir := "/tmp/zenoh_c_build"
-zenoh_cpp_build_dir := "/tmp/zenoh_cpp_build"
+zenoh_c_build_dir := "/tmp/tbai_zenoh_c_build"
+zenoh_cpp_build_dir := "/tmp/tbai_zenoh_cpp_build"
 tbai_sdk_build_dir := "/tmp/tbai_sdk_build"
 tbai_mujoco_build_dir := "/tmp/tbai_mujoco_build"
 
