@@ -53,6 +53,15 @@ PinocchioInterfaceCppAd PinocchioInterface::toCppAd() const {
 // explicit instantiation
 template class PinocchioInterfaceTpl<scalar_t>;
 
+// TODO(lnotspotl): remove this helper function once we update to pinocchio >=3.0.0
+static __attribute__((always_inline)) inline pinocchio::JointIndex getJointIndex(const pinocchio::Frame &frame) {
+#if defined(PINOCCHIO_VERSION_AT_LEAST) && PINOCCHIO_VERSION_AT_LEAST(3, 0, 0)
+    return frame.parentJoint;
+#else
+    return frame.parent;
+#endif
+}
+
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
@@ -75,7 +84,7 @@ std::ostream &operator<<(std::ostream &os, const PinocchioInterface &p) {
     for (int k = 0; k < model.nframes; ++k) {
         os << std::setw(20) << model.frames[k].name << ":  ";
         os << " ID = " << k;
-        os << ", parent = " << model.frames[k].parent;
+        os << ", parent = " << getJointIndex(model.frames[k]);
         os << ", type = ";
 
         std::string frameType;

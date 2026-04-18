@@ -39,6 +39,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace ocs2 {
 
+// TODO(lnotspotl): remove this helper function once we update to pinocchio >=3.0.0
+static __attribute__((always_inline)) inline pinocchio::JointIndex getJointIndex(const pinocchio::Frame &frame) {
+#if defined(PINOCCHIO_VERSION_AT_LEAST) && PINOCCHIO_VERSION_AT_LEAST(3, 0, 0)
+    return frame.parentJoint;
+#else
+    return frame.parent;
+#endif
+}
+
 /******************************************************************************************************/
 /******************************************************************************************************/
 /******************************************************************************************************/
@@ -196,7 +205,7 @@ vector_t CentroidalModelRbdConversions::computeRbdTorqueFromCentroidalModelPD(
     pinocchio::container::aligned_vector<pinocchio::Force> fextDesired(model.njoints, pinocchio::Force::Zero());
     for (size_t i = 0; i < info.numThreeDofContacts; i++) {
         const auto frameIndex = info.endEffectorFrameIndices[i];
-        const auto jointIndex = model.frames[frameIndex].parent;
+        const auto jointIndex = getJointIndex(model.frames[frameIndex]);
         const Vector3 translationJointFrameToContactFrame = model.frames[frameIndex].placement.translation();
         const Matrix3 rotationWorldFrameToJointFrame = data.oMi[jointIndex].rotation().transpose();
         const Vector3 contactForce =
@@ -206,7 +215,7 @@ vector_t CentroidalModelRbdConversions::computeRbdTorqueFromCentroidalModelPD(
     }
     for (size_t i = info.numThreeDofContacts; i < info.numThreeDofContacts + info.numSixDofContacts; i++) {
         const auto frameIndex = info.endEffectorFrameIndices[i];
-        const auto jointIndex = model.frames[frameIndex].parent;
+        const auto jointIndex = getJointIndex(model.frames[frameIndex]);
         const Vector3 translationJointFrameToContactFrame = model.frames[frameIndex].placement.translation();
         const Matrix3 rotationWorldFrameToJointFrame = data.oMi[jointIndex].rotation().transpose();
         const Vector3 contactForce =

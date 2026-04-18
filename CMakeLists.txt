@@ -34,6 +34,16 @@ project(tbai VERSION 2.0.0)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Silences the hpp/fcl -> coal deprecation pragma pulled in via pinocchio's header
+# chain (pinocchio still ships the hpp/fcl compat shim). coal 3.0.2+ offers this
+# macro as the official opt-out.
+add_compile_definitions(COAL_DISABLE_HPP_FCL_WARNINGS)
+
+# Silences #warning directives emitted by third-party conda-env headers (e.g.
+# urdf_world/types.h shouting about its deprecation). tbai itself uses zero
+# #warning directives, so -Wno-cpp has no collateral damage on our code.
+add_compile_options(-Wno-cpp)
+
 # Fetch torch if needed
 find_package(Torch QUIET)
 if(NOT Torch_FOUND)

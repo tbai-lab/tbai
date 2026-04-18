@@ -110,6 +110,16 @@ set(Torch_FOUND TRUE)
     string(CONFIGURE "${_tbai_torch_shim_template}" _tbai_torch_shim_content @ONLY)
     file(WRITE "${_tbai_torch_shim_dir}/TorchConfig.cmake" "${_tbai_torch_shim_content}")
     set(Torch_DIR "${_tbai_torch_shim_dir}" CACHE PATH "tbai torch shim (CPU-only bypass of CUDA-torch TorchConfig)" FORCE)
+
+    # torch/lib vendors its own libgomp.so.1, which shadows the gcc toolchain copy
+    # that OpenMP-using targets (e.g. tbai_ocs2) link against. Marking torch/lib as
+    # an implicit link dir stops CMake's auto-RPATH from treating it as a "user"
+    # dir and silences the "may be hidden" warning. We then re-add it to the
+    # target RPATH ourselves so the loader still finds libtorch*.so at runtime.
+    list(APPEND CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "${TORCH_SOURCE_DIR}/lib")
+    list(APPEND CMAKE_C_IMPLICIT_LINK_DIRECTORIES   "${TORCH_SOURCE_DIR}/lib")
+    list(APPEND CMAKE_BUILD_RPATH   "${TORCH_SOURCE_DIR}/lib")
+    list(APPEND CMAKE_INSTALL_RPATH "${TORCH_SOURCE_DIR}/lib")
 endif()
 
 find_package(Torch REQUIRED)
