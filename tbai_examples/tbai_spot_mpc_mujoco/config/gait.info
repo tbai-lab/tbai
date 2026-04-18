@@ -12,6 +12,7 @@ list
   [9] lindyhop
   [10] skipping
   [11] pawup
+  [12] jump
 }
 
 stance
@@ -252,4 +253,19 @@ pawup
      [0]     0.0
      [1]     2.0
    }
+}
+
+jump
+{
+  modeSequence
+  {
+    [0]     STANCE
+    [1]     FLY
+  }
+  switchingTimes
+  {
+    [0]     0.0
+    [1]     0.3
+    [2]     0.6
+  }
 }

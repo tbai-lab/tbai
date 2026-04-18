@@ -84,7 +84,7 @@ class VirtualJoystick(tk.Frame):
 
 class UIController:
     GAITS = ["stance", "trot", "standing_trot", "flying_trot", "pace", "standing_pace",
-             "dynamic_walk", "static_walk", "amble"]
+             "dynamic_walk", "static_walk", "amble", "jump"]
     def __init__(self, stand_callback, sit_callback, mpc_callback, set_gait_callback):
         self.root = tk.Tk()
         self.root.title("Spot MPC Controller")
