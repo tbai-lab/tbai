@@ -12,7 +12,7 @@
 #   curl -LsSf https://raw.githubusercontent.com/tbai-lab/tbai/main/install.sh | TBAI_TARGET=cpp bash
 
 set -euo pipefail
-rm -r /tmp/tbai_*
+rm -rf /tmp/tbai_* 2>/dev/null || true
 
 REPO_URL="https://github.com/tbai-lab/tbai.git"
 BRANCH="${BRANCH:-main}"
