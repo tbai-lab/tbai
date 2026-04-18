@@ -1,6 +1,7 @@
 tyro
-tbai_descriptions @ git+ssh://git@github.com/tbai-lab/tbai_descriptions.git
-tbai_mujoco_descriptions @ git+ssh://git@github.com/tbai-lab/tbai_mujoco_descriptions.git
+tbai_descriptions @ git+https://github.com/tbai-lab/tbai_descriptions.git
+tbai_mujoco_descriptions @ git+https://github.com/tbai-lab/tbai_mujoco_descriptions.git
 tbai_mujoco_assets @ git+https://github.com/tbai-lab/tbai_mujoco_assets.git
-tbai_sdk @ git+ssh://git@github.com/tbai-lab/tbai_sdk.git
+tbai_sdk @ git+https://github.com/tbai-lab/tbai_sdk.git
+eclipse-zenoh
 hf

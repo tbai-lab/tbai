@@ -13,7 +13,7 @@ This repository contains implementations of core algorithms used in the `tbai` e
 - [**tbai_ros**](https://github.com/tbai-lab/tbai_ros) - a ROS-noetic wrapper around tbai, uses [pixi](https://pixi.sh) for dependency management, so no worries that ROS is past its end of life :) - works on many Ubuntu releases, including Ubuntu 24.04
 - [**tbai_ros2**](https://github.com/tbai-lab/tbai_ros2) - a ROS2-jazzy wrapper around tbai, uses [pixi](https://pixi.sh) for dependency management - works on many Ubuntu releases, including Ubuntu 20.04, Ubuntu 22.04 and Ubuntu 24.04
 
-#### Install `tbai`
+#### Install `tbai` (recommended)
 ```bash
 pixi install -e default && pixi shell -e default
 just build-tbai-sdk && just build-tbai-mujoco
@@ -21,11 +21,20 @@ cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 10
 ```
 
-#### Install `tbai` python bindings
+#### Install `tbai` python bindings (recommended)
 ```bash
 pixi install -e default && pixi shell -e default
 just build-tbai-sdk && just build-tbai-mujoco
 pip3 install ./tbai_python --verbose --no-build-isolation
+```
+
+#### Automatic installation (experimental)
+```bash
+# Python bindings (default)
+curl -LsSf https://raw.githubusercontent.com/tbai-lab/tbai/main/install.sh | TBAI_TARGET=python bash
+
+# C++ libraries only
+curl -LsSf https://raw.githubusercontent.com/tbai-lab/tbai/main/install.sh | TBAI_TARGET=cpp bash
 ```
 
 ### Tbai as a framework
