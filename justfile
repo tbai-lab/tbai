@@ -1,5 +1,10 @@
 # TBAI justfile
 
+zenoh_c_build_dir := "/tmp/zenoh_c_build"
+zenoh_cpp_build_dir := "/tmp/zenoh_cpp_build"
+tbai_sdk_build_dir := "/tmp/tbai_sdk_build"
+tbai_mujoco_build_dir := "/tmp/tbai_mujoco_build"
+
 # Show available commands
 [group('utils')]
 help:
@@ -60,3 +65,105 @@ test:
         -DTBAI_BUILD_DEPLOY_ANYMAL_C=OFF \
         -DTBAI_BUILD_DEPLOY_ANYMAL_D=OFF \
     && cd build && make -j8 && ctest --output-on-failure
+
+# Build and install zenoh-c (requires Rust)
+[group('zenoh')]
+build-zenoh-c:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -f "$CONDA_PREFIX/lib/libzenohc.so" ]; then
+        echo "[TBAI] zenoh-c already installed, skipping."
+        exit 0
+    fi
+    echo "[TBAI] Building zenoh-c (requires Rust)..."
+    [ -d "thirdparty/zenoh-c" ] || \
+        git clone --depth 1 https://github.com/eclipse-zenoh/zenoh-c.git thirdparty/zenoh-c
+    cmake -S thirdparty/zenoh-c -B {{zenoh_c_build_dir}} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+        -DZENOHC_BUILD_WITH_UNSTABLE_API=ON \
+        -DZENOHC_BUILD_WITH_SHARED_MEMORY=ON
+    cmake --build {{zenoh_c_build_dir}} --config Release -j"$(nproc)" --target install
+    echo "[TBAI] zenoh-c installed."
+
+# Build and install zenoh-cpp headers
+[group('zenoh')]
+build-zenoh-cpp: build-zenoh-c
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -f "$CONDA_PREFIX/lib/cmake/zenohcxx/zenohcxxConfig.cmake" ]; then
+        echo "[TBAI] zenoh-cpp already installed, skipping."
+        exit 0
+    fi
+    echo "[TBAI] Installing zenoh-cpp headers..."
+    [ -d "thirdparty/zenoh-cpp" ] || \
+        git clone --depth 1 https://github.com/eclipse-zenoh/zenoh-cpp.git thirdparty/zenoh-cpp
+    cmake -S thirdparty/zenoh-cpp -B {{zenoh_cpp_build_dir}} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
+        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+        -DZENOHCXX_ZENOHC=ON -DZENOHCXX_ZENOHPICO=OFF
+    cmake --build {{zenoh_cpp_build_dir}} --config Release -j"$(nproc)" --target install
+    echo "[TBAI] zenoh-cpp installed."
+
+# Clone tbai_sdk (skips if already exists)
+[group('tbai_sdk')]
+clone-tbai-sdk:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TBAI_SDK_DIR="thirdparty/tbai_sdk"
+    if [[ ! -d "$TBAI_SDK_DIR" ]]; then
+        echo "[TBAI] Cloning tbai_sdk..."
+        git clone --depth 1 git@github.com:tbai-lab/tbai_sdk.git "$TBAI_SDK_DIR"
+    else
+        echo "[TBAI] tbai_sdk already exists at $TBAI_SDK_DIR"
+        if [[ -d "$TBAI_SDK_DIR/.git" ]]; then
+            echo "[TBAI] Pulling latest changes..."
+            git -C "$TBAI_SDK_DIR" pull
+        fi
+    fi
+
+# Build and install tbai_sdk
+[group('tbai_sdk')]
+build-tbai-sdk: build-zenoh-cpp clone-tbai-sdk
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TBAI_SDK_DIR="thirdparty/tbai_sdk"
+    if [ -f "$CONDA_PREFIX/lib/cmake/tbai_sdk/tbai_sdkConfig.cmake" ]; then
+        echo "[TBAI] tbai_sdk already installed, skipping."
+        exit 0
+    fi
+    echo "[TBAI] Building and installing tbai_sdk..."
+    cmake -S "$TBAI_SDK_DIR" -B {{tbai_sdk_build_dir}} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
+    cmake --build {{tbai_sdk_build_dir}} --parallel "$(nproc)" --target install
+    echo "[TBAI] tbai_sdk installed."
+
+# Clone tbai_mujoco (skips if already exists)
+[group('tbai_mujoco')]
+clone-tbai-mujoco:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! -d "thirdparty/tbai_mujoco" ]]; then
+        echo "[TBAI] Cloning tbai_mujoco..."
+        git clone --depth 1 git@github.com:tbai-lab/tbai_mujoco.git thirdparty/tbai_mujoco
+    else
+        echo "[TBAI] tbai_mujoco already exists"
+        if [[ -d "thirdparty/tbai_mujoco/.git" ]]; then
+            echo "[TBAI] Pulling latest changes..."
+            git -C thirdparty/tbai_mujoco pull
+        fi
+    fi
+
+# Build tbai_mujoco
+[group('tbai_mujoco')]
+build-tbai-mujoco: build-tbai-sdk clone-tbai-mujoco
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "[TBAI] Building tbai_mujoco..."
+    cmake -S thirdparty/tbai_mujoco -B {{tbai_mujoco_build_dir}} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
+    cmake --build {{tbai_mujoco_build_dir}} --parallel "$(nproc)" --target install
+    echo "[TBAI] tbai_mujoco installed."

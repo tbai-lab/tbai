@@ -23,4 +23,4 @@ jobs:
     - name: Run tests
       run: |
         export PATH="$HOME/.pixi/bin:$PATH"
-        pixi run just test
+        pixi run -e test just test
