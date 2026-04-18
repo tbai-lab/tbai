@@ -19,6 +19,9 @@ cmake="3.30.*"
 just = ">=1.42.4,<2"
 glpk="5.0.*"
 pip="*"
+python="3.12.*"
+glfw="*"
+libgl-devel="*"
 
 [feature.rust.dependencies]
 rust="*"
