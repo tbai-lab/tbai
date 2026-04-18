@@ -21,6 +21,13 @@ cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 10
 ```
 
+#### Install `tbai` python bindings
+```bash
+pixi install -e default && pixi shell -e default
+just build-tbai-sdk && just build-tbai-mujoco
+pip3 install ./tbai_python --verbose --no-build-isolation
+```
+
 ### Tbai as a framework
 
 <div align="center">
