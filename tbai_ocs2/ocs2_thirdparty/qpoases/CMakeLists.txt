@@ -12,6 +12,7 @@ ExternalProject_Add(
   GIT_TAG c7e5ff50a770cf3a2b1b56eb375941be6088b26b
   CMAKE_ARGS
     --no-warn-unused-cli
+    --log-level=NOTICE
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DBUILD_SHARED_LIBS=ON
     -DCMAKE_CXX_FLAGS="-w"
