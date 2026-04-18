@@ -34,10 +34,19 @@ project(tbai VERSION 2.0.0)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Silences the hpp/fcl -> coal deprecation pragma pulled in via pinocchio's header
-# chain (pinocchio still ships the hpp/fcl compat shim). coal 3.0.2+ offers this
-# macro as the official opt-out.
+# Suppress CMake dev/deprecation warnings from third-party Config files we don't
+# control (eigenpy/pinocchio/coal still use legacy FindBoost + jrl-cmakemodules'
+# old cmake_minimum_required). Equivalent to `-Wno-dev -Wno-deprecated` on the CLI.
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE INTERNAL "" FORCE)
+set(CMAKE_WARN_DEPRECATED FALSE CACHE INTERNAL "" FORCE)
+
+# Silences the hpp/fcl -> coal deprecation notices from pinocchio's dep chain.
+# coal 3.0.2+ uses COAL_DISABLE_HPP_FCL_WARNINGS in two distinct places:
+#   * coal.hpp checks it as a C++ preprocessor define (suppresses #pragma message).
+#   * hpp-fclConfig.cmake checks it as a CMake variable (suppresses message(WARNING)).
+# Both opt-outs need to be set.
 add_compile_definitions(COAL_DISABLE_HPP_FCL_WARNINGS)
+set(COAL_DISABLE_HPP_FCL_WARNINGS TRUE)
 
 # Silences #warning directives emitted by third-party conda-env headers (e.g.
 # urdf_world/types.h shouting about its deprecation). tbai itself uses zero

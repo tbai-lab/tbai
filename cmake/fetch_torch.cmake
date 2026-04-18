@@ -116,6 +116,8 @@ set(Torch_FOUND TRUE)
     # an implicit link dir stops CMake's auto-RPATH from treating it as a "user"
     # dir and silences the "may be hidden" warning. We then re-add it to the
     # target RPATH ourselves so the loader still finds libtorch*.so at runtime.
+    # (tbai_python avoids -ltorch_cpu / -ltorch in favour of absolute-path linking
+    # precisely because implicit-dir status strips -L<dir>.)
     list(APPEND CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES "${TORCH_SOURCE_DIR}/lib")
     list(APPEND CMAKE_C_IMPLICIT_LINK_DIRECTORIES   "${TORCH_SOURCE_DIR}/lib")
     list(APPEND CMAKE_BUILD_RPATH   "${TORCH_SOURCE_DIR}/lib")

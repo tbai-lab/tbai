@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.16.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# setup.py invokes its own cmake here, independent of the root build's cache.
+# Silence dev/deprecation noise from eigenpy/pinocchio/coal + jrl-cmakemodules.
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS TRUE CACHE INTERNAL "" FORCE)
+set(CMAKE_WARN_DEPRECATED FALSE CACHE INTERNAL "" FORCE)
+
 project(tbai_python)
 
 find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
@@ -48,8 +53,13 @@ target_link_libraries(_C
 # Without this, MPC/OCS2 transitive dependencies (hpipm, blasfeo) are loaded before
 # libtorch at runtime, causing symbol conflicts that segfault torch::jit forward passes.
 # See also: tbai_ros_anymal_d_mujoco ("Find Torch before catkin to avoid CGAL/MKL cmake conflict")
-target_link_directories(_C PUBLIC ${TORCH_INSTALL_PREFIX}/lib)
-target_link_options(_C PUBLIC "LINKER:--no-as-needed" -ltorch_cpu -ltorch "LINKER:--as-needed")
+# Link by absolute path (rather than -ltorch_cpu -ltorch) so this keeps working even
+# when torch/lib is marked as an implicit link dir (which suppresses CMake's -L<dir>).
+target_link_options(_C PUBLIC
+    "LINKER:--no-as-needed"
+    "${TORCH_INSTALL_PREFIX}/lib/libtorch_cpu.so"
+    "${TORCH_INSTALL_PREFIX}/lib/libtorch.so"
+    "LINKER:--as-needed")
 
 if(TBAI_BUILD_DEPLOY_GO2)
     target_link_libraries(_C PUBLIC tbai_deploy_go2)
