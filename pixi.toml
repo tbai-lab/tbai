@@ -28,5 +28,5 @@ pytorch = { version = "==2.7.0", build = "*cpu_generic*" }
 
 [environments]
 default = ["rust"]
-test = []
+test = ["python"]
 python = ["python", "rust"]
