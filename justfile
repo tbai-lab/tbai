@@ -38,9 +38,9 @@ pixi-generate-conda-envs:
 install:
     cmake -B/tmp/cpmbuild -S. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX && cmake --build /tmp/cpmbuild --parallel 8 && cmake --build /tmp/cpmbuild --target install
 
-# Run tests (moved from pixi.toml)
+# Build tests (moved from pixi.toml)
 [group('utils')]
-test:
+build-tests:
     cmake -Bbuild -S. \
         -DTBAI_BUILD_TESTS=ON \
         -DTBAI_BUILD_NP3O=ON \
@@ -64,7 +64,16 @@ test:
         -DTBAI_BUILD_DEPLOY_ANYMAL_B=OFF \
         -DTBAI_BUILD_DEPLOY_ANYMAL_C=OFF \
         -DTBAI_BUILD_DEPLOY_ANYMAL_D=OFF \
-    && cd build && make -j8 && ctest --output-on-failure
+    && cmake --build build --parallel 8
+
+# Run tests (requires build-tests to have been run)
+[group('utils')]
+run-tests:
+    cd build && ctest --output-on-failure
+
+# Build and run tests
+[group('utils')]
+test: build-tests run-tests
 
 # Build and install zenoh-c (requires Rust)
 [group('zenoh')]
