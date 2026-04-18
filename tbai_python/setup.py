@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import subprocess
 from pathlib import Path
@@ -56,6 +57,23 @@ class CMakeBuild(build_ext):
             cwd=build_temp,
             check=True,
         )
+
+        # CMAKE_LIBRARY_OUTPUT_DIRECTORY covers normal targets but misses IMPORTED libs
+        # (onnxruntime) and ExternalProject artifacts (qpOASES). Stage an install and
+        # mirror its lib/ .so* files next to _C.so so the loader finds everything.
+        staging = (build_temp / "_install_staging").resolve()
+        if staging.exists():
+            shutil.rmtree(staging)
+        subprocess.run(
+            ["cmake", "--install", ".", "--prefix", str(staging)],
+            cwd=build_temp,
+            check=True,
+        )
+        for src in (staging / "lib").glob("*.so*"):
+            dst = extdir / src.name
+            if dst.exists() or dst.is_symlink():
+                dst.unlink()
+            shutil.copy2(src, dst, follow_symlinks=False)
 
     def run(self):
         super().run()

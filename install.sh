@@ -83,5 +83,4 @@ pip install -r ./tbai_examples/requirements.txt
 
 
 cd $OLD_DIR
-rm -rf $TMP_DIR
 say "done. enjoy 🤗"
