@@ -37,7 +37,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Fetch torch if needed
 find_package(Torch QUIET)
 if(NOT Torch_FOUND)
-  set(TBAI_TORCH_VERSION "2.7.0")
+  set(TBAI_TORCH_VERSION "2.1.0")
   include(cmake/fetch_torch.cmake)
 endif()
 
