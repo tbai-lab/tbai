@@ -29,18 +29,25 @@ option(TBAI_BUILD_JOE "Build the joe" ON)
 option(TBAI_BUILD_TESTS "Build the tests" OFF)
 option(TBAI_BUILD_PYTHON "Build the Python bindings" OFF)
 option(TBAI_BUILD_DOCS "Build the documentation" OFF)
-option(TBAI_FETCH_TORCH "Fetch libtorch" OFF)
 
 project(tbai VERSION 2.0.0)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if(TBAI_FETCH_TORCH)
-  include(cmake/torch.cmake)
+# Fetch torch if needed
+find_package(Torch QUIET)
+if(NOT Torch_FOUND)
+  set(TBAI_TORCH_VERSION "2.7.0")
+  include(cmake/fetch_torch.cmake)
 endif()
 
 if(TBAI_BUILD_DEPLOY_GO2_UNITREE OR TBAI_BUILD_DEPLOY_G1_UNITREE)
-  include(cmake/unitree_sdk2.cmake)
+  include(cmake/fetch_unitree_sdk2.cmake)
+endif()
+
+if(TBAI_BUILD_DEPLOY_G1)
+  set(TBAI_ONNXRUNTIME_VERSION "1.22.0")
+  include(cmake/fetch_onnxruntime.cmake)
 endif()
 
 if(TBAI_BUILD_TESTS)

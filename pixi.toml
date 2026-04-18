@@ -9,7 +9,6 @@ version = "0.1.0"
 gxx = "13.3.*"
 fmt = "10.1.*"
 spdlog = "1.12.0.*"
-libtorch = { version = "==2.7.0", build = "*cpu_generic*" }
 cpp-argparse = "*"
 eigen="3.3.7.*"
 gtest="*"
@@ -24,6 +23,10 @@ pip="*"
 [feature.rust.dependencies]
 rust="*"
 
+[feature.python.dependencies]
+pytorch = { version = "==2.7.0", build = "*cpu_generic*" }
+
 [environments]
 default = ["rust"]
 test = []
+python = ["python", "rust"]

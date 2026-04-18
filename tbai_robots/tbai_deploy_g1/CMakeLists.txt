@@ -7,38 +7,6 @@ project(tbai_deploy_g1)
 
 find_package(tbai_sdk REQUIRED)
 
-# Fetch ONNX Runtime automatically
-include(FetchContent)
-
-if(NOT UNIX OR APPLE)
-    message(FATAL_ERROR "tbai_deploy_g1 currently only supports Linux platforms")
-endif()
-
-set(ONNXRUNTIME_VERSION "1.22.0")
-set(ONNXRUNTIME_URL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz")
-
-message(STATUS "Fetching ONNX Runtime v${ONNXRUNTIME_VERSION}...")
-
-FetchContent_Declare(
-    onnxruntime
-    URL ${ONNXRUNTIME_URL}
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-FetchContent_MakeAvailable(onnxruntime)
-
-FetchContent_GetProperties(onnxruntime SOURCE_DIR ONNXRUNTIME_SOURCE_DIR)
-
-set(ONNXRUNTIME_INCLUDE_DIR "${onnxruntime_SOURCE_DIR}/include")
-set(ONNXRUNTIME_LIB_DIR "${onnxruntime_SOURCE_DIR}/lib")
-
-add_library(onnxruntime SHARED IMPORTED)
-set_target_properties(onnxruntime PROPERTIES
-    IMPORTED_LOCATION "${ONNXRUNTIME_LIB_DIR}/libonnxruntime.so"
-    INTERFACE_INCLUDE_DIRECTORIES "${ONNXRUNTIME_INCLUDE_DIR}"
-)
-
-message(STATUS "ONNX Runtime configured: ${onnxruntime_SOURCE_DIR}")
-
 # Find Torch for G1Twist2Controller
 find_package(Torch REQUIRED)
 
@@ -139,15 +107,3 @@ if(TBAI_BUILD_DEPLOY_G1_UNITREE)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/tbai
     )
 endif()
-
-# Install ONNX Runtime headers
-install(DIRECTORY "${ONNXRUNTIME_INCLUDE_DIR}/"
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
-# Install ONNX Runtime library
-install(FILES "${ONNXRUNTIME_LIB_DIR}/libonnxruntime.so.${ONNXRUNTIME_VERSION}"
-              "${ONNXRUNTIME_LIB_DIR}/libonnxruntime.so.1"
-              "${ONNXRUNTIME_LIB_DIR}/libonnxruntime.so"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)

@@ -11,6 +11,7 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
 find_package(nanobind CONFIG REQUIRED)
 find_package(pinocchio CONFIG REQUIRED)
+find_package(Torch REQUIRED)
 
 nanobind_add_module(_C
     src/bindings.cpp
@@ -47,6 +48,7 @@ target_link_libraries(_C
 # Without this, MPC/OCS2 transitive dependencies (hpipm, blasfeo) are loaded before
 # libtorch at runtime, causing symbol conflicts that segfault torch::jit forward passes.
 # See also: tbai_ros_anymal_d_mujoco ("Find Torch before catkin to avoid CGAL/MKL cmake conflict")
+target_link_directories(_C PUBLIC ${TORCH_INSTALL_PREFIX}/lib)
 target_link_options(_C PUBLIC "LINKER:--no-as-needed" -ltorch_cpu -ltorch "LINKER:--as-needed")
 
 if(TBAI_BUILD_DEPLOY_GO2)
