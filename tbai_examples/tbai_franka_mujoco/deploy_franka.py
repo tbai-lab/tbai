@@ -15,6 +15,8 @@ from tbai import ChangeControllerSubscriber
 
 import tbai_descriptions
 
+from cartesian_controller import CartesianImpedanceController
+
 
 class VirtualJoystick(tk.Frame):
     def __init__(self, parent, size=200, **kwargs):
@@ -95,13 +97,17 @@ class EEJoystickUI:
     def __init__(
         self,
         mpc_callback=lambda: None,
+        cart_callback=lambda: None,
         home_callback=lambda: None,
         arm_mpc_controller=None,
+        cart_controller=None,
         gripper_callback=lambda is_open: None,
     ):
         self.mpc_callback = mpc_callback
+        self.cart_callback = cart_callback
         self.home_callback = home_callback
         self.arm_mpc_controller = arm_mpc_controller
+        self.cart_controller = cart_controller
         self.gripper_callback = gripper_callback
         self.gripper_is_open = False
 
@@ -157,8 +163,11 @@ class EEJoystickUI:
         self.btn_mpc = ttk.Button(buttons_frame, text="MPC", command=self.mpc_callback)
         self.btn_mpc.grid(row=0, column=1, padx=10)
 
+        self.btn_cart = ttk.Button(buttons_frame, text="Cartesian", command=self.cart_callback)
+        self.btn_cart.grid(row=0, column=2, padx=10)
+
         self.btn_gripper = ttk.Button(buttons_frame, text="Open Gripper", command=self.toggle_gripper)
-        self.btn_gripper.grid(row=0, column=2, padx=10)
+        self.btn_gripper.grid(row=0, column=3, padx=10)
 
         # Status label
         self.status_var = tk.StringVar(value="EE target: (0.50, 0.00, 0.50)")
@@ -176,10 +185,13 @@ class EEJoystickUI:
 
         self.status_var.set(f"EE target: ({target_x:.3f}, {target_y:.3f}, {target_z:.3f})")
 
-        # Send to controller
+        # Send to controllers — both implement the same set_target_ee_pose API.
+        # Whichever controller is active in CentralController will act on it.
+        position = np.array([target_x, target_y, target_z])
         if self.arm_mpc_controller is not None:
-            position = np.array([target_x, target_y, target_z])
             self.arm_mpc_controller.set_target_ee_pose(position, self.orientation)
+        if self.cart_controller is not None:
+            self.cart_controller.set_target_ee_pose(position, self.orientation)
 
         self.root.after(50, self.update_loop)
 
@@ -254,7 +266,13 @@ class FrankaChangeControllerSubscriber(ChangeControllerSubscriber):
             self._on_mpc_switch()
         self.new_controller = "MPC"
 
+    def cart_callback(self):
+        if self._on_cart_switch is not None:
+            self._on_cart_switch()
+        self.new_controller = "CART"
+
     _on_mpc_switch = None
+    _on_cart_switch = None
 
 
 class ImageViewer:
@@ -329,8 +347,12 @@ def main():
     # Arm MPC controller (uses system clock internally)
     arm_mpc_ctrl = tbai_python.ArmMpcController(robot)
 
+    # Cartesian impedance controller (Python-side DLS IK + joint PD)
+    cart_ctrl = CartesianImpedanceController(robot)
+
     central_controller.add_controller(static_ctrl)
     central_controller.add_controller(arm_mpc_ctrl)
+    central_controller.add_controller(cart_ctrl)
 
     def on_gripper_toggle(is_open: bool) -> None:
         if is_open:
@@ -343,14 +365,24 @@ def main():
     # Create joystick UI
     ui = EEJoystickUI(
         mpc_callback=controller_sub.mpc_callback,
+        cart_callback=controller_sub.cart_callback,
         home_callback=controller_sub.home_callback,
         arm_mpc_controller=arm_mpc_ctrl,
+        cart_controller=cart_ctrl,
         gripper_callback=on_gripper_toggle,
     )
 
-    # Snapshot current EE orientation when switching to MPC
+    def on_cart_switch():
+        # Seed the Cartesian controller at the current joint configuration so
+        # it holds the arm in place until the user moves the joysticks.
+        state = robot.get_latest_state()
+        cart_ctrl.initialize_hold(np.array(state.x[:7]))
+        ui.snapshot_current_ee_orientation()
+
+    # Snapshot current EE orientation on controller switches
     ui.robot = robot
     controller_sub._on_mpc_switch = ui.snapshot_current_ee_orientation
+    controller_sub._on_cart_switch = on_cart_switch
 
     # Camera viewer
     image_viewer = None
