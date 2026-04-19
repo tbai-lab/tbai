@@ -69,6 +69,7 @@ void bind_wtw_controller(nb::module_ &m);
 void bind_central_controller(nb::module_ &m);
 void bind_arm_mpc_controller(nb::module_ &m);
 void bind_quadruped_mpc_controller(nb::module_ &m);
+void bind_python_controller(nb::module_ &m);
 
 NB_MODULE(_C, m) {
     nb::set_leak_warnings(false);
@@ -81,6 +82,20 @@ NB_MODULE(_C, m) {
           nb::call_guard<nb::gil_scoped_release>());
 
     nb::class_<tbai::MotorCommand>(m, "MotorCommand")
+        .def(nb::init<>())
+        .def("__init__",
+             [](tbai::MotorCommand *self, const std::string &joint_name, double desired_position,
+                double desired_velocity, double kp, double kd, double torque_ff) {
+                 new (self) tbai::MotorCommand();
+                 self->joint_name = joint_name;
+                 self->desired_position = desired_position;
+                 self->desired_velocity = desired_velocity;
+                 self->kp = kp;
+                 self->kd = kd;
+                 self->torque_ff = torque_ff;
+             },
+             nb::arg("joint_name"), nb::arg("desired_position") = 0.0, nb::arg("desired_velocity") = 0.0,
+             nb::arg("kp") = 0.0, nb::arg("kd") = 0.0, nb::arg("torque_ff") = 0.0)
         .def_rw("kp", &tbai::MotorCommand::kp)
         .def_rw("desired_position", &tbai::MotorCommand::desired_position)
         .def_rw("kd", &tbai::MotorCommand::kd)
@@ -170,4 +185,5 @@ NB_MODULE(_C, m) {
     bind_wtw_controller(m);
     bind_arm_mpc_controller(m);
     bind_quadruped_mpc_controller(m);
+    bind_python_controller(m);
 }

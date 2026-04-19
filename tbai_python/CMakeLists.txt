@@ -36,6 +36,7 @@ nanobind_add_module(_C
     src/controllers/bindings_central.cpp
     src/controllers/bindings_arm_mpc.cpp
     src/controllers/bindings_quadruped_mpc.cpp
+    src/controllers/bindings_python_controller.cpp
 )
 target_link_libraries(_C
     PUBLIC
