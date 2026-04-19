@@ -7,6 +7,7 @@ import dataclasses
 import tkinter as tk
 from tkinter import ttk
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tyro
 
@@ -279,10 +280,8 @@ class ImageViewer:
     def __init__(self, topic: str):
         from tbai_sdk.subscriber import PollingSubscriber
         from tbai_sdk.messages.robot_msgs import ImgFrame
-        import matplotlib.pyplot as plt
 
         self._sub = PollingSubscriber(ImgFrame, topic)
-        self._plt = plt
         self._fig, self._ax = plt.subplots()
         self._img_handle = None
         self._ax.set_axis_off()
@@ -309,11 +308,11 @@ class ImageViewer:
         self._fig.canvas.flush_events()
 
     def start_nonblocking(self):
-        self._plt.ion()
-        self._plt.show(block=False)
+        plt.ion()
+        plt.show(block=False)
 
     def close(self):
-        self._plt.close(self._fig)
+        plt.close(self._fig)
 
 
 def main():

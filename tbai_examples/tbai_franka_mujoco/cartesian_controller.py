@@ -42,7 +42,6 @@ class CartesianImpedanceController(tbai_python.PythonController):
 
         urdf_path = urdf_path or os.environ["TBAI_ROBOT_DESCRIPTION_PATH"]
 
-        self._pin = pin
         self._model = pin.buildModelFromUrdf(urdf_path)
         self._data = self._model.createData()
         self._ee_frame_id = self._model.getFrameId(ee_frame)
@@ -81,8 +80,6 @@ class CartesianImpedanceController(tbai_python.PythonController):
     ) -> None:
         """DLS IK from the current target_q seed to the requested EE pose
         (position in meters, orientation as xyzw quaternion in the URDF frame)."""
-        pin = self._pin
-
         with self._lock:
             q = self._target_q.copy() if self._target_q is not None else np.zeros(7)
 
@@ -132,7 +129,7 @@ class CartesianImpedanceController(tbai_python.PythonController):
         # arm holds its pose instead of sagging under its own weight.
         state = self.get_latest_state()
         q_meas = np.array(state.x[:7], dtype=np.float64)
-        tau_g = self._pin.computeGeneralizedGravity(self._model, self._data, q_meas)
+        tau_g = pin.computeGeneralizedGravity(self._model, self._data, q_meas)
 
         for i, cmd in enumerate(self._cmds):
             cmd.desired_position = float(q_des[i])
