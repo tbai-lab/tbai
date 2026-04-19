@@ -175,3 +175,30 @@ build-tbai-mujoco: build-tbai-sdk clone-tbai-mujoco
         -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
     cmake --build {{tbai_mujoco_build_dir}} --parallel "$(nproc)" --target install
     echo "[TBAI] tbai_mujoco installed."
+
+# Install all C++ components (tbai_sdk, tbai_mujoco, tbai) + examples requirements
+[group('utils')]
+install-all-cpp: build-tbai-sdk build-tbai-mujoco
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ -z "${CONDA_PREFIX:-}" ]]; then
+        echo "[TBAI] CONDA_PREFIX is not set. Please activate a conda environment." >&2
+        exit 1
+    fi
+    echo "[TBAI] Building and installing tbai C++ to $CONDA_PREFIX..."
+    cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --parallel "$(nproc)" --target install
+    echo "[TBAI] Installing tbai_examples requirements..."
+    pip install -r ./tbai_examples/requirements.txt
+    echo "[TBAI] tbai C++ installed."
+
+# Install all Python components (tbai_sdk, tbai_mujoco, tbai python bindings) + examples requirements
+[group('utils')]
+install-all-python: build-tbai-sdk build-tbai-mujoco
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "[TBAI] Building tbai python bindings..."
+    pip install ./tbai_python --verbose --no-build-isolation
+    echo "[TBAI] Installing tbai_examples requirements..."
+    pip install -r ./tbai_examples/requirements.txt
+    echo "[TBAI] tbai python installed."
