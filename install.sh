@@ -57,9 +57,15 @@ fi
 
 cd "$TMP_DIR"
 
+say "building tbai_sdk"
+just build-tbai-sdk
+
+say "building tbai_mujoco"
+just build-tbai-mujoco
+
 if [[ "$TARGET" == "python" ]]; then
-    say "installing all python components"
-    just install-all-python
+    say "building tbai python bindings (parallel jobs: $JOBS)"
+    pip install ./tbai_python --verbose --no-build-isolation
 fi
 
 if [[ "$TARGET" == "cpp" ]]; then
@@ -67,9 +73,14 @@ if [[ "$TARGET" == "cpp" ]]; then
         err "CONDA_PREFIX is not set. Please activate a conda environment before running this script."
         exit 1
     fi
-    say "installing all cpp components (parallel jobs: $JOBS)"
-    just install-all-cpp
+    say "building tbai and installing to $CONDA_PREFIX (parallel jobs: $JOBS)"
+    cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --parallel "$JOBS" --target install
 fi
+
+say "installing python dependencies"
+pip install -r ./tbai_examples/requirements.txt
+
 
 cd $OLD_DIR
 say "done. enjoy 🤗"
