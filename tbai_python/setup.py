@@ -64,11 +64,16 @@ class CMakeBuild(build_ext):
         staging = (build_temp / "_install_staging").resolve()
         if staging.exists():
             shutil.rmtree(staging)
-        subprocess.run(
+        result = subprocess.run(
             ["cmake", "--install", ".", "--prefix", str(staging)],
             cwd=build_temp,
-            check=True,
+            capture_output=True,
+            text=True,
         )
+        if result.returncode != 0:
+            sys.stdout.write(result.stdout)
+            sys.stderr.write(result.stderr)
+            result.check_returncode()
         for src in (staging / "lib").glob("*.so*"):
             dst = extdir / src.name
             if dst.exists() or dst.is_symlink():
