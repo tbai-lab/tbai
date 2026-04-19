@@ -14,7 +14,8 @@ namespace tbai {
 
 void FrankaRobotInterface::initMotorMapping() {
     // Franka Panda 7-DOF arm + 2-DOF gripper
-    // Map panda_joint* names (used by URDF/MPC) to MuJoCo motor indices
+    // Map panda_joint* names (used by URDF/MPC) to MuJoCo (or real robot) motor indices (TODO: check real robot
+    // indices)
     motorIdMap_["panda_joint1"] = 0;
     motorIdMap_["panda_joint2"] = 1;
     motorIdMap_["panda_joint3"] = 2;
@@ -22,8 +23,14 @@ void FrankaRobotInterface::initMotorMapping() {
     motorIdMap_["panda_joint5"] = 4;
     motorIdMap_["panda_joint6"] = 5;
     motorIdMap_["panda_joint7"] = 6;
+
+    // Finger joints
     motorIdMap_["panda_finger_joint1"] = 7;
     motorIdMap_["panda_finger_joint2"] = 8;
+
+    // Finger command joint names
+    fingerCommandLeft_.joint_name = "panda_finger_joint1";
+    fingerCommandRight_.joint_name = "panda_finger_joint2";
 }
 
 FrankaRobotInterface::FrankaRobotInterface(FrankaRobotInterfaceArgs args) {
@@ -38,6 +45,13 @@ FrankaRobotInterface::FrankaRobotInterface(FrankaRobotInterfaceArgs args) {
     TBAI_LOG_INFO(logger_, "Initializing subscriber - Topic: {}", FRANKA_TOPIC_LOWSTATE);
     lowstate_subscriber = std::make_unique<tbai::QueuedSubscriber<robot_msgs::LowState>>(
         FRANKA_TOPIC_LOWSTATE, [this](const robot_msgs::LowState &msg) { lowStateCallback(msg); }, 1);
+
+    TBAI_LOG_INFO(logger_, "Closing gripper on startup: {}", args.closeGripper);
+    if (args.closeGripper) {
+        closeGripper();
+    } else {
+        TBAI_LOG_WARN(logger_, "Gripper will be 'floppy' and will not be closed on startup");
+    }
 }
 
 FrankaRobotInterface::~FrankaRobotInterface() {
@@ -60,25 +74,31 @@ void FrankaRobotInterface::lowStateCallback(const robot_msgs::LowState &low_stat
         last_time = currentTime;
     }
 
-    // Extract arm joint positions and velocities (7 DOF, skip finger)
-    vector_t jointAngles(FRANKA_NUM_ARM_JOINTS);
-    vector_t jointVelocities(FRANKA_NUM_ARM_JOINTS);
+    // Extract arm joint positions/velocities (7 DOF) and finger joint positions/velocities (2 DOF)
+    const int numReported = static_cast<int>(low_state.motor_states.size());
 
-    int numMotors = std::min(static_cast<int>(low_state.motor_states.size()), FRANKA_NUM_ARM_JOINTS);
-    for (int i = 0; i < numMotors; ++i) {
-        jointAngles[i] = low_state.motor_states[i].q;
-        jointVelocities[i] = low_state.motor_states[i].dq;
-    }
-
-    // Fixed-base state: [7 joint_pos, 7 joint_vel]
+    // Fixed-base state layout:
+    //   [0, 7)    arm positions
+    //   [7, 14)   arm velocities
+    //   [14, 16)  finger positions
+    //   [16, 18)  finger velocities
     State state;
     state.x = vector_t::Zero(FRANKA_STATE_DIM);
 
-    // Joint positions at index 0
-    state.x.segment(0, FRANKA_NUM_ARM_JOINTS) = jointAngles;
+    // Arm state
+    const int numArm = std::min(numReported, FRANKA_NUM_ARM_JOINTS);
+    for (int i = 0; i < numArm; ++i) {
+        state.x[i] = low_state.motor_states[i].q;
+        state.x[FRANKA_NUM_ARM_JOINTS + i] = low_state.motor_states[i].dq;
+    }
 
-    // Joint velocities at index 7
-    state.x.segment(FRANKA_NUM_ARM_JOINTS, FRANKA_NUM_ARM_JOINTS) = jointVelocities;
+    // Finger state
+    const int numFingers = std::min(numReported - FRANKA_NUM_ARM_JOINTS, FRANKA_NUM_FINGER_JOINTS);
+    for (int i = 0; i < numFingers; ++i) {
+        state.x[2 * FRANKA_NUM_ARM_JOINTS + i] = low_state.motor_states[FRANKA_NUM_ARM_JOINTS + i].q;
+        state.x[2 * FRANKA_NUM_ARM_JOINTS + FRANKA_NUM_FINGER_JOINTS + i] =
+            low_state.motor_states[FRANKA_NUM_ARM_JOINTS + i].dq;
+    }
 
     state.timestamp = currentTime;
     state.contactFlags = {};
@@ -106,6 +126,8 @@ void FrankaRobotInterface::publish(std::vector<MotorCommand> commands) {
     robot_msgs::MotorCommands motor_commands;
     motor_commands.commands.resize(FRANKA_NUM_MUJOCO_MOTORS);
 
+    bool leftProvided = false;
+    bool rightProvided = false;
     for (const auto &command : commands) {
         const int motorId = motorIdMap_[command.joint_name];
         motor_commands.commands[motorId].q = command.desired_position;
@@ -113,9 +135,47 @@ void FrankaRobotInterface::publish(std::vector<MotorCommand> commands) {
         motor_commands.commands[motorId].kp = command.kp;
         motor_commands.commands[motorId].kd = command.kd;
         motor_commands.commands[motorId].tau = command.torque_ff;
+
+        if (motorId == motorIdMap_["panda_finger_joint1"]) leftProvided = true;
+        if (motorId == motorIdMap_["panda_finger_joint2"]) rightProvided = true;
+    }
+
+    // Overlay internal finger commands for slots the caller didn't populate.
+    {
+        std::lock_guard<std::mutex> lock(fingerCommandMutex_);
+        auto fill = [&](const MotorCommand &src) {
+            const int motorId = motorIdMap_[src.joint_name];
+            motor_commands.commands[motorId].q = src.desired_position;
+            motor_commands.commands[motorId].dq = src.desired_velocity;
+            motor_commands.commands[motorId].kp = src.kp;
+            motor_commands.commands[motorId].kd = src.kd;
+            motor_commands.commands[motorId].tau = src.torque_ff;
+        };
+        if (!leftProvided) fill(fingerCommandLeft_);
+        if (!rightProvided) fill(fingerCommandRight_);
     }
 
     lowcmd_publisher->publish(motor_commands);
+}
+
+void FrankaRobotInterface::setFingerCommand(scalar_t desired_position, scalar_t desired_velocity, scalar_t kp,
+                                            scalar_t kd, scalar_t torque_ff) {
+    std::lock_guard<std::mutex> lock(fingerCommandMutex_);
+    for (MotorCommand *cmd : {&fingerCommandLeft_, &fingerCommandRight_}) {
+        cmd->desired_position = desired_position;
+        cmd->desired_velocity = desired_velocity;
+        cmd->kp = kp;
+        cmd->kd = kd;
+        cmd->torque_ff = torque_ff;
+    }
+}
+
+void FrankaRobotInterface::openGripper(scalar_t kp, scalar_t kd) {
+    setFingerCommand(FRANKA_GRIPPER_OPEN_POS, 0.0, kp, kd);
+}
+
+void FrankaRobotInterface::closeGripper(scalar_t kp, scalar_t kd) {
+    setFingerCommand(FRANKA_GRIPPER_CLOSED_POS, 0.0, kp, kd);
 }
 
 void FrankaRobotInterface::waitTillInitialized() {

@@ -86,15 +86,24 @@ class VirtualJoystick(tk.Frame):
 class EEJoystickUI:
     """Virtual joystick UI for controlling the Franka end-effector position."""
 
+    # Gripper travel limits (per-finger prismatic joint, meters).
+    GRIPPER_OPEN_POS = 0.04
+    GRIPPER_CLOSED_POS = 0.0
+    GRIPPER_KP = 200.0
+    GRIPPER_KD = 10.0
+
     def __init__(
         self,
         mpc_callback=lambda: None,
         home_callback=lambda: None,
         arm_mpc_controller=None,
+        gripper_callback=lambda is_open: None,
     ):
         self.mpc_callback = mpc_callback
         self.home_callback = home_callback
         self.arm_mpc_controller = arm_mpc_controller
+        self.gripper_callback = gripper_callback
+        self.gripper_is_open = False
 
         # Base EE target position (updated on MPC switch to current EE pos)
         self.base_x = 0.4
@@ -148,6 +157,9 @@ class EEJoystickUI:
         self.btn_mpc = ttk.Button(buttons_frame, text="MPC", command=self.mpc_callback)
         self.btn_mpc.grid(row=0, column=1, padx=10)
 
+        self.btn_gripper = ttk.Button(buttons_frame, text="Open Gripper", command=self.toggle_gripper)
+        self.btn_gripper.grid(row=0, column=2, padx=10)
+
         # Status label
         self.status_var = tk.StringVar(value="EE target: (0.50, 0.00, 0.50)")
         self.status_label = ttk.Label(main_frame, textvariable=self.status_var, font=("Courier", 10))
@@ -193,6 +205,11 @@ class EEJoystickUI:
         self.orientation = quat
         print(f"Snapshotted EE orientation (xyzw): {quat}")
         self.update_loop()
+
+    def toggle_gripper(self):
+        self.gripper_is_open = not self.gripper_is_open
+        self.btn_gripper.config(text="Close Gripper" if self.gripper_is_open else "Open Gripper")
+        self.gripper_callback(self.gripper_is_open)
 
     def on_closing(self):
         self.root.quit()
@@ -292,8 +309,8 @@ def main():
         print("Error: tbai_python was built without ARM MPC support (TBAI_BUILD_MPC=OFF)")
         sys.exit(1)
 
-    robot_args = tbai_python.FrankaRobotInterfaceArgs()
     print("Connecting to Franka...")
+    robot_args = tbai_python.FrankaRobotInterfaceArgs()
     robot = tbai_python.FrankaRobotInterface(robot_args)
 
     print("Waiting for robot to initialize...")
@@ -315,11 +332,20 @@ def main():
     central_controller.add_controller(static_ctrl)
     central_controller.add_controller(arm_mpc_ctrl)
 
+    def on_gripper_toggle(is_open: bool) -> None:
+        if is_open:
+            robot.open_gripper()
+            print("Gripper opened")
+        else:
+            robot.close_gripper()
+            print("Gripper closed")
+
     # Create joystick UI
     ui = EEJoystickUI(
         mpc_callback=controller_sub.mpc_callback,
         home_callback=controller_sub.home_callback,
         arm_mpc_controller=arm_mpc_ctrl,
+        gripper_callback=on_gripper_toggle,
     )
 
     # Snapshot current EE orientation when switching to MPC
