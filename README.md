@@ -15,7 +15,7 @@ This repository contains implementations of core algorithms used in the `tbai` e
 
 #### Install `tbai` (recommended)
 ```bash
-pixi install -e default && pixi shell -e default
+pixi shell -e default
 just build-tbai-sdk && just build-tbai-mujoco
 cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 10
@@ -23,7 +23,7 @@ cmake --build build --parallel 10
 
 #### Install `tbai` python bindings (recommended)
 ```bash
-pixi install -e default && pixi shell -e default
+pixi shell -e default
 just build-tbai-sdk && just build-tbai-mujoco
 pip3 install ./tbai_python --verbose --no-build-isolation
 ```
