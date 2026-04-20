@@ -5,3 +5,4 @@ tbai_mujoco_assets @ git+https://github.com/tbai-lab/tbai_mujoco_assets.git
 tbai_sdk @ git+https://github.com/tbai-lab/tbai_sdk.git
 eclipse-zenoh
 hf
+matplotlib
