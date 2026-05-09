@@ -6,9 +6,14 @@
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
+
+#ifdef TBAI_HAS_WTW
 #include <tbai_wtw/WtwController.hpp>
+#endif
 
 namespace tbai {
+
+#ifdef TBAI_HAS_WTW
 
 class PyWtwController : public tbai::WtwController {
    public:
@@ -32,14 +37,18 @@ class PyWtwController : public tbai::WtwController {
     std::function<void(scalar_t, scalar_t)> postStepCallback_ = nullptr;
 };
 
+#endif  // TBAI_HAS_WTW
+
 }  // namespace tbai
 
 namespace nb = nanobind;
 
 void bind_wtw_controller(nb::module_ &m) {
+#ifdef TBAI_HAS_WTW
     nb::class_<tbai::PyWtwController, tbai::Controller>(m, "WtwController")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &,
                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
              nb::arg("robot_interface"), nb::arg("ref_vel_gen"), nb::arg("post_step_callback") = nullptr);
+#endif
 }

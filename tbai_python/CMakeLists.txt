@@ -41,14 +41,26 @@ nanobind_add_module(_C
 target_link_libraries(_C
     PUBLIC
         tbai_core
-        tbai_bob
-        tbai_np3o
-        tbai_wtw
         tbai_reference
         tbai_static
         tbai_estim
         pinocchio::pinocchio
 )
+
+if(TBAI_BUILD_BOB)
+    target_link_libraries(_C PUBLIC tbai_bob)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_BOB)
+endif()
+
+if(TBAI_BUILD_NP3O)
+    target_link_libraries(_C PUBLIC tbai_np3o)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_NP3O)
+endif()
+
+if(TBAI_BUILD_WTW)
+    target_link_libraries(_C PUBLIC tbai_wtw)
+    target_compile_definitions(_C PRIVATE TBAI_HAS_WTW)
+endif()
 
 # Force libtorch_cpu and libtorch to appear first in the dynamic library load order.
 # Without this, MPC/OCS2 transitive dependencies (hpipm, blasfeo) are loaded before

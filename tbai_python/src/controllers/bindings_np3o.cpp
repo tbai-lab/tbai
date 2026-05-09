@@ -5,10 +5,15 @@
 
 #include <tbai_core/Types.hpp>
 #include <tbai_core/control/RobotInterface.hpp>
-#include <tbai_np3o/Np3oController.hpp>
 #include <tbai_reference/ReferenceVelocityGenerator.hpp>
 
+#ifdef TBAI_HAS_NP3O
+#include <tbai_np3o/Np3oController.hpp>
+#endif
+
 namespace tbai {
+
+#ifdef TBAI_HAS_NP3O
 
 class PyNp3oController : public tbai::Np3oController {
    public:
@@ -30,14 +35,18 @@ class PyNp3oController : public tbai::Np3oController {
     std::function<void(scalar_t, scalar_t)> postStepCallback_ = nullptr;
 };
 
+#endif  // TBAI_HAS_NP3O
+
 }  // namespace tbai
 
 namespace nb = nanobind;
 
 void bind_np3o_controller(nb::module_ &m) {
+#ifdef TBAI_HAS_NP3O
     nb::class_<tbai::PyNp3oController, tbai::Controller>(m, "Np3oController")
         .def(nb::init<const std::shared_ptr<tbai::RobotInterface> &,
                       const std::shared_ptr<tbai::reference::ReferenceVelocityGenerator> &,
                       std::function<void(tbai::scalar_t, tbai::scalar_t)>>(),
              nb::arg("robot_interface"), nb::arg("ref_vel_gen"), nb::arg("post_step_callback") = nullptr);
+#endif
 }
