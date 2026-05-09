@@ -10,6 +10,13 @@
 #   TBAI_TARGET=cpp     install the C++ libraries only
 #   TBAI_TARGET=python  install the Python bindings
 #   curl -LsSf https://raw.githubusercontent.com/tbai-lab/tbai/main/install.sh | TBAI_TARGET=cpp bash
+#
+# Pick which modules to build (comma-separated, case-insensitive). Unset = all defaults.
+#   TBAI_INSTALL_ROBOTS       go2, go2_unitree, go2w, g1, g1_unitree, franka, spot,
+#                             anymal_b, anymal_c, anymal_d   (or "all" / "none")
+#   TBAI_INSTALL_CONTROLLERS  bob, wtw, np3o, muse, ocs2, mpc, dtc, joe   (or "all" / "none")
+# Example:
+#   TBAI_INSTALL_ROBOTS=go2 TBAI_INSTALL_CONTROLLERS=bob,np3o ./install.sh
 
 set -euo pipefail
 rm -rf /tmp/tbai_* 2>/dev/null || true
@@ -32,6 +39,60 @@ err() { printf '\033[1;31m[tbai]\033[0m %s\n' "$*" >&2; }
 need() {
     command -v "$1" >/dev/null 2>&1 || { err "missing required tool: '$1'. Make sure it is in your PATH."; exit 1; }
 }
+
+ALL_ROBOTS=(GO2 GO2_UNITREE GO2W G1 G1_UNITREE FRANKA SPOT ANYMAL_B ANYMAL_C ANYMAL_D)
+ALL_CONTROLLERS=(BOB WTW NP3O MUSE OCS2 MPC DTC JOE)
+
+declare -a MODULE_FLAGS=()
+
+# pick_modules <label> <selection-csv> <cmake_prefix> <valid-name>...
+# Empty selection -> CMakeLists defaults (no flags emitted).
+# Otherwise emit -D<prefix><NAME>=ON for chosen names and =OFF for the rest.
+pick_modules() {
+    local label="$1" selection="$2" prefix="$3"
+    shift 3
+    local -a all=("$@")
+    [[ -z "$selection" ]] && return 0
+
+    selection="${selection,,}"
+    selection="${selection// /,}"
+
+    local -a chosen=()
+    if [[ "$selection" == "all" ]]; then
+        chosen=("${all[@]}")
+    elif [[ "$selection" == "none" ]]; then
+        chosen=()
+    else
+        local -a raw_arr=()
+        IFS=',' read -ra raw_arr <<< "$selection"
+        local raw up ok v
+        for raw in "${raw_arr[@]}"; do
+            [[ -z "$raw" ]] && continue
+            up="${raw^^}"
+            ok=0
+            for v in "${all[@]}"; do [[ "$v" == "$up" ]] && ok=1; done
+            if [[ $ok -eq 0 ]]; then
+                local lower="${all[*]}"; lower="${lower,,}"
+                err "unknown $label: '$raw'. Valid: $lower"
+                exit 1
+            fi
+            chosen+=("$up")
+        done
+    fi
+
+    local pretty=""
+    for v in "${chosen[@]}"; do pretty+="${v,,} "; done
+    say "$label: ${pretty:-<none>}"
+
+    for v in "${all[@]}"; do
+        local on=OFF c
+        for c in "${chosen[@]}"; do [[ "$v" == "$c" ]] && on=ON; done
+        MODULE_FLAGS+=("-D${prefix}${v}=${on}")
+    done
+}
+
+pick_modules robots      "${TBAI_INSTALL_ROBOTS:-}"      "TBAI_BUILD_DEPLOY_" "${ALL_ROBOTS[@]}"
+pick_modules controllers "${TBAI_INSTALL_CONTROLLERS:-}" "TBAI_BUILD_"        "${ALL_CONTROLLERS[@]}"
 
 say "checking for required tools (target: $TARGET)"
 need git
@@ -65,7 +126,8 @@ just build-tbai-mujoco
 
 if [[ "$TARGET" == "python" ]]; then
     say "building tbai python bindings (parallel jobs: $JOBS)"
-    pip install ./tbai_python --verbose --no-build-isolation
+    CMAKE_ARGS="${CMAKE_ARGS:-} ${MODULE_FLAGS[*]}" \
+        pip install ./tbai_python --verbose --no-build-isolation
 fi
 
 if [[ "$TARGET" == "cpp" ]]; then
@@ -74,7 +136,7 @@ if [[ "$TARGET" == "cpp" ]]; then
         exit 1
     fi
     say "building tbai and installing to $CONDA_PREFIX (parallel jobs: $JOBS)"
-    cmake -Bbuild -DCMAKE_BUILD_TYPE=Release
+    cmake -Bbuild -DCMAKE_BUILD_TYPE=Release "${MODULE_FLAGS[@]}"
     cmake --build build --parallel "$JOBS" --target install
 fi
 
