@@ -14,7 +14,7 @@
 # Pick which modules to build (comma-separated, case-insensitive). Unset = all defaults.
 #   TBAI_INSTALL_ROBOTS       go2, go2_unitree, go2w, g1, g1_unitree, franka, spot,
 #                             anymal_b, anymal_c, anymal_d   (or "all" / "none")
-#   TBAI_INSTALL_CONTROLLERS  bob, wtw, np3o, muse, ocs2, mpc, dtc, joe   (or "all" / "none")
+#   TBAI_INSTALL_CONTROLLERS  bob, wtw, np3o, mpc, dtc, joe   (or "all" / "none")
 # Example:
 #   TBAI_INSTALL_ROBOTS=go2 TBAI_INSTALL_CONTROLLERS=bob,np3o ./install.sh
 
@@ -41,7 +41,9 @@ need() {
 }
 
 ALL_ROBOTS=(GO2 GO2_UNITREE GO2W G1 G1_UNITREE FRANKA SPOT ANYMAL_B ANYMAL_C ANYMAL_D)
-ALL_CONTROLLERS=(BOB WTW NP3O MUSE OCS2 MPC DTC JOE)
+ALL_CONTROLLERS=(BOB WTW NP3O MPC DTC JOE)
+# Controllers that pull in the OCS2 framework; if any are enabled, OCS2 must be too.
+OCS2_DEPENDENTS=(MPC DTC JOE)
 
 declare -a MODULE_FLAGS=()
 
@@ -93,6 +95,21 @@ pick_modules() {
 
 pick_modules robots      "${TBAI_INSTALL_ROBOTS:-}"      "TBAI_BUILD_DEPLOY_" "${ALL_ROBOTS[@]}"
 pick_modules controllers "${TBAI_INSTALL_CONTROLLERS:-}" "TBAI_BUILD_"        "${ALL_CONTROLLERS[@]}"
+
+# OCS2 isn't a controller — it's a framework that mpc/dtc/joe link against. If
+# the user picked any of them, force OCS2 on; otherwise leave it off so the
+# user's "only build what I need" intent stands. When no controller selection
+# was made (defaults), don't touch OCS2 — CMakeLists' default (ON) applies.
+if [[ -n "${TBAI_INSTALL_CONTROLLERS:-}" ]]; then
+    ocs2_state=OFF
+    for f in "${MODULE_FLAGS[@]}"; do
+        for dep in "${OCS2_DEPENDENTS[@]}"; do
+            [[ "$f" == "-DTBAI_BUILD_${dep}=ON" ]] && ocs2_state=ON
+        done
+    done
+    MODULE_FLAGS+=("-DTBAI_BUILD_OCS2=${ocs2_state}")
+    say "ocs2 framework: ${ocs2_state,,} (auto)"
+fi
 
 say "checking for required tools (target: $TARGET)"
 need git

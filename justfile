@@ -46,7 +46,6 @@ build-tests:
         -DTBAI_BUILD_NP3O=ON \
         -DTBAI_BUILD_WTW=ON \
         -DTBAI_BUILD_BOB=OFF \
-        -DTBAI_BUILD_MUSE=OFF \
         -DTBAI_BUILD_MPC=OFF \
         -DTBAI_BUILD_DTC=OFF \
         -DTBAI_BUILD_JOE=OFF \
