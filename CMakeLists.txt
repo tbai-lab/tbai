@@ -28,6 +28,7 @@ option(TBAI_BUILD_JOE "Build the joe" ON)
 option(TBAI_BUILD_TESTS "Build the tests" OFF)
 option(TBAI_BUILD_PYTHON "Build the Python bindings" OFF)
 option(TBAI_BUILD_DOCS "Build the documentation" OFF)
+option(TBAI_BUILD_VO "Build visual-odometry support in tbai_estim (OpenCV + ONNX SuperPoint)" OFF)
 
 project(tbai VERSION 2.0.0)
 
@@ -63,7 +64,7 @@ if(TBAI_BUILD_DEPLOY_GO2_UNITREE OR TBAI_BUILD_DEPLOY_G1_UNITREE)
   include(cmake/fetch_unitree_sdk2.cmake)
 endif()
 
-if(TBAI_BUILD_DEPLOY_G1)
+if(TBAI_BUILD_DEPLOY_G1 OR TBAI_BUILD_VO)
   set(TBAI_ONNXRUNTIME_VERSION "1.22.0")
   include(cmake/fetch_onnxruntime.cmake)
 endif()

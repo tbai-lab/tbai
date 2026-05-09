@@ -35,6 +35,14 @@ class Go2RobotInterface : public RobotInterface {
     void waitTillInitialized() override;
     State getLatestState() override;
 
+    // Forward visual-odometry landmark observations (3D points in the body
+    // frame, with persistent integer IDs) to the internal InEKFEstimator.
+    // Safe to call from any thread; protected by an internal mutex.
+    // When `pruneStale` is true, drops any tracked landmark not in this
+    // observation set -- essential for real-time use, see the InEKFEstimator
+    // declaration for why.
+    void correctVisualLandmarks(const ::inekf::vectorLandmarks &landmarks, bool pruneStale = true);
+
    private:
     void lowStateCallback(const robot_msgs::LowState &message);
 
@@ -48,6 +56,19 @@ class Go2RobotInterface : public RobotInterface {
     bool initialized_ = false;
 
     std::unique_ptr<tbai::inekf::InEKFEstimator> estimator_;
+    // Guards every call into estimator_->*, since the IMU-driven update path
+    // (lowStateCallback) and the visual-landmark correction path
+    // (correctVisualLandmarks) run on different threads.
+    std::mutex estimatorMutex_;
+    // Cached estimator readouts. Populated whenever the IMU callback
+    // successfully takes estimatorMutex_, and reused on samples where the
+    // try_lock fails (the VO worker is holding the mutex). This keeps the
+    // published State sane even when the estimator update is skipped.
+    vector3_t cachedBasePosition_ = vector3_t::Zero();
+    vector3_t cachedBaseVelocity_ = vector3_t::Zero();
+    vector3_t cachedGyroBias_ = vector3_t::Zero();
+    quaternion_t cachedBaseQuaternion_ = quaternion_t::Identity();
+    std::atomic<size_t> estimatorBusySkips_{0};
 
     scalar_t lastYaw_ = 0.0;
     std::mutex latestStateMutex_;

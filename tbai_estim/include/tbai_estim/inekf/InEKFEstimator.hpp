@@ -19,6 +19,20 @@ class InEKFEstimator {
                 const vector_t &jointVelocities, const vector3_t &linearAccBase, const vector3_t &angularVelBase,
                 std::vector<bool> contacts, bool rectifyOrientation = true, bool enablePositionEstimation = true);
 
+    // Apply a vision-derived landmark correction to the filter. Each landmark
+    // carries an integer ID; landmarks with IDs already tracked by the filter
+    // produce a measurement update, while new IDs are added to the state. The
+    // landmark `position` is the 3D position of the landmark in the robot
+    // (body) frame, with `covariance` expressed in the same frame. See
+    // ::inekf::InEKF::CorrectLandmarks for the full update semantics.
+    //
+    // When `pruneStale` is true, any tracked landmark NOT in the current
+    // observation set is removed from the filter state. This keeps the state
+    // matrix bounded and is essential for real-time use -- without it, every
+    // unmatched SuperPoint keypoint adds 3 rows/cols to the covariance and the
+    // O(N^2) update cost grows unboundedly across frames.
+    void correctVisualLandmarks(const ::inekf::vectorLandmarks &landmarks, bool pruneStale = true);
+
     void computeLinPosVel(scalar_t currentTime, scalar_t dt, Eigen::Vector3d &acc, Eigen::Matrix3d &w_R_b,
                           Eigen::Vector3d &v_b);
 

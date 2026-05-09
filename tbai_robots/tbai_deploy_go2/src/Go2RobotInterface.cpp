@@ -176,42 +176,88 @@ void Go2RobotInterface::lowStateCallback(const robot_msgs::LowState &low_state) 
     last_time3 = currentTime;
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    estimator_->update(currentTime, dt, baseOrientation, jointAngles, jointVelocities, baseAcc, baseAngVel,
-                       contactFlags, rectifyOrientation_, enable_);
+
+    // Take the estimator mutex non-blockingly. If the VO worker is currently
+    // holding it for a CorrectLandmarks call (which can take >100ms with many
+    // landmarks), we skip the estimator step for this IMU sample and reuse the
+    // cached estimator readouts from the last successful tick. The next call
+    // gets a longer dt covering the skipped interval, which InEKF::Propagate
+    // integrates correctly.
+    quaternion_t baseQuaternion;
+    bool gotLock = false;
+    {
+        std::unique_lock<std::mutex> lk(estimatorMutex_, std::try_to_lock);
+        if (lk.owns_lock()) {
+            estimator_->update(currentTime, dt, baseOrientation, jointAngles, jointVelocities, baseAcc, baseAngVel,
+                               contactFlags, rectifyOrientation_, enable_);
+            baseQuaternion =
+                rectifyOrientation_ ? quaternion_t(baseOrientation) : quaternion_t(estimator_->getBaseOrientation());
+            // Cache estimator readouts so we can serve the publish path even
+            // when subsequent IMU samples lose the lock race with VO.
+            cachedBasePosition_ = estimator_->getBasePosition();
+            cachedBaseVelocity_ = estimator_->getBaseVelocity();
+            cachedGyroBias_ = estimator_->getGyroscopeBias();
+            gotLock = true;
+            // Only advance last_time3 on a successful step so dt accumulates
+            // across skipped samples instead of being lost.
+            last_time3 = currentTime;
+        } else {
+            estimatorBusySkips_++;
+            // dt would have been wrong since we just advanced last_time3 above
+            // -- undo that. (Above we only set last_time3 inside the `if`.)
+            // Reuse the cached orientation: rectifyOrientation_ path doesn't
+            // touch the estimator, so we can still build a fresh quaternion
+            // from the IMU sample.
+            baseQuaternion = rectifyOrientation_ ? quaternion_t(baseOrientation) : cachedBaseQuaternion_;
+        }
+    }
+    if (gotLock) {
+        cachedBaseQuaternion_ = baseQuaternion;
+    }
 
     auto t2 = std::chrono::high_resolution_clock::now();
-    TBAI_LOG_INFO_THROTTLE(logger_, 8.0, "State estimator update: {} us",
-                           std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
+    TBAI_LOG_INFO_THROTTLE(logger_, 8.0, "State estimator update: {} us  (busy_skips={})",
+                           std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count(),
+                           estimatorBusySkips_.load());
 
     // Get the latest state from the estimator
     State state;
     state.x = vector_t::Zero(36);
 
     // Base orientation - Euler zyx as {roll, pitch, yaw}
-    const quaternion_t baseQuaternion =
-        rectifyOrientation_ ? quaternion_t(baseOrientation) : quaternion_t(estimator_->getBaseOrientation());
     const tbai::matrix3_t R_world_base = baseQuaternion.toRotationMatrix();
     const tbai::matrix3_t R_base_world = R_world_base.transpose();
     const tbai::vector_t rpy = tbai::mat2oc2rpy(R_world_base, lastYaw_);
     lastYaw_ = rpy[2];
 
-    // Base orientation - Euler zyx as {roll, pitch, yaw}
     state.x.segment<3>(0) = rpy;
 
-    // Base position and linear velocity
+    // Base position and linear velocity (always served from cache; updated
+    // whenever the estimator lock could be taken above).
     if (useGroundTruthState_ && low_state.has_position && low_state.has_velocity) {
         vector3_t gtPos(low_state.position[0], low_state.position[1], low_state.position[2]);
         vector3_t gtVel(low_state.velocity[0], low_state.velocity[1], low_state.velocity[2]);
         state.x.segment<3>(3) = gtPos;
         state.x.segment<3>(9) = R_base_world * gtVel;
     } else {
-        state.x.segment<3>(3) = estimator_->getBasePosition();
-        state.x.segment<3>(9) = R_base_world * estimator_->getBaseVelocity();
+        state.x.segment<3>(3) = cachedBasePosition_;
+        state.x.segment<3>(9) = R_base_world * cachedBaseVelocity_;
+    }
+
+    // GT-vs-estimated position log. Independent of useGroundTruthState_; we
+    // always print both when MuJoCo provides ground truth.
+    if (low_state.has_position) {
+        vector3_t gtPos(low_state.position[0], low_state.position[1], low_state.position[2]);
+        const vector3_t &estPos = cachedBasePosition_;
+        TBAI_LOG_INFO_THROTTLE(logger_, 1.0,
+                               "Pose  gt=({:+.3f}, {:+.3f}, {:+.3f})  est=({:+.3f}, {:+.3f}, {:+.3f})  err={:.3f} m",
+                               gtPos.x(), gtPos.y(), gtPos.z(), estPos.x(), estPos.y(), estPos.z(),
+                               (gtPos - estPos).norm());
     }
 
     // Base angular velocity
     if (removeGyroscopeBias_) {
-        state.x.segment<3>(6) = baseAngVel - estimator_->getGyroscopeBias();
+        state.x.segment<3>(6) = baseAngVel - cachedGyroBias_;
     } else {
         state.x.segment<3>(6) = baseAngVel;
     }
@@ -291,6 +337,37 @@ void Go2RobotInterface::waitTillInitialized() {
 State Go2RobotInterface::getLatestState() {
     std::lock_guard<std::mutex> lock(latestStateMutex_);
     return state_;
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+void Go2RobotInterface::correctVisualLandmarks(const ::inekf::vectorLandmarks &landmarks, bool pruneStale) {
+    // Process in small chunks so we release the estimator mutex between
+    // batches. The IMU callback uses try_lock and skips when blocked, so
+    // shorter critical sections directly reduce the number of skipped IMU
+    // samples (and therefore estimator drift). For independent landmark
+    // measurements, sequential chunked Kalman updates are mathematically
+    // equivalent to a batch update.
+    constexpr size_t CHUNK = 8;
+    for (size_t i = 0; i < landmarks.size(); i += CHUNK) {
+        size_t end = std::min(i + CHUNK, landmarks.size());
+        ::inekf::vectorLandmarks slice(landmarks.begin() + static_cast<std::ptrdiff_t>(i),
+                                       landmarks.begin() + static_cast<std::ptrdiff_t>(end));
+        std::lock_guard<std::mutex> lk(estimatorMutex_);
+        estimator_->inekf_.CorrectLandmarks(slice);
+        // Implicit unlock at scope exit -- gives the IMU callback a chance to
+        // grab the mutex before we start the next chunk.
+    }
+    if (pruneStale) {
+        std::vector<int> ids;
+        ids.reserve(landmarks.size());
+        for (const auto &lm : landmarks) {
+            ids.push_back(lm.id);
+        }
+        std::lock_guard<std::mutex> lk(estimatorMutex_);
+        estimator_->inekf_.KeepLandmarks(ids);
+    }
 }
 
 }  // namespace tbai

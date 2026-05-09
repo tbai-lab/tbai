@@ -1,6 +1,18 @@
 # tbai demos
 
 sim_startup_time := "1.5"
+superpoint_onnx_path := env_var_or_default("TBAI_SUPERPOINT_ONNX", env_var("HOME") / ".tbai" / "superpoint.onnx")
+# Preload conda's libprotobuf so that libtorch (used by Bob) and libonnxruntime
+# (used by SuperPoint) end up resolving descriptor-pool symbols against a single
+# protobuf instance. Without this, both libs ship their own bundled protobuf,
+# and concurrent first-use of descriptor registration aborts the process with
+# "File already exists in database".
+# Path to the libprotobuf that tbai_python's _C.so was linked against. ldd
+# shows it picks the python pixi-env copy regardless of which env's `python3`
+# launches the script (the rpath inside _C.so wins). Override with
+# TBAI_LIBPROTOBUF_PRELOAD if you have a different layout.
+libprotobuf_preload := env_var_or_default("TBAI_LIBPROTOBUF_PRELOAD",
+    justfile_directory() / ".." / ".pixi" / "envs" / "python" / "lib" / "libprotobuf.so.29.3.0")
 
 # Show available commands
 [group('utils')]
@@ -21,14 +33,28 @@ g1_mujoco_demo:
     sleep {{sim_startup_time}}
     python3 ./tbai_g1_mujoco/deploy_g1.py
 
-# Run Go2 MuJoCo demo
+# Download the SuperPoint ONNX model used by visual odometry
+[group('utils')]
+fetch_superpoint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -f "{{superpoint_onnx_path}}" ]; then
+        echo "SuperPoint ONNX already at {{superpoint_onnx_path}}"
+    else
+        python3 ../tbai_estim/scripts/download_superpoint_onnx.py --output "{{superpoint_onnx_path}}"
+    fi
+
+# Run Go2 MuJoCo demo (with visual-odometry landmark feedback into the InEKF)
 [group('examples')]
-go2_rl_mujoco_demo:
+go2_rl_mujoco_demo: fetch_superpoint
     #!/usr/bin/env bash
     trap 'kill 0' EXIT
     XDG_SESSION_TYPE=x11 tbai_mujoco $(python3 -m tbai_mujoco_descriptions.print_config_path go2) &
     sleep {{sim_startup_time}}
-    python3 ./tbai_go2_mujoco/deploy_go2.py
+    LD_PRELOAD="{{libprotobuf_preload}}${LD_PRELOAD:+:$LD_PRELOAD}" \
+    python3 ./tbai_go2_mujoco/deploy_go2.py \
+        --enable-vo \
+        --superpoint-onnx "{{superpoint_onnx_path}}"
 
 # Run Go2 MPC MuJoCo demo
 [group('examples')]

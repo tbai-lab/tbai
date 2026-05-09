@@ -129,6 +129,29 @@ void InEKFEstimator::update(scalar_t currentTime, scalar_t dt, const vector4_t &
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
 /*********************************************************************************************************************/
+void InEKFEstimator::correctVisualLandmarks(const ::inekf::vectorLandmarks &landmarks, bool pruneStale) {
+    if (landmarks.empty()) {
+        if (pruneStale) {
+            // No observations this frame -> drop all tracked visual landmarks
+            // so we don't carry stale ones forever.
+            inekf_.KeepLandmarks({});
+        }
+        return;
+    }
+    inekf_.CorrectLandmarks(landmarks);
+    if (pruneStale) {
+        std::vector<int> observedIds;
+        observedIds.reserve(landmarks.size());
+        for (const auto &lm : landmarks) {
+            observedIds.push_back(lm.id);
+        }
+        inekf_.KeepLandmarks(observedIds);
+    }
+}
+
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
+/*********************************************************************************************************************/
 void InEKFEstimator::setupPinocchioModel(const std::string &urdf) {
     if (urdf.empty()) {
         auto urdfPath = tbai::getEnvAs<std::string>("TBAI_ROBOT_DESCRIPTION_PATH");

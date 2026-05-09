@@ -214,6 +214,24 @@ class Args:
     video: bool = False
     pointcloud: bool = False
     pointcloud_topic: str = "rt/pointcloud"
+    # Visual odometry: feed SuperPoint-derived landmarks into the InEKF.
+    enable_vo: bool = False
+    superpoint_onnx: str = ""  # path to superpoint.onnx (download via tbai_estim/scripts/download_superpoint_onnx.py)
+    image_topic: str = "rt/camera/image"
+    depth_topic: str = "rt/camera/depth"  # ImgFrame, encoding 32FC1, published by tbai_mujoco's DepthImagePublisher
+    vo_max_keypoints: int = 64
+    vo_input_width: int = 320
+    vo_input_height: int = 240
+    vo_rate_hz: float = 3.0
+    vo_intra_op_threads: int = 2  # ORT intra-op parallelism for SuperPoint
+    show_vo: bool = False  # display the keypoint overlay in a cv2 window
+    # Pinhole intrinsics for the depth camera, used to back-project (u, v, depth)
+    # to (X, Y, Z) in the camera frame. Defaults match a 640x480 MuJoCo camera
+    # with the default 45 deg vertical FOV (fy = 240 / tan(22.5 deg) ~= 579.4).
+    depth_fx: float = 579.4
+    depth_fy: float = 579.4
+    depth_cx: float = 320.0
+    depth_cy: float = 240.0
 
 
 class Go2ChangeControllerSubscriber(ChangeControllerSubscriber):
@@ -327,6 +345,282 @@ class RerunLoggerNode:
         )
 
 
+class VisualOdometryWorker:
+    """Background thread that pumps (rgb image, depth image) -> SuperPoint -> tracker -> robot.
+
+    Subscribes to two ImgFrame topics via tbai_sdk: an RGB-style image and a
+    float32 depth image (encoding "32FC1") published by tbai_mujoco's
+    DepthImagePublisher. On each tick takes the most recent of each, back-
+    projects the depth into a per-pixel (X, Y, Z) buffer, runs SuperPoint +
+    tracker, and forwards landmarks to the robot's internal InEKF via
+    correct_visual_landmarks.
+    """
+
+    def __init__(self, robot, onnx_path, image_topic, depth_topic, *, max_keypoints, input_width, input_height,
+                 rate_hz, fx, fy, cx, cy, intra_op_threads=2, show=False):
+        import threading
+        import numpy as np
+        from tbai_sdk.subscriber import PollingSubscriber
+        from tbai_sdk.messages.robot_msgs import ImgFrame
+
+        if not tbai_python.HAS_VO:
+            raise RuntimeError("tbai_python was built without TBAI_BUILD_VO=ON; visual odometry unavailable.")
+        if not hasattr(robot, "correct_visual_landmarks"):
+            raise RuntimeError(
+                "Robot interface has no correct_visual_landmarks(...) method; rebuild tbai_python with VO enabled."
+            )
+
+        self._robot = robot
+        self._image_topic = image_topic
+        self._depth_topic = depth_topic
+        self._image_sub = PollingSubscriber(ImgFrame, image_topic)
+        self._depth_sub = PollingSubscriber(ImgFrame, depth_topic)
+        print(f"VO: subscribed to image={image_topic}  depth={depth_topic}")
+
+        opts = tbai_python.vision.SuperPointOptions()
+        opts.input_width = input_width
+        opts.input_height = input_height
+        opts.max_keypoints = max_keypoints
+        opts.intra_op_threads = intra_op_threads
+        self._extractor = tbai_python.vision.SuperPointExtractor(onnx_path, opts)
+        self._tracker = tbai_python.vision.VisualLandmarkTracker()
+        print(f"VO: SuperPoint loaded from {onnx_path} ({input_width}x{input_height}, k<={max_keypoints})")
+
+        # Pinhole intrinsics for back-projection
+        self._fx, self._fy, self._cx, self._cy = float(fx), float(fy), float(cx), float(cy)
+        # Pre-build a (H, W) grid of (u-cx)/fx and (v-cy)/fy lazily on first depth frame
+        # (we only know the resolution from the first message).
+        self._u_norm = None
+        self._v_norm = None
+        self._cloud_buf = None  # reusable (H, W, 3) float32 buffer
+
+        self._show = show
+        self._dt = 1.0 / max(rate_hz, 0.1)
+        self._stop_event = threading.Event()
+        self._thread = threading.Thread(target=self._run, name="vo-worker", daemon=True)
+        # Counters
+        self._image_received = 0
+        self._depth_received = 0
+        self._processed = 0
+        self._fed = 0
+        # Skip-reason counters (so "processed=0" tells you WHY)
+        self._skip_no_image = 0
+        self._skip_no_depth = 0
+        self._skip_decode = 0
+        self._skip_depth_encoding = 0
+        self._skip_dim_mismatch = 0
+        self._skip_no_keypoints = 0
+        self._skip_no_landmarks = 0
+        self._last_img_dims = None
+        self._last_depth_dims = None
+        self._depth_stats_logged = False
+        self._latest_overlay = None  # for visualization, set by worker thread
+        # Stage timings (sum of microseconds, count) -- printed alongside the
+        # diagnostic line so we can see where the budget is going.
+        self._t_decode = (0, 0)
+        self._t_backproj = (0, 0)
+        self._t_detect = (0, 0)
+        self._t_track = (0, 0)
+        self._t_correct = (0, 0)
+
+    def start(self):
+        self._thread.start()
+        if self._show:
+            print("VO: --show-vo enabled (cv2 window updates from main thread on poll)")
+
+    def stop(self):
+        self._stop_event.set()
+        self._thread.join(timeout=2.0)
+        if self._show:
+            try:
+                import cv2
+                cv2.destroyAllWindows()
+            except Exception:
+                pass
+        self._print_diagnostics(prefix="VO: stopped.")
+
+    # Called from main thread to push a cv2.imshow update (cv2 GUI must be on main thread on macOS;
+    # on Linux it's lenient, but we keep the worker free of GUI calls just in case).
+    def pump_visualization(self):
+        if not self._show:
+            return
+        overlay = self._latest_overlay
+        if overlay is None:
+            return
+        try:
+            import cv2
+            cv2.imshow("VO: SuperPoint keypoints (green=tracked, red=new)", overlay)
+            cv2.waitKey(1)
+        except Exception as e:
+            print(f"VO: cv2 imshow failed: {e}")
+            self._show = False
+
+    def _decode_image(self, frame):
+        import numpy as np
+        enc = frame.encoding
+        if enc in ("bgr8", "rgb8"):
+            arr = np.frombuffer(frame.data, dtype=np.uint8).reshape(frame.height, frame.width, 3)
+            # SuperPointExtractor expects BGR for 3-channel; flip if it's RGB.
+            return arr if enc == "bgr8" else arr[:, :, ::-1].copy()
+        if enc == "mono8":
+            return np.frombuffer(frame.data, dtype=np.uint8).reshape(frame.height, frame.width)
+        if enc == "rgba8":
+            arr = np.frombuffer(frame.data, dtype=np.uint8).reshape(frame.height, frame.width, 4)
+            return arr[:, :, [2, 1, 0]].copy()  # to BGR
+        return None
+
+    def _backproject_depth(self, depth_frame):
+        """Back-project a 32FC1 depth ImgFrame into a (H, W, 3) float32 (X, Y, Z) buffer.
+
+        Returns (cloud_buf_view, height, width) on success or None on failure.
+        Reuses self._cloud_buf to avoid per-frame allocation.
+        """
+        import numpy as np
+        if depth_frame.encoding != "32FC1":
+            self._skip_depth_encoding += 1
+            return None
+        H, W = int(depth_frame.height), int(depth_frame.width)
+        depth = np.frombuffer(depth_frame.data, dtype=np.float32).reshape(H, W)
+
+        if self._cloud_buf is None or self._cloud_buf.shape != (H, W, 3):
+            us = np.arange(W, dtype=np.float32)
+            vs = np.arange(H, dtype=np.float32)
+            self._u_norm = ((us - self._cx) / self._fx)[None, :]  # (1, W)
+            self._v_norm = ((vs - self._cy) / self._fy)[:, None]  # (H, 1)
+            self._cloud_buf = np.empty((H, W, 3), dtype=np.float32)
+            print(f"VO: depth back-projection grid built: {W}x{H} fx={self._fx:.1f} fy={self._fy:.1f} "
+                  f"cx={self._cx:.1f} cy={self._cy:.1f}")
+
+        # X = (u - cx) * Z / fx; Y = (v - cy) * Z / fy; Z stays. NaNs propagate.
+        np.multiply(depth, self._u_norm, out=self._cloud_buf[:, :, 0])
+        np.multiply(depth, self._v_norm, out=self._cloud_buf[:, :, 1])
+        self._cloud_buf[:, :, 2] = depth
+
+        if not self._depth_stats_logged:
+            valid = np.isfinite(depth)
+            n_valid = int(valid.sum())
+            if n_valid > 0:
+                z = depth[valid]
+                print(f"VO: first depth frame: shape={depth.shape} valid={n_valid}/{H*W} "
+                      f"z=[{float(z.min()):.3f}, {float(z.max()):.3f}] median={float(np.median(z)):.3f}")
+                self._depth_stats_logged = True
+
+        return self._cloud_buf, H, W
+
+    def _print_diagnostics(self, prefix="VO:"):
+        def avg_us(stage):
+            total, n = stage
+            return f"{total // n}us" if n > 0 else "-"
+
+        msg = (
+            f"{prefix} img_rx={self._image_received} depth_rx={self._depth_received} "
+            f"processed={self._processed} fed={self._fed} | "
+            f"skips: no_img={self._skip_no_image} no_depth={self._skip_no_depth} "
+            f"decode={self._skip_decode} depth_enc={self._skip_depth_encoding} "
+            f"dim_mismatch={self._skip_dim_mismatch} "
+            f"no_kps={self._skip_no_keypoints} no_lms={self._skip_no_landmarks} | "
+            f"avg(us): decode={avg_us(self._t_decode)} backproj={avg_us(self._t_backproj)} "
+            f"detect={avg_us(self._t_detect)} track={avg_us(self._t_track)} "
+            f"correct={avg_us(self._t_correct)}"
+        )
+        if self._last_img_dims is not None or self._last_depth_dims is not None:
+            msg += f" | last img={self._last_img_dims} depth={self._last_depth_dims}"
+        print(msg)
+
+    def _build_overlay(self, image, kps, ids_for_kps, prev_ids):
+        import numpy as np
+        import cv2
+        bgr = image if image.ndim == 3 else cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        bgr = bgr.copy()
+        prev_set = set(prev_ids) if prev_ids else set()
+        for (x, y), kpid in zip(kps, ids_for_kps):
+            color = (0, 220, 0) if kpid in prev_set else (0, 0, 255)  # green=tracked, red=new
+            cv2.circle(bgr, (int(round(x)), int(round(y))), 3, color, 1, lineType=cv2.LINE_AA)
+        cv2.putText(bgr, f"kps={len(kps)} tracked={sum(1 for i in ids_for_kps if i in prev_set)}",
+                    (8, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1, cv2.LINE_AA)
+        return bgr
+
+    def _run(self):
+        import time
+        import numpy as np
+        last_diag = time.monotonic()
+        prev_landmark_ids = []
+        while not self._stop_event.is_set():
+            start = time.monotonic()
+            frame = self._image_sub.take()
+            depth = self._depth_sub.take()
+            if frame is not None:
+                self._image_received += 1
+                self._last_img_dims = (frame.width, frame.height, frame.encoding)
+            else:
+                self._skip_no_image += 1
+            if depth is not None:
+                self._depth_received += 1
+                self._last_depth_dims = (depth.width, depth.height, depth.encoding)
+            else:
+                self._skip_no_depth += 1
+
+            if frame is not None and depth is not None:
+                t = time.monotonic()
+                image = self._decode_image(frame)
+                self._t_decode = (self._t_decode[0] + int((time.monotonic() - t) * 1e6), self._t_decode[1] + 1)
+                if image is None:
+                    self._skip_decode += 1
+                else:
+                    t = time.monotonic()
+                    bp = self._backproject_depth(depth)
+                    self._t_backproj = (self._t_backproj[0] + int((time.monotonic() - t) * 1e6), self._t_backproj[1] + 1)
+                    if bp is not None:
+                        cloud_buf, dh, dw = bp
+                        if dh != frame.height or dw != frame.width:
+                            self._skip_dim_mismatch += 1
+                        else:
+                            try:
+                                cloud_bytes = cloud_buf.view(np.uint8).reshape(-1)
+                                indexer = tbai_python.vision.PointCloudIndexer(
+                                    cloud_bytes, dh, dw, dw * 3 * 4, 3 * 4, 0, 8.0,
+                                )
+                                t = time.monotonic()
+                                kps, scores, desc = self._extractor.detect(image)
+                                self._t_detect = (self._t_detect[0] + int((time.monotonic() - t) * 1e6),
+                                                  self._t_detect[1] + 1)
+                                if kps.shape[0] == 0:
+                                    self._skip_no_keypoints += 1
+                                else:
+                                    t = time.monotonic()
+                                    landmarks = self._tracker.process_frame(kps, desc, indexer)
+                                    self._t_track = (self._t_track[0] + int((time.monotonic() - t) * 1e6),
+                                                     self._t_track[1] + 1)
+                                    if landmarks:
+                                        ids = [lm.id for lm in landmarks]
+                                        t = time.monotonic()
+                                        self._robot.correct_visual_landmarks(landmarks)
+                                        self._t_correct = (self._t_correct[0] + int((time.monotonic() - t) * 1e6),
+                                                           self._t_correct[1] + 1)
+                                        self._fed += 1
+                                        if self._show:
+                                            kp_ids = ids if len(ids) == kps.shape[0] else list(range(kps.shape[0]))
+                                            self._latest_overlay = self._build_overlay(
+                                                image, kps, kp_ids, prev_landmark_ids
+                                            )
+                                        prev_landmark_ids = ids
+                                    else:
+                                        self._skip_no_landmarks += 1
+                                self._processed += 1
+                            except Exception as e:
+                                print(f"VO: pipeline error: {e}")
+
+            now = time.monotonic()
+            if now - last_diag >= 2.0:
+                self._print_diagnostics()
+                last_diag = now
+
+            elapsed = now - start
+            sleep = self._dt - elapsed
+            if sleep > 0:
+                self._stop_event.wait(sleep)
+
+
 def main():
     args = tyro.cli(Args)
 
@@ -382,11 +676,50 @@ def main():
 
     central_controller.start_thread()
 
+    vo_worker = None
+    if args.enable_vo:
+        if not args.superpoint_onnx:
+            print("Error: --enable-vo requires --superpoint-onnx PATH (run "
+                  "tbai_estim/scripts/download_superpoint_onnx.py first)")
+            central_controller.stop_thread()
+            sys.exit(1)
+        try:
+            vo_worker = VisualOdometryWorker(
+                robot,
+                onnx_path=args.superpoint_onnx,
+                image_topic=args.image_topic,
+                depth_topic=args.depth_topic,
+                max_keypoints=args.vo_max_keypoints,
+                input_width=args.vo_input_width,
+                input_height=args.vo_input_height,
+                rate_hz=args.vo_rate_hz,
+                fx=args.depth_fx,
+                fy=args.depth_fy,
+                cx=args.depth_cx,
+                cy=args.depth_cy,
+                intra_op_threads=args.vo_intra_op_threads,
+                show=args.show_vo,
+            )
+            vo_worker.start()
+            if args.show_vo:
+                # Pump the cv2 window from the Tk main loop (~30 Hz).
+                def _pump():
+                    vo_worker.pump_visualization()
+                    ui_controller.root.after(33, _pump)
+                ui_controller.root.after(100, _pump)
+        except Exception as e:
+            print(f"Failed to start visual odometry worker: {e}")
+            central_controller.stop_thread()
+            sys.exit(1)
+
     try:
         ui_controller.run()
     except KeyboardInterrupt:
         pass
     finally:
+        if vo_worker is not None:
+            print("Stopping visual odometry worker...")
+            vo_worker.stop()
         print("Stopping controller...")
         central_controller.stop_thread()
         if args.log:

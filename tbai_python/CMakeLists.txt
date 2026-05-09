@@ -37,6 +37,7 @@ nanobind_add_module(_C
     src/controllers/bindings_arm_mpc.cpp
     src/controllers/bindings_quadruped_mpc.cpp
     src/controllers/bindings_python_controller.cpp
+    src/bindings_vision.cpp
 )
 target_link_libraries(_C
     PUBLIC
@@ -46,6 +47,12 @@ target_link_libraries(_C
         tbai_estim
         pinocchio::pinocchio
 )
+
+if(TBAI_BUILD_VO)
+    # tbai_estim's vision sources already pull in opencv + onnxruntime when
+    # TBAI_BUILD_VO=ON, so just propagate the marker macro.
+    target_compile_definitions(_C PRIVATE TBAI_HAS_VO)
+endif()
 
 if(TBAI_BUILD_BOB)
     target_link_libraries(_C PUBLIC tbai_bob)

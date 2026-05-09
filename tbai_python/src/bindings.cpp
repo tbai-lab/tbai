@@ -61,6 +61,9 @@ void bind_anymal_c(nb::module_ &m);
 void bind_anymal_d(nb::module_ &m);
 void bind_spot(nb::module_ &m);
 
+// Forward declarations — vision
+void bind_vision(nb::module_ &m);
+
 // Forward declarations — controllers
 void bind_static_controller(nb::module_ &m);
 void bind_bob_controller(nb::module_ &m);
@@ -165,6 +168,9 @@ NB_MODULE(_C, m) {
     // must be registered before any derived controllers
     // note: bind_g1 registers controllers too!
     nb::class_<tbai::Controller>(m, "Controller");
+
+    // bind vision (must be before robots so Landmark exists when bound on robot interfaces)
+    bind_vision(m);
 
     // bind robots
     bind_go2(m);

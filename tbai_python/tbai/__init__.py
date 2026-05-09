@@ -1,6 +1,11 @@
 from tbai._C import *  # noqa: F401, F403
 from tbai._C import rotations  # noqa: F401
 
+try:
+    from tbai._C import vision  # noqa: F401
+except ImportError:
+    pass
+
 # Fix repr so classes show as tbai.X instead of tbai._C.X
 for _obj in list(vars().values()):
     if isinstance(_obj, type) and _obj.__module__ == "tbai._C":
