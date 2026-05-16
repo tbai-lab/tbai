@@ -31,6 +31,8 @@ class CMakeBuild(build_ext):
             "-DTBAI_BUILD_PYTHON=ON",
             f"-DTBAI_BUILD_DEPLOY_GO2_UNITREE={build_go2_unitree}",
             f"-DTBAI_BUILD_DEPLOY_G1_UNITREE={build_g1_unitree}",
+            "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
+            "-DCMAKE_INSTALL_RPATH=$ORIGIN",
         ]
 
         build_args = []
